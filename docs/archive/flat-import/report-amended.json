@@ -1,0 +1,34 @@
+{
+  "report_id": "R100",
+  "version": 2,
+  "lifecycle_state": "finalized",
+  "supersedes": { "report_id": "R100", "version": 1 },
+  "amendment_type": "correction",
+  "source_catalog_version": "V1",
+
+  "_comment": "Created AFTER Catalog V2 was published. Baseline was cloned from R100/V1's resolved_payload (INV-10), NOT re-resolved against V2. Only diagnosis.comment changed. Note tumour.grade still reads 'Grade 2' and still carries source_catalog_version V1 — the V2 relabel to 'Intermediate grade' did NOT reach into this amendment because unchanged values inherit the historical snapshot untouched.",
+
+  "amended_at": "2026-07-02T14:10:00Z",
+  "amended_by": "pathologist:kk",
+  "amendment_reason": "Clarified margin status per reviewer request.",
+
+  "resolved_payload": {
+    "diagnosis.type": {
+      "option_id": "invasive_carcinoma",
+      "display": "Invasive carcinoma",
+      "source_catalog_version": "V1",
+      "changed_in_this_version": false
+    },
+    "tumour.grade": {
+      "option_id": "grade_2",
+      "display": "Grade 2",
+      "source_catalog_version": "V1",
+      "changed_in_this_version": false
+    },
+    "diagnosis.comment": {
+      "value": "Tumour confined to specimen margins; margins clear by at least 2 mm.",
+      "source_catalog_version": "V1",
+      "changed_in_this_version": true
+    }
+  }
+}

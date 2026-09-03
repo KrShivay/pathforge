@@ -1,0 +1,40 @@
+{
+  "_comment": "Reference expectations for the semantic-comparison layer. These assert BEHAVIOR of the comparator, independent of any fingerprint. Fingerprints may accelerate these checks but must never be their authority (INV-7).",
+
+  "comparisons": [
+    {
+      "id": "CMP-1-amendment-clinical-diff",
+      "left":  "report-initial.json (R100/V1)",
+      "right": "report-amended.json (R100/V2)",
+      "expected_result": "DIFFERENT",
+      "clinical_diff": true,
+      "changed_fields": ["diagnosis.comment"],
+      "unchanged_fields": ["diagnosis.type", "tumour.grade"],
+      "note": "Exactly one clinical field changed. tumour.grade must NOT appear as changed despite Catalog V2's relabel, because the amendment inherited V1's snapshot."
+    },
+    {
+      "id": "CMP-2-relabel-is-not-clinical",
+      "left":  "R100/V1 rendered while Catalog V1 is current",
+      "right": "R100/V1 rendered while Catalog V2 is current",
+      "expected_result": "EQUAL",
+      "clinical_diff": false,
+      "note": "Same finalized version viewed under two catalog states. Snapshot rendering means both produce 'Grade 2'. If the comparator or renderer ever produces 'Intermediate grade' for the right side, that is an INV-2 violation, not a legitimate difference."
+    },
+    {
+      "id": "CMP-3-presentation-only",
+      "left":  "R100/V1 rendered by renderer r1 (font A, pagination X)",
+      "right": "R100/V1 rendered by renderer r2 (font B, pagination Y)",
+      "expected_result": "EQUAL",
+      "clinical_diff": false,
+      "note": "Different bytes, different line wrapping. Semantic comparison must report clinically EQUAL (INV-6). A PDF binary diff is NOT an acceptable comparator here."
+    },
+    {
+      "id": "CMP-4-deprecated-option-still-readable",
+      "left":  "a report using diagnosis.type=in_situ_carcinoma, issued under V1",
+      "right": "the same report retrieved after V2 deprecated that option",
+      "expected_result": "EQUAL",
+      "clinical_diff": false,
+      "note": "Deprecation in V2 must not alter or break the historical report (INV-8). It still renders 'In-situ carcinoma' from its snapshot; no silent remap."
+    }
+  ]
+}
