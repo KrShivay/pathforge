@@ -2,19 +2,24 @@
   "catalog_version": "V1",
   "published_at": "2026-01-10T00:00:00Z",
   "fields": {
-    "diagnosis.type": {
-      "field_id": "diagnosis.type",
-      "options": [
-        { "option_id": "invasive_carcinoma", "label": "Invasive carcinoma" },
-        { "option_id": "in_situ_carcinoma",   "label": "In-situ carcinoma" }
-      ]
+    "test.fasting_glucose": {
+      "field_id": "test.fasting_glucose",
+      "display": "Fasting Blood Sugar",
+      "unit": "mg/dL",
+      "reference_range": { "low": 70, "high": 100 }
     },
-    "tumour.grade": {
-      "field_id": "tumour.grade",
+    "test.hba1c": {
+      "field_id": "test.hba1c",
+      "display": "HbA1c",
+      "unit": "%",
+      "reference_range": { "high": 5.7 }
+    },
+    "interpretation.glucose": {
+      "field_id": "interpretation.glucose",
       "options": [
-        { "option_id": "grade_1", "label": "Grade 1" },
-        { "option_id": "grade_2", "label": "Grade 2" },
-        { "option_id": "grade_3", "label": "Grade 3" }
+        { "option_id": "glu_normal",      "label": "Normal" },
+        { "option_id": "glu_prediabetes", "label": "Pre-diabetes" },
+        { "option_id": "glu_diabetes",    "label": "Diabetes" }
       ]
     }
   }

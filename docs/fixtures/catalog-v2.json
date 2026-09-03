@@ -3,28 +3,31 @@
   "published_at": "2026-06-15T00:00:00Z",
   "supersedes": "V1",
   "fields": {
-    "diagnosis.type": {
-      "field_id": "diagnosis.type",
+    "test.fasting_glucose": {
+      "field_id": "test.fasting_glucose",
+      "display": "Fasting Plasma Glucose",
+      "unit": "mg/dL",
+      "reference_range": { "low": 74, "high": 106 }
+    },
+    "test.hba1c": {
+      "field_id": "test.hba1c",
+      "display": "HbA1c",
+      "unit": "%",
+      "reference_range": { "high": 5.7 }
+    },
+    "interpretation.glucose": {
+      "field_id": "interpretation.glucose",
       "options": [
-        { "option_id": "invasive_carcinoma", "label": "Invasive carcinoma" },
-        { "option_id": "in_situ_carcinoma",   "label": "In-situ carcinoma", "deprecated": true }
+        { "option_id": "glu_normal",      "label": "Within range" },
+        { "option_id": "glu_prediabetes", "label": "Pre-diabetes", "deprecated": true },
+        { "option_id": "glu_diabetes",    "label": "Diabetes" }
       ]
     },
-    "tumour.grade": {
-      "field_id": "tumour.grade",
-      "options": [
-        { "option_id": "grade_1", "label": "Low grade" },
-        { "option_id": "grade_2", "label": "Intermediate grade" },
-        { "option_id": "grade_3", "label": "High grade" }
-      ]
-    },
-    "tumour.mitotic_score": {
-      "field_id": "tumour.mitotic_score",
-      "options": [
-        { "option_id": "m1", "label": "Score 1" },
-        { "option_id": "m2", "label": "Score 2" },
-        { "option_id": "m3", "label": "Score 3" }
-      ]
+    "test.random_glucose": {
+      "field_id": "test.random_glucose",
+      "display": "Random Blood Sugar",
+      "unit": "mg/dL",
+      "reference_range": { "high": 140 }
     }
   }
 }

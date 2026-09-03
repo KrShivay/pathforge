@@ -5,30 +5,41 @@
   "supersedes": { "report_id": "R100", "version": 1 },
   "amendment_type": "correction",
   "source_catalog_version": "V1",
-
-  "_comment": "Created AFTER Catalog V2 was published. Baseline was cloned from R100/V1's resolved_payload (INV-10), NOT re-resolved against V2. Only diagnosis.comment changed. Note tumour.grade still reads 'Grade 2' and still carries source_catalog_version V1 — the V2 relabel to 'Intermediate grade' did NOT reach into this amendment because unchanged values inherit the historical snapshot untouched.",
-
+  "issue_number": "INV-2026-006801",
+  "issue_date": "2026-07-02",
   "amended_at": "2026-07-02T14:10:00Z",
   "amended_by": "pathologist:kk",
-  "amendment_reason": "Clarified margin status per reviewer request.",
+  "amendment_reason": "Fasting glucose value corrected after re-check of the analyser log.",
+
+  "_comment": "Option A amendment (see expected-analysis/amendment-presentation.md). Created AFTER Catalog V2 was published. Baseline CLONED from R100/V1 resolved_payload (INV-10), NOT re-resolved against V2. Surface changes vs the original PDF: NEW issue_number + issue_date only; NO visible amendment marker. Clinical change: only test.fasting_glucose.value corrected. Note hba1c and interpretation still carry V1 snapshots (display/range), so the V2 relabel 'Fasting Plasma Glucose' and range 74-106 did NOT leak in.",
 
   "resolved_payload": {
-    "diagnosis.type": {
-      "option_id": "invasive_carcinoma",
-      "display": "Invasive carcinoma",
-      "source_catalog_version": "V1",
-      "changed_in_this_version": false
-    },
-    "tumour.grade": {
-      "option_id": "grade_2",
-      "display": "Grade 2",
-      "source_catalog_version": "V1",
-      "changed_in_this_version": false
-    },
-    "diagnosis.comment": {
-      "value": "Tumour confined to specimen margins; margins clear by at least 2 mm.",
+    "test.fasting_glucose": {
+      "field_id": "test.fasting_glucose",
+      "display": "Fasting Blood Sugar",
+      "unit": "mg/dL",
+      "reference_range": { "low": 70, "high": 100 },
+      "value": 129,
+      "flag": "high",
       "source_catalog_version": "V1",
       "changed_in_this_version": true
+    },
+    "test.hba1c": {
+      "field_id": "test.hba1c",
+      "display": "HbA1c",
+      "unit": "%",
+      "reference_range": { "high": 5.7 },
+      "value": 5.4,
+      "flag": "normal",
+      "source_catalog_version": "V1",
+      "changed_in_this_version": false
+    },
+    "interpretation.glucose": {
+      "field_id": "interpretation.glucose",
+      "option_id": "glu_normal",
+      "display": "Normal",
+      "source_catalog_version": "V1",
+      "changed_in_this_version": false
     }
   }
 }

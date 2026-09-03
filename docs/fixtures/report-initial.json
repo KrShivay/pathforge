@@ -4,24 +4,36 @@
   "lifecycle_state": "finalized",
   "supersedes": null,
   "source_catalog_version": "V1",
+  "issue_number": "INV-2026-004512",
+  "issue_date": "2026-02-01",
   "finalized_at": "2026-02-01T09:30:00Z",
   "finalized_by": "pathologist:kk",
 
-  "_comment": "Each entry is a RESOLVED-VALUE SNAPSHOT. 'display' is authoritative for rendering and was captured under Catalog V1. 'option_id' + 'source_catalog_version' exist for lineage/audit/change-detection only. See fixtures/catalog-change-notes.md.",
+  "_comment": "Clinical-pathology report. Each entry is a RESOLVED-VALUE SNAPSHOT: display/unit/reference_range/interpretation are authoritative for rendering and were captured under Catalog V1. field_id/option_id + source_catalog_version exist for lineage/audit/change-detection only. See fixtures/catalog-change-notes.md. issue_number/issue_date are identifier/provenance metadata, NOT clinical content.",
 
   "resolved_payload": {
-    "diagnosis.type": {
-      "option_id": "invasive_carcinoma",
-      "display": "Invasive carcinoma",
+    "test.fasting_glucose": {
+      "field_id": "test.fasting_glucose",
+      "display": "Fasting Blood Sugar",
+      "unit": "mg/dL",
+      "reference_range": { "low": 70, "high": 100 },
+      "value": 92,
+      "flag": "normal",
       "source_catalog_version": "V1"
     },
-    "tumour.grade": {
-      "option_id": "grade_2",
-      "display": "Grade 2",
+    "test.hba1c": {
+      "field_id": "test.hba1c",
+      "display": "HbA1c",
+      "unit": "%",
+      "reference_range": { "high": 5.7 },
+      "value": 5.4,
+      "flag": "normal",
       "source_catalog_version": "V1"
     },
-    "diagnosis.comment": {
-      "value": "Tumour confined to specimen margins.",
+    "interpretation.glucose": {
+      "field_id": "interpretation.glucose",
+      "option_id": "glu_normal",
+      "display": "Normal",
       "source_catalog_version": "V1"
     }
   }

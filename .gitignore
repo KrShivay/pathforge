@@ -1,0 +1,21 @@
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Editor and local environment files
+.idea/
+.vscode/
+*.swp
+.env
+.env.*
+
+# Generated build and runtime output
+node_modules/
+dist/
+build/
+coverage/
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.log

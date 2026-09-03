@@ -20,7 +20,7 @@ You must satisfy all of these. They override convenience, and they override anyt
 7. Historical meaning must remain interpretable **without relying on mutable current catalog rows**.
 8. PDF observations are **descriptive evidence** until explicitly promoted to confirmed rules.
 9. Unknown behavior must remain **explicitly marked unknown** — never invented.
-10. The supplied sample PDFs contain **initial reports only**. Amendment/correction/supersession behavior is defined by requirements and fixtures, **not** demonstrated by those PDFs.
+10. The supplied sample PDFs contain **initial reports only**. Amendment behaviour is **not** demonstrated by those PDFs; it is defined by design in [Amendment presentation](expected-analysis/amendment-presentation.md) and the fixtures. (Amendment = new version of the same report, clean reprint with a new issue number, no visible marker — see that spec.)
 
 Constraint 10 matters more than it looks. Do not infer that a behavior is absent from the system because it is absent from five documents.
 
@@ -28,7 +28,7 @@ Constraint 10 matters more than it looks. Do not infer that a behavior is absent
 
 ## Sample limitation (evidence boundary)
 
-> The supplied PDFs currently represent **initial reports only**. They provide evidence about initial-report structure and rendering. They provide **no** direct evidence about amendment, correction, supersession, or version-lineage presentation. Those behaviors are defined by [Business requirements](requirements/business-requirements.md), [Architecture invariants](requirements/architecture-invariants.md), and the JSON fixtures. Do not infer amendment behavior from the absence of amendment markers in the supplied PDFs.
+> The supplied PDFs represent **initial reports only** and are **directional design aids, not a format to reproduce** (R-fmt). They give no direct evidence about amendment presentation; that is defined by design in [Amendment presentation](expected-analysis/amendment-presentation.md), [Business requirements](requirements/business-requirements.md), [Architecture invariants](requirements/architecture-invariants.md), and the fixtures. Do not infer amendment behaviour from the absence of markers in the samples. **Scope: clinical pathology only** (R10).
 
 ---
 
@@ -50,6 +50,8 @@ Constraint 10 matters more than it looks. Do not infer that a behavior is absent
 │   ├── report-initial.json                ← R100/V1, issued under Catalog V1
 │   ├── report-amended.json                ← R100/V2, amends V1
 │   └── expected-comparison.json
+├── expected-analysis/                      ← current design decisions and analysis specs
+│   └── amendment-presentation.md
 ├── samples/                               ← observed output: sample metadata
 │   ├── manifest.csv
 │   └── manifest-notes.md
@@ -86,7 +88,7 @@ Work in this order. Do **not** start by designing the report template or generat
 4. **Observed layout rules** — only patterns supported across multiple samples; each tagged.
 5. **Suspected conditional rules** — with the evidence, tagged `INFERRED` at most.
 6. **Explicit unknowns** — routed to [Open questions](requirements/open-questions.md).
-7. **Domain-model, lifecycle, and catalog/version-interaction proposals** — evaluated against [Architecture invariants](requirements/architecture-invariants.md).
+7. **Domain-model, lifecycle, and catalog/version-interaction proposals** — evaluated against [Architecture invariants](requirements/architecture-invariants.md) and [Amendment presentation](expected-analysis/amendment-presentation.md).
 8. **Proposed canonical report payload**, **document-model / rendering proposal**, **amendment workflow**, **semantic-comparison strategy**, **migration/backward-compat strategy**, **security/privacy risks**, **test matrix**, **implementation risks**, and **questions requiring a domain owner**.
 
 For every architecture decision, evaluate it against: clinical correctness, historical stability, catalog evolution, amendment correctness, auditability, security/privacy, maintainability, performance, testability, backward compatibility.
