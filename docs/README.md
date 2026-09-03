@@ -52,10 +52,9 @@ Constraint 10 matters more than it looks. Do not infer that a behavior is absent
 │   └── expected-comparison.json
 ├── expected-analysis/                      ← current design decisions and analysis specs
 │   └── amendment-presentation.md
-├── samples/                               ← observed output: sample metadata
-│   ├── manifest.csv
-│   └── manifest-notes.md
-└── archive/                               ← original imports; not canonical
+└── samples/                               ← observed output: sample metadata
+    ├── manifest.csv
+    └── manifest-notes.md
 ```
 
 **What is missing / not yet evidenced:** an amended-report *PDF*, multi-specimen histopathology samples, and any real catalog export. The fixtures stand in for the semantics; they are illustrative, not scraped from production.

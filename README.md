@@ -16,6 +16,4 @@ boundary, provenance labels, and expected work order.
 | [Analysis](docs/expected-analysis/) | Current design specifications, including amendment presentation behavior. |
 | [Samples](docs/samples/) | Metadata for the illustrative rendered-report sample set. |
 
-The active source of truth is the structured material under `docs/`. The
-original import bundle and flattened source files are retained under
-[`docs/archive/`](docs/archive/) for provenance only.
+The active source of truth is the structured material under `docs/`.
