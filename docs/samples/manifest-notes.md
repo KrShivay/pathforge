@@ -1,15 +1,21 @@
 # Notes on the sample set
 
-## These are illustrative, not authoritative
-All five PDFs are vendor **sample/demo** reports (Pathofast, CoreLab Software, Dr Lal PathLabs) on dummy patients, each carrying its own "sample report" / "not valid for medical legal purpose" disclaimer. They are useful for **structure and rendering evidence** (`OBSERVED`), not as normative specifications of *this* platform's behavior. `authoritative` is `illustrative` for every row.
+## Evidence status
+
+The manifest names five illustrative sample PDFs, but none of the binary files is present in the repository. Vendor, page-count, section, feature, and report-kind values are manifest-provided metadata and remain unverified against the documents. They are not direct `OBSERVED` PDF evidence. See the authoritative [PDF evidence gap](../expected-analysis/pdf-evidence-gap.md). `UNKNOWN`
+
+The manifest marks every row `illustrative`; even after intake, these samples are directional evidence rather than specifications of this platform's house format. `CONFIRMED_REQUIREMENT` (R-fmt)
 
 ## Coverage gaps (be explicit about these)
-- **All are initial reports.** None demonstrates amendment, correction, supersession, or version lineage. See the evidence boundary in the [project brief](../README.md). Amendment semantics live in [Architecture invariants](../requirements/architecture-invariants.md) (INV-4, INV-10) and [`report-amended.json`](../fixtures/report-amended.json).
-- **No multi-specimen sample.** Every report is single-subject/single-accession. Repeated-specimen ordering and pagination (a stated concern) is **not** evidenced here — tag any conclusion about it `UNKNOWN`.
-- **Two vendor formats mixed.** Different providers = different templates. Do not merge their layout quirks into one "house style."
+- **All five binaries are absent.** Typography, layout, content, disclaimers, report status, and pagination cannot be verified. `UNKNOWN`
+- **The manifest labels every row `initial`.** This is metadata, not confirmation that the unseen documents contain no amendment, correction, supersession, or version-lineage evidence. Amendment semantics come from [Architecture invariants](../requirements/architecture-invariants.md) (INV-4, INV-10) and [`report-amended.json`](../fixtures/report-amended.json). `CONFIRMED_REQUIREMENT`
+- **Multi-specimen behavior is not evidenced.** Repeated-specimen ordering and pagination remain `UNKNOWN`.
+- **A single house format must be designed.** Do not merge manifest-described vendor or layout differences into a house-style rule. `CONFIRMED_REQUIREMENT` (R-fmt)
 
-## The "Revised" trap in S005 (WM17S.pdf)
-S005's header shows `Report Status : Revised`. This is **not** the missing amendment sample. The document contains a status string but **no version-lineage markup, no supersession reference, and no "this supersedes previously issued reports" indicator tied to a prior version** that you can profile. Treat "Revised" here as `OBSERVED` (a status label exists) but treat "how amendments are presented" as `UNKNOWN` from the PDFs. Do not reverse-engineer amendment presentation from this single status word.
+## S005 `Revised` metadata
 
-## On the ASCII/box-drawing tables (S004, and treatment-goal tables in S003/S005)
-Some interpretation and reference tables are drawn with monospaced box-drawing characters. That is almost certainly a **renderer/legacy artifact**, not a business requirement. Per README constraint 8, keep it `OBSERVED` and do not promote it to a layout rule.
+The S005 manifest row mentions a `Revised` status. Without `WM17S.pdf`, neither the label nor the absence of version-lineage or supersession text can be verified. Do not use this metadata to infer amendment presentation. `UNKNOWN`
+
+## Table-rendering metadata
+
+The manifest describes ASCII or box-drawing tables in S003–S005. This remains unverified metadata until the binaries are supplied and must not be promoted to a rendering rule. `UNKNOWN`

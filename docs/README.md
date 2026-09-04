@@ -20,7 +20,7 @@ You must satisfy all of these. They override convenience, and they override anyt
 7. Historical meaning must remain interpretable **without relying on mutable current catalog rows**.
 8. PDF observations are **descriptive evidence** until explicitly promoted to confirmed rules.
 9. Unknown behavior must remain **explicitly marked unknown** — never invented.
-10. The supplied sample PDFs contain **initial reports only**. Amendment behaviour is **not** demonstrated by those PDFs; it is defined by design in [Amendment presentation](expected-analysis/amendment-presentation.md) and the fixtures. (Amendment = new version of the same report, clean reprint with a new issue number, no visible marker — see that spec.)
+10. The sample manifest describes **initial reports only**, but the five PDF binaries are absent and its metadata is not direct PDF evidence. Amendment behaviour is defined by design in [Amendment presentation](expected-analysis/amendment-presentation.md) and the fixtures. (Amendment = new version of the same report, clean reprint with a new issue number, no visible marker — see that spec.)
 
 Constraint 10 matters more than it looks. Do not infer that a behavior is absent from the system because it is absent from five documents.
 
@@ -28,7 +28,7 @@ Constraint 10 matters more than it looks. Do not infer that a behavior is absent
 
 ## Sample limitation (evidence boundary)
 
-> The supplied PDFs represent **initial reports only** and are **directional design aids, not a format to reproduce** (R-fmt). They give no direct evidence about amendment presentation; that is defined by design in [Amendment presentation](expected-analysis/amendment-presentation.md), [Business requirements](requirements/business-requirements.md), [Architecture invariants](requirements/architecture-invariants.md), and the fixtures. Do not infer amendment behaviour from the absence of markers in the samples. **Scope: clinical pathology only** (R10).
+> The manifest names five PDFs as **initial reports** and **directional design aids, not a format to reproduce** (R-fmt), but the binaries are absent. The manifest therefore gives no direct PDF evidence about amendment presentation; that is defined by design in [Amendment presentation](expected-analysis/amendment-presentation.md), [Business requirements](requirements/business-requirements.md), [Architecture invariants](requirements/architecture-invariants.md), and the fixtures. See [PDF evidence gap](expected-analysis/pdf-evidence-gap.md) before making any sample claim. **Scope: clinical pathology only** (R10).
 
 ---
 
@@ -51,13 +51,14 @@ Constraint 10 matters more than it looks. Do not infer that a behavior is absent
 │   ├── report-amended.json                ← R100/V2, amends V1
 │   └── expected-comparison.json
 ├── expected-analysis/                      ← current design decisions and analysis specs
-│   └── amendment-presentation.md
+│   ├── amendment-presentation.md
+│   └── pdf-evidence-gap.md             ← authoritative status of absent PDF evidence
 └── samples/                               ← observed output: sample metadata
     ├── manifest.csv
     └── manifest-notes.md
 ```
 
-**What is missing / not yet evidenced:** an amended-report *PDF*, multi-specimen histopathology samples, and any real catalog export. The fixtures stand in for the semantics; they are illustrative, not scraped from production.
+**What is missing / not yet evidenced:** all five PDF binaries named in the manifest, any amended-report PDF, multi-specimen clinical-pathology examples, and any real catalog export. The fixtures stand in for the semantics; they are illustrative, not scraped from production.
 
 ---
 
