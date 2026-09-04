@@ -1,3 +1,11 @@
+## Current product scope
+
+Read `SCOPE.md` before planning or editing. It is authoritative for the current
+prototype. Do not expand the product into enterprise storage, authorization,
+integrations, compliance, distributed systems, or speculative scale work without
+explicit owner approval. Prioritize the working data -> report preview ->
+print/save-as-PDF path.
+
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 

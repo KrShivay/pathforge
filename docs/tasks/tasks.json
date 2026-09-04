@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "statuses": ["todo", "in_progress", "blocked", "deferred", "done"],
   "tasks": [
     {
       "id": "DOC-001",
@@ -17,7 +18,7 @@
     {
       "id": "DOC-002",
       "title": "Profile sample PDFs and produce the field inventory",
-      "status": "blocked",
+      "status": "deferred",
       "priority": "P0",
       "area": "0-evidence",
       "dependsOn": ["DOC-001"],
@@ -27,12 +28,12 @@
         "Cross-sample patterns and anomalies are separated",
         "Unknowns are added to the open-question log"
       ],
-      "notes": "Blocked because all five binaries named by docs/samples/manifest.csv are absent. The verified gap and exact intake filenames are recorded in docs/expected-analysis/pdf-evidence-gap.md; do not promote manifest metadata or stale docs/context claims to PDF observations."
+      "notes": "Basic intake is recorded in docs/expected-analysis/pdf-evidence-gap.md. Exhaustive profiling and field-inventory documentation are deferred because they are not required for the prototype; use samples only for short directional visual checks. S001 must be replaced with a de-identified copy before sample PDFs are committed."
     },
     {
       "id": "DEC-001",
       "title": "Confirm production-blocking domain decisions",
-      "status": "blocked",
+      "status": "deferred",
       "priority": "P0",
       "area": "0-evidence",
       "dependsOn": ["DOC-001"],
@@ -42,7 +43,7 @@
         "Roles, jurisdiction, retention, and integration boundaries are confirmed",
         "Decisions are recorded in the resolved log"
       ],
-      "notes": "Blocked on domain-owner answers to Q1-Q5, Q7, Q9a-Q9c, Q11-Q12, Q14-Q15; reversible scaffolding can continue."
+      "notes": "Deferred outside the current one-to-two-user report-generation prototype. Reopen individual decisions only if they directly block SCOPE.md or the owner expands scope."
     },
     {
       "id": "DEC-002",
@@ -163,7 +164,7 @@
     {
       "id": "SRV-001",
       "title": "Implement durable version and audit storage",
-      "status": "todo",
+      "status": "deferred",
       "priority": "P1",
       "area": "3-service",
       "dependsOn": ["DEV-004", "DEC-001"],
@@ -172,7 +173,7 @@
         "Finalization is atomic and concurrency-safe",
         "Recovery test reconstructs version lineage"
       ],
-      "notes": "Storage selection waits for retention and integration constraints."
+      "notes": "Production durability, restart recovery, and concurrency infrastructure are outside the current prototype scope. Use in-memory or simple local storage only if the prototype needs it."
     },
     {
       "id": "SRV-002",
@@ -208,7 +209,7 @@
     {
       "id": "REN-002",
       "title": "Generate deterministic clinical report PDFs",
-      "status": "todo",
+      "status": "deferred",
       "priority": "P1",
       "area": "4-rendering",
       "dependsOn": ["REN-001"],
@@ -218,12 +219,12 @@
         "Long text, pagination, missing optionals, and font fallback are tested",
         "Renderer-only changes remain clinically equal"
       ],
-      "notes": "Target semantic and structural equivalence per R6, not pixel identity."
+      "notes": "Server-generated archival PDFs, export metadata, checksums, and renderer-retention work are deferred. The current prototype uses a print-ready browser view and the browser's Print / Save as PDF action."
     },
     {
       "id": "OPS-001",
       "title": "Complete clinical production-readiness review",
-      "status": "todo",
+      "status": "deferred",
       "priority": "P1",
       "area": "5-hardening",
       "dependsOn": ["SRV-001", "REN-002", "DEC-001"],
@@ -234,7 +235,23 @@
         "Load and failure-injection targets pass",
         "No real clinical data is enabled before release approval"
       ],
-      "notes": "Includes observability, redaction, retention, and operational runbooks."
+      "notes": "Enterprise production hardening is outside SCOPE.md and requires explicit owner approval before implementation."
+    },
+    {
+      "id": "APP-001",
+      "title": "Deliver the report preview and print prototype",
+      "status": "done",
+      "priority": "P0",
+      "area": "4-rendering",
+      "dependsOn": ["REN-001"],
+      "acceptanceCriteria": [
+        "npm start opens the report product rather than the internal task dashboard",
+        "A fixture-shaped report can be loaded or pasted and validated",
+        "The user can generate a readable house-format preview",
+        "The report view prints cleanly and supports browser Save as PDF",
+        "An end-to-end test covers data input through the rendered document model"
+      ],
+      "notes": "Verified end to end: npm start loads the initial sample, pasted/file JSON is validated server-side, all payload fields reach the document model and preview, the amended sample displays V2 and corrected value 129, print CSS provides an A4 report view, and Print / Save PDF invokes the browser print flow. The delivery dashboard remains available through npm run dashboard."
     }
   ]
 }

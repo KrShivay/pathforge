@@ -1,5 +1,9 @@
 # Open Questions
 
+> These are deferred production questions unless a question directly blocks the
+> current scope in [`../../SCOPE.md`](../../SCOPE.md). Do not turn them into
+> implementation work without explicit owner approval.
+
 Unresolved items requiring a domain owner. Agents: when a decision depends on an **open** item, proceed with the safest reversible option, tag it `ASSUMPTION`, and reference the question number. Do not silently resolve open items. **Resolved** items are recorded in the log at the bottom and are `CONFIRMED_REQUIREMENT` unless noted.
 
 ## Lifecycle & versioning
@@ -37,8 +41,8 @@ Unresolved items requiring a domain owner. Agents: when a decision depends on an
 | **R6** (was Q6) | PDF reproduction fidelity | **Semantic + structural equivalence** is sufficient. Same clinical content in the same order; font / line-wrap / pixel differences are acceptable. Not pixel-identical. | `CONFIRMED_REQUIREMENT` |
 | **R9** (was Q9) | How amendments are presented | Amendment = **new version of the same logical report** (Option A), lineage retained in-system. Regenerated **PDF is a clean ordinary report with a new issue number + issue date and NO visible amendment marker**. See [amendment presentation](../expected-analysis/amendment-presentation.md). | `CONFIRMED_REQUIREMENT` |
 | **R10** (was Q10) | Disciplines in scope | **Clinical pathology only** (lab-panel style: values, units, reference ranges, tables). No histopathology. | `CONFIRMED_REQUIREMENT` |
-| **R13** (was Q13) | Scale | **~100 reports/day**, but the system must be **scalable and crash-proof / fault-tolerant**. | `ASSUMPTION` for the volume figure; scalability/robustness is `CONFIRMED_REQUIREMENT` |
+| **R13** (was Q13) | Scale | Current prototype has **one or two non-concurrent users**. Do not add scale infrastructure or optimization without explicit approval. | `CONFIRMED_REQUIREMENT` |
 | **R-fmt** (was part of Q8) | Sample authority | Sample PDFs are **directional understanding aids**, not a format to reproduce. The house format is being **designed**, informed by the samples. | `CONFIRMED_REQUIREMENT` |
 
 ### Scope note carried into the docs
-Scope is **clinical pathology; single house format (designed, applied across report types); amendments in scope via Option A; semantic PDF fidelity; ~100/day, scalable + fault-tolerant.** The five samples are from different vendors and are illustrative only — "same format" means one house format to be designed, not that the samples are already uniform.
+Scope is **clinical pathology; one or two non-concurrent users; single house format; data-to-preview-to-print/PDF; amendments retained only as the already-defined simple version behavior.** Enterprise authorization, integrations, production persistence, compliance programs, distributed systems, and speculative scale work are deferred by [`SCOPE.md`](../../SCOPE.md). The five samples are illustrative only.

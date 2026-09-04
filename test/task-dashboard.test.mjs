@@ -4,7 +4,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { createTaskServer, loadTaskBoard, normalizeTaskBoard, summarizeTasks, validateTaskBoard } from '../scripts/task-dashboard.mjs';
+import {
+  createTaskServer,
+  loadTaskBoard,
+  normalizeTaskBoard,
+  summarizeTasks,
+  validateTaskBoard,
+} from '../scripts/task-dashboard.mjs';
 
 const board = {
   schemaVersion: 1,
@@ -12,8 +18,24 @@ const board = {
   statuses: ['todo', 'doing', 'done'],
   phases: ['foundation'],
   tasks: [
-    { id: 'PF-001', title: 'First', phase: 'foundation', status: 'done', priority: 'high', dependsOn: [], acceptance: ['Works'] },
-    { id: 'PF-002', title: 'Second', phase: 'foundation', status: 'doing', priority: 'medium', dependsOn: ['PF-001'], acceptance: ['Tested'] },
+    {
+      id: 'PF-001',
+      title: 'First',
+      phase: 'foundation',
+      status: 'done',
+      priority: 'high',
+      dependsOn: [],
+      acceptance: ['Works'],
+    },
+    {
+      id: 'PF-002',
+      title: 'Second',
+      phase: 'foundation',
+      status: 'doing',
+      priority: 'medium',
+      dependsOn: ['PF-001'],
+      acceptance: ['Tested'],
+    },
   ],
 };
 
@@ -31,7 +53,17 @@ test('validates task references and required fields', () => {
 test('normalizes the compact documentation contract', () => {
   const compact = {
     version: 1,
-    tasks: [{ id: 'PF-001', title: 'First', area: 'foundation', status: 'todo', priority: 'P1', dependsOn: [], acceptanceCriteria: ['Works'] }],
+    tasks: [
+      {
+        id: 'PF-001',
+        title: 'First',
+        area: 'foundation',
+        status: 'todo',
+        priority: 'P1',
+        dependsOn: [],
+        acceptanceCriteria: ['Works'],
+      },
+    ],
   };
   const normalized = normalizeTaskBoard(compact);
   assert.equal(normalized.schemaVersion, 1);
@@ -43,7 +75,17 @@ test('normalizes the compact documentation contract', () => {
 test('rejects a status outside the compact contract', () => {
   const compact = normalizeTaskBoard({
     version: 1,
-    tasks: [{ id: 'PF-001', title: 'First', area: 'foundation', status: 'started', priority: 'P1', dependsOn: [], acceptanceCriteria: ['Works'] }],
+    tasks: [
+      {
+        id: 'PF-001',
+        title: 'First',
+        area: 'foundation',
+        status: 'started',
+        priority: 'P1',
+        dependsOn: [],
+        acceptanceCriteria: ['Works'],
+      },
+    ],
   });
   assert.match(validateTaskBoard(compact).join('\n'), /status is not declared/);
 });

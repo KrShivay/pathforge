@@ -1,7 +1,12 @@
 # PathForge
 
-PathForge is a versioned pathology reporting system with immutable clinical
-records, catalog-aware amendments, and deterministic document generation.
+PathForge is a small clinical-pathology report prototype. It accepts structured
+report data and turns it into a printable house-format report.
+
+The current prototype scope is intentionally small: one or two users converting
+report data into one house-format preview that can be printed or saved as PDF.
+Read [SCOPE.md](SCOPE.md) before planning work; it is the authority on what is in
+and out of scope.
 
 ## Local setup
 
@@ -19,14 +24,15 @@ npm run build
 npm start
 ```
 
-Open <http://127.0.0.1:4173> to view delivery progress. `npm start` is the
-one-command local entry point after installation. Native ESM runs directly in
-Node, so `npm run build` validates the source rather than emitting generated
-JavaScript.
+Open <http://127.0.0.1:4173>, load or paste report JSON, generate the preview,
+then use **Print / Save PDF**. `npm start` is the one-command product entry
+point. The internal task dashboard remains available through `npm run
+dashboard`. Native ESM runs directly in Node, so `npm run build` validates the
+source rather than emitting generated JavaScript.
 
 `npm run verify` is the local and CI quality gate. It checks formatting, lint,
 types, unit tests, domain fixtures, and the task ledger. Run `npm run format`
-before verification when changing domain source or its tests.
+before verification when changing source or tests.
 
 Only non-sensitive local settings belong in `.env`. Never commit credentials,
 patient-identifiable data, production payloads, or secrets. `.env.example`

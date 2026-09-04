@@ -37,7 +37,7 @@ const renderConfig = {
       input_id: 'page-geometry',
       category: 'layout',
       status: 'UNKNOWN',
-      reason: 'Sample PDF binaries are absent, so page geometry is not evidence-backed.',
+      reason: 'The illustrative samples do not define the PathForge house-format geometry.',
       reference: 'docs/expected-analysis/pdf-evidence-gap.md',
     },
     {

@@ -335,5 +335,8 @@ test('transaction rolls back version and audit writes when finalization cannot a
   const history = await service.retrieveHistory({ reportId: 'R-ROLLBACK' });
   assert.equal(history.revision, 1);
   assert.equal(history.versions[0]?.lifecycle_state, 'draft');
-  assert.deepEqual(history.auditEvents.map((event) => event.event_type), ['report_draft_created']);
+  assert.deepEqual(
+    history.auditEvents.map((event) => event.event_type),
+    ['report_draft_created'],
+  );
 });

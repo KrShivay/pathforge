@@ -1,5 +1,12 @@
 # Business Requirements (Deep Reference)
 
+> **Scope notice:** [`../../SCOPE.md`](../../SCOPE.md) governs the current
+> prototype. This deep reference contains possible production concerns and is
+> not an active implementation backlog. Do not build authorization systems,
+> external integrations, production storage, compliance programs, distributed
+> infrastructure, or scale optimizations unless the owner explicitly expands
+> scope.
+
 > **This is reference material, not the agent entry point.** Read the [project brief](../README.md) first, then
 > [Architecture invariants](architecture-invariants.md). Consult this document for detail on a specific topic; you are not expected to
 > retain it uniformly across a single pass.

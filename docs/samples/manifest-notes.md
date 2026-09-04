@@ -2,20 +2,21 @@
 
 ## Evidence status
 
-The manifest names five illustrative sample PDFs, but none of the binary files is present in the repository. Vendor, page-count, section, feature, and report-kind values are manifest-provided metadata and remain unverified against the documents. They are not direct `OBSERVED` PDF evidence. See the authoritative [PDF evidence gap](../expected-analysis/pdf-evidence-gap.md). `UNKNOWN`
+Five illustrative sample PDFs are available locally and match the filenames in the manifest. Basic metadata and first-page text were checked on 2026-09-04. The files remain directional examples, not house-format requirements. See [PDF evidence status](../expected-analysis/pdf-evidence-gap.md). `OBSERVED`
 
 The manifest marks every row `illustrative`; even after intake, these samples are directional evidence rather than specifications of this platform's house format. `CONFIRMED_REQUIREMENT` (R-fmt)
 
 ## Coverage gaps (be explicit about these)
-- **All five binaries are absent.** Typography, layout, content, disclaimers, report status, and pagination cannot be verified. `UNKNOWN`
-- **The manifest labels every row `initial`.** This is metadata, not confirmation that the unseen documents contain no amendment, correction, supersession, or version-lineage evidence. Amendment semantics come from [Architecture invariants](../requirements/architecture-invariants.md) (INV-4, INV-10) and [`report-amended.json`](../fixtures/report-amended.json). `CONFIRMED_REQUIREMENT`
+- **S001 contains visible personal data.** It is intentionally ignored by Git and must be replaced with a de-identified copy before any sample PDFs are committed. `OBSERVED`
+- **S005 restricts printing and copying.** It can be read locally but must not be treated as proof that PathForge should reproduce those restrictions. `OBSERVED`
+- **The samples are not authoritative amendment examples.** Amendment semantics come from [Architecture invariants](../requirements/architecture-invariants.md) (INV-4, INV-10) and [`report-amended.json`](../fixtures/report-amended.json). `CONFIRMED_REQUIREMENT`
 - **Multi-specimen behavior is not evidenced.** Repeated-specimen ordering and pagination remain `UNKNOWN`.
 - **A single house format must be designed.** Do not merge manifest-described vendor or layout differences into a house-style rule. `CONFIRMED_REQUIREMENT` (R-fmt)
 
 ## S005 `Revised` metadata
 
-The S005 manifest row mentions a `Revised` status. Without `WM17S.pdf`, neither the label nor the absence of version-lineage or supersession text can be verified. Do not use this metadata to infer amendment presentation. `UNKNOWN`
+S005 visibly contains a `Revised` status, but that single label does not define PathForge amendment presentation. `OBSERVED`
 
 ## Table-rendering metadata
 
-The manifest describes ASCII or box-drawing tables in S003–S005. This remains unverified metadata until the binaries are supplied and must not be promoted to a rendering rule. `UNKNOWN`
+ASCII or box-drawing tables occur in the reference samples. They are vendor rendering artifacts and must not be promoted to a PathForge rendering rule. `OBSERVED`

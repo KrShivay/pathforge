@@ -27,11 +27,13 @@ export async function loadTaskBoard(file = DEFAULT_DATA_FILE) {
 
 export function normalizeTaskBoard(board) {
   if (!board || typeof board !== 'object' || Array.isArray(board)) return board;
-  const tasks = Array.isArray(board.tasks) ? board.tasks.map((task) => ({
-    ...task,
-    phase: task.phase ?? task.area,
-    acceptance: task.acceptance ?? task.acceptanceCriteria,
-  })) : board.tasks;
+  const tasks = Array.isArray(board.tasks)
+    ? board.tasks.map((task) => ({
+        ...task,
+        phase: task.phase ?? task.area,
+        acceptance: task.acceptance ?? task.acceptanceCriteria,
+      }))
+    : board.tasks;
   const unique = (field) => [...new Set((tasks ?? []).map((task) => task?.[field]).filter(Boolean))];
   return {
     ...board,
@@ -53,7 +55,8 @@ export function validateTaskBoard(board) {
   if (!Array.isArray(board.phases)) errors.push('phases must be an array');
   if (!Array.isArray(board.tasks)) return [...errors, 'tasks must be an array'];
 
-  const definitionIds = (definitions) => new Set((definitions ?? []).map((item) => typeof item === 'string' ? item : item?.id).filter(Boolean));
+  const definitionIds = (definitions) =>
+    new Set((definitions ?? []).map((item) => (typeof item === 'string' ? item : item?.id)).filter(Boolean));
   const statuses = definitionIds(board.statuses);
   const phases = definitionIds(board.phases);
 
@@ -65,7 +68,8 @@ export function validateTaskBoard(board) {
       return;
     }
     for (const field of ['id', 'title', 'phase', 'status', 'priority']) {
-      if (typeof task[field] !== 'string' || task[field].trim() === '') errors.push(`${at}.${field} must be a non-empty string`);
+      if (typeof task[field] !== 'string' || task[field].trim() === '')
+        errors.push(`${at}.${field} must be a non-empty string`);
     }
     if (typeof task.id === 'string') {
       if (ids.has(task.id)) errors.push(`${at}.id duplicates ${task.id}`);
@@ -73,10 +77,17 @@ export function validateTaskBoard(board) {
     }
     if (!Array.isArray(task.dependsOn)) errors.push(`${at}.dependsOn must be an array`);
     if (!Array.isArray(task.acceptance)) errors.push(`${at}.acceptance must be an array`);
-    if (Array.isArray(task.dependsOn) && task.dependsOn.some((item) => typeof item !== 'string')) errors.push(`${at}.dependsOn must contain only task IDs`);
-    if (Array.isArray(task.acceptance) && task.acceptance.some((item) => typeof item !== 'string' || item.trim() === '')) errors.push(`${at}.acceptance must contain non-empty strings`);
-    if (typeof task.status === 'string' && statuses.size > 0 && !statuses.has(task.status)) errors.push(`${at}.status is not declared in statuses`);
-    if (typeof task.phase === 'string' && phases.size > 0 && !phases.has(task.phase)) errors.push(`${at}.phase is not declared in phases`);
+    if (Array.isArray(task.dependsOn) && task.dependsOn.some((item) => typeof item !== 'string'))
+      errors.push(`${at}.dependsOn must contain only task IDs`);
+    if (
+      Array.isArray(task.acceptance) &&
+      task.acceptance.some((item) => typeof item !== 'string' || item.trim() === '')
+    )
+      errors.push(`${at}.acceptance must contain non-empty strings`);
+    if (typeof task.status === 'string' && statuses.size > 0 && !statuses.has(task.status))
+      errors.push(`${at}.status is not declared in statuses`);
+    if (typeof task.phase === 'string' && phases.size > 0 && !phases.has(task.phase))
+      errors.push(`${at}.phase is not declared in phases`);
   });
 
   board.tasks.forEach((task, index) => {
@@ -108,10 +119,11 @@ export function validateTaskBoard(board) {
 }
 
 export function summarizeTasks(tasks) {
-  const countBy = (field) => tasks.reduce((counts, task) => {
-    counts[task[field]] = (counts[task[field]] ?? 0) + 1;
-    return counts;
-  }, {});
+  const countBy = (field) =>
+    tasks.reduce((counts, task) => {
+      counts[task[field]] = (counts[task[field]] ?? 0) + 1;
+      return counts;
+    }, {});
   const done = tasks.filter((task) => task.status === 'done').length;
   return {
     total: tasks.length,
@@ -134,7 +146,12 @@ export function createTaskServer({ dataFile = DEFAULT_DATA_FILE } = {}) {
       }
       if (request.method === 'GET' && url.pathname === '/api/tasks') {
         const board = await loadTaskBoard(dataFile);
-        send(response, 200, JSON.stringify({ ...board, summary: summarizeTasks(board.tasks) }), 'application/json; charset=utf-8');
+        send(
+          response,
+          200,
+          JSON.stringify({ ...board, summary: summarizeTasks(board.tasks) }),
+          'application/json; charset=utf-8',
+        );
         return;
       }
       if (request.method === 'GET' && url.pathname === '/health') {
@@ -159,7 +176,12 @@ function send(response, status, body, contentType) {
 }
 
 function parseArguments(argv) {
-  const options = { host: '127.0.0.1', port: Number(process.env.PORT ?? 4173), dataFile: DEFAULT_DATA_FILE, check: false };
+  const options = {
+    host: '127.0.0.1',
+    port: Number(process.env.PORT ?? 4173),
+    dataFile: DEFAULT_DATA_FILE,
+    check: false,
+  };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === '--check') options.check = true;
@@ -169,7 +191,8 @@ function parseArguments(argv) {
     else if (argument === '--data') options.dataFile = resolve(argv[++index]);
     else throw new Error(`Unknown argument: ${argument}`);
   }
-  if (!Number.isInteger(options.port) || options.port < 0 || options.port > 65535) throw new Error('--port must be an integer from 0 to 65535');
+  if (!Number.isInteger(options.port) || options.port < 0 || options.port > 65535)
+    throw new Error('--port must be an integer from 0 to 65535');
   return options;
 }
 
@@ -218,4 +241,8 @@ for(const id of ['search','status','phase'])el(id).addEventListener('input',rend
 </script></body></html>`;
 
 const isDirectRun = process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
-if (isDirectRun) main().catch((error) => { console.error(error.message); process.exitCode = 1; });
+if (isDirectRun)
+  main().catch((error) => {
+    console.error(error.message);
+    process.exitCode = 1;
+  });

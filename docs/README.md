@@ -1,5 +1,11 @@
 # Pathology Report Platform — Agent Brief
 
+> **Current-scope guardrail:** Read [`../SCOPE.md`](../SCOPE.md) first. This
+> document explains domain correctness, but it is not permission to build an
+> enterprise clinical platform. For the current prototype, implement only the
+> data -> report preview -> print/save-as-PDF path and the small supporting
+> rules named in `SCOPE.md`.
+
 **Read this file first. It is the primary interface to this project.**
 Everything else is reference material you consult as needed, not context you must hold uniformly.
 
@@ -20,7 +26,7 @@ You must satisfy all of these. They override convenience, and they override anyt
 7. Historical meaning must remain interpretable **without relying on mutable current catalog rows**.
 8. PDF observations are **descriptive evidence** until explicitly promoted to confirmed rules.
 9. Unknown behavior must remain **explicitly marked unknown** — never invented.
-10. The sample manifest describes **initial reports only**, but the five PDF binaries are absent and its metadata is not direct PDF evidence. Amendment behaviour is defined by design in [Amendment presentation](expected-analysis/amendment-presentation.md) and the fixtures. (Amendment = new version of the same report, clean reprint with a new issue number, no visible marker — see that spec.)
+10. The five local samples are illustrative rather than authoritative. Amendment behaviour is defined by design in [Amendment presentation](expected-analysis/amendment-presentation.md) and the fixtures. (Amendment = new version of the same report, clean reprint with a new issue number, no visible marker — see that spec.)
 
 Constraint 10 matters more than it looks. Do not infer that a behavior is absent from the system because it is absent from five documents.
 
@@ -28,7 +34,7 @@ Constraint 10 matters more than it looks. Do not infer that a behavior is absent
 
 ## Sample limitation (evidence boundary)
 
-> The manifest names five PDFs as **initial reports** and **directional design aids, not a format to reproduce** (R-fmt), but the binaries are absent. The manifest therefore gives no direct PDF evidence about amendment presentation; that is defined by design in [Amendment presentation](expected-analysis/amendment-presentation.md), [Business requirements](requirements/business-requirements.md), [Architecture invariants](requirements/architecture-invariants.md), and the fixtures. See [PDF evidence gap](expected-analysis/pdf-evidence-gap.md) before making any sample claim. **Scope: clinical pathology only** (R10).
+> Five local PDFs are available as **directional design aids, not a format to reproduce** (R-fmt). They are ignored by Git because one contains personal data. The samples give no authoritative evidence about amendment presentation; that is defined by [Amendment presentation](expected-analysis/amendment-presentation.md) and the fixtures. See [PDF evidence status](expected-analysis/pdf-evidence-gap.md) before making any sample claim. **Scope: clinical pathology only** (R10).
 
 ---
 
@@ -58,7 +64,7 @@ Constraint 10 matters more than it looks. Do not infer that a behavior is absent
     └── manifest-notes.md
 ```
 
-**What is missing / not yet evidenced:** all five PDF binaries named in the manifest, any amended-report PDF, multi-specimen clinical-pathology examples, and any real catalog export. The fixtures stand in for the semantics; they are illustrative, not scraped from production.
+**What is missing / not yet evidenced:** a safe de-identified replacement for S001, any authoritative house-format or amended-report PDF, multi-specimen examples, and any real catalog export. The fixtures stand in for the semantics; they are illustrative, not scraped from production.
 
 ---
 
@@ -78,7 +84,11 @@ Tag **every** conclusion in your output with exactly one provenance label. This 
 
 ---
 
-## What you must produce
+## Reference deliverables, not the active backlog
+
+The list below describes analysis that may be useful over the life of the
+project. Do not execute it wholesale. Only produce an item when it directly
+unblocks the current prototype or the owner explicitly asks for it.
 
 Work in this order. Do **not** start by designing the report template or generating production code from PDF screenshots — understanding the domain contract comes first.
 

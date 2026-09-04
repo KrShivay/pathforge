@@ -21,3 +21,6 @@ __pycache__/
 .venv/
 venv/
 *.log
+
+# Local reference PDFs may contain personal/clinical data; never commit them.
+docs/samples/pdfs/*.pdf
