@@ -8,8 +8,10 @@ Thumbs.db
 *.swp
 .env
 .env.*
+!.env.example
 
 # Generated build and runtime output
+.gitnexus/
 node_modules/
 dist/
 build/

@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "exactOptionalPropertyTypes": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "noEmit": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
+    "strict": true,
+    "target": "es2024",
+    "types": ["node"]
+  },
+  "include": ["src/**/*.mjs", "test/domain/**/*.mjs"],
+  "exclude": ["node_modules"]
+}

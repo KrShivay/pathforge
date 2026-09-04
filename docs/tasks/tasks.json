@@ -1,0 +1,240 @@
+{
+  "version": 1,
+  "tasks": [
+    {
+      "id": "DOC-001",
+      "title": "Audit the existing evidence and requirements",
+      "status": "done",
+      "priority": "P0",
+      "area": "0-evidence",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Canonical documentation and fixtures are inventoried",
+        "Known prerequisites and unresolved production decisions are identified"
+      ],
+      "notes": "Verified against docs/README.md, architecture invariants, open questions, glossary, fixtures, and business-requirement headings."
+    },
+    {
+      "id": "DOC-002",
+      "title": "Profile sample PDFs and produce the field inventory",
+      "status": "blocked",
+      "priority": "P0",
+      "area": "0-evidence",
+      "dependsOn": ["DOC-001"],
+      "acceptanceCriteria": [
+        "Each sample has tagged descriptive observations",
+        "Section and field inventory includes cardinality and provenance",
+        "Cross-sample patterns and anomalies are separated",
+        "Unknowns are added to the open-question log"
+      ],
+      "notes": "Blocked because all five binaries named by docs/samples/manifest.csv are absent. The verified gap and exact intake filenames are recorded in docs/expected-analysis/pdf-evidence-gap.md; do not promote manifest metadata or stale docs/context claims to PDF observations."
+    },
+    {
+      "id": "DEC-001",
+      "title": "Confirm production-blocking domain decisions",
+      "status": "blocked",
+      "priority": "P0",
+      "area": "0-evidence",
+      "dependsOn": ["DOC-001"],
+      "acceptanceCriteria": [
+        "Lifecycle and transition set are confirmed",
+        "Snapshot boundary and identifier reuse policy are confirmed",
+        "Roles, jurisdiction, retention, and integration boundaries are confirmed",
+        "Decisions are recorded in the resolved log"
+      ],
+      "notes": "Blocked on domain-owner answers to Q1-Q5, Q7, Q9a-Q9c, Q11-Q12, Q14-Q15; reversible scaffolding can continue."
+    },
+    {
+      "id": "DEC-002",
+      "title": "Record core architecture decisions",
+      "status": "done",
+      "priority": "P0",
+      "area": "0-evidence",
+      "dependsOn": ["DOC-002"],
+      "acceptanceCriteria": [
+        "Canonical payload and version identity decision passes INV-1 through INV-10",
+        "Lifecycle and audit decision names unresolved assumptions",
+        "Catalog snapshot decision names visible failure behavior"
+      ],
+      "notes": "Verified in ADR-0001 through ADR-0003: canonical identity/payload is checked against INV-1 through INV-10, lifecycle assumptions and production blockers remain explicit, and snapshot/error behavior is recorded. Accepted only for the reversible fixture-driven slice."
+    },
+    {
+      "id": "SET-001",
+      "title": "Create reproducible project scaffold",
+      "status": "done",
+      "priority": "P0",
+      "area": "1-setup",
+      "dependsOn": ["DOC-001"],
+      "acceptanceCriteria": [
+        "Runtime and dependency versions are pinned",
+        "A clean checkout has documented install, verify, build, and start commands",
+        "Formatting, lint, type checking, and unit tests run from one verification command",
+        "Example environment contains no secrets"
+      ],
+      "notes": "Verified with a clean npm ci and full verify/build on the pinned Node 24.20.0 and npm 11.19.0 runtime. README documents install/verify/build/start; .env.example is non-sensitive. Technology choice remains reversible scaffolding."
+    },
+    {
+      "id": "SET-002",
+      "title": "Add continuous verification",
+      "status": "done",
+      "priority": "P1",
+      "area": "1-setup",
+      "dependsOn": ["SET-001"],
+      "acceptanceCriteria": [
+        "CI installs from the lockfile",
+        "CI runs the same verification command used locally",
+        "Build artifacts and secrets are excluded from version control"
+      ],
+      "notes": "Verified .github/workflows/ci.yml uses the committed lockfile via npm ci, runs the local verify command plus build, and pins actions by commit SHA. Generated output, local environments, logs, and GitNexus data are ignored; repository scans found no secret-like values or generated artifacts."
+    },
+    {
+      "id": "SET-003",
+      "title": "Provide a local task dashboard",
+      "status": "done",
+      "priority": "P1",
+      "area": "1-setup",
+      "dependsOn": ["DOC-001"],
+      "acceptanceCriteria": [
+        "An .mjs entry point reads docs/tasks/tasks.json",
+        "Summary counts and full task details can be viewed locally",
+        "Invalid statuses, duplicate IDs, and missing dependencies fail visibly",
+        "Dashboard does not mutate the task file"
+      ],
+      "notes": "Implemented as a dependency-free local server with API/detail filters and read-only validation; covered by the dashboard test suite."
+    },
+    {
+      "id": "DEV-001",
+      "title": "Validate domain fixtures and define typed contracts",
+      "status": "done",
+      "priority": "P0",
+      "area": "2-domain-core",
+      "dependsOn": ["SET-001", "DEC-002"],
+      "acceptanceCriteria": [
+        "Catalog and report fixtures validate with actionable errors",
+        "Contracts separate clinical, catalog, and presentation state",
+        "Historical resolved values do not require current catalog rows"
+      ],
+      "notes": "Verified fixture parsers report actionable JSON/schema paths, JSDoc contracts and canonicalization keep catalog/envelope/presentation metadata outside clinical comparison, and historical snapshots are self-contained. Scope is the supplied fixture schema only; no production schema claim."
+    },
+    {
+      "id": "DEV-002",
+      "title": "Implement explainable semantic comparison",
+      "status": "done",
+      "priority": "P0",
+      "area": "2-domain-core",
+      "dependsOn": ["DEV-001"],
+      "acceptanceCriteria": [
+        "Comparison identifies added, removed, and changed clinical values",
+        "Presentation and issue metadata are excluded",
+        "Equality is explainable without a fingerprint",
+        "Expected comparison fixture passes"
+      ],
+      "notes": "Verified added/removed/changed traversal in comparison.mjs and CMP-1 through CMP-4 tests: clinical paths and before/after values are explained, issue/presentation/provenance annotations are excluded, and equality does not consult fingerprints."
+    },
+    {
+      "id": "DEV-003",
+      "title": "Implement immutable finalization and amendment lineage",
+      "status": "done",
+      "priority": "P0",
+      "area": "2-domain-core",
+      "dependsOn": ["DEV-001"],
+      "acceptanceCriteria": [
+        "Finalization creates a stable immutable version and audit event",
+        "Amendment begins from the superseded resolved payload",
+        "Catalog V2 cannot alter the V1 historical payload",
+        "Lineage is queryable in both directions"
+      ],
+      "notes": "Verified deep-frozen copy-on-write finalization, audit events, historical-payload amendment cloning, V1 stability under Catalog V2, and bidirectional lineage/supersession evidence. This is in-memory domain behavior only; durability and concurrency remain SRV-001."
+    },
+    {
+      "id": "DEV-004",
+      "title": "Add invariant acceptance test suite",
+      "status": "done",
+      "priority": "P0",
+      "area": "2-domain-core",
+      "dependsOn": ["DEV-002", "DEV-003"],
+      "acceptanceCriteria": [
+        "Historical stability, amendment baseline, semantic equality, deleted reference, and audit reconstruction tests pass",
+        "Tests name the invariant they protect",
+        "Test failures explain the clinical risk"
+      ],
+      "notes": "Verified named INV-1 through INV-10 tests cover historical stability, amendment baseline, semantic equality, deprecated-reference readability/no remap, lifecycle audit evidence, and lineage reconstruction. Full suite passes 16/16; persistence-level reconstruction remains SRV-001."
+    },
+    {
+      "id": "SRV-001",
+      "title": "Implement durable version and audit storage",
+      "status": "todo",
+      "priority": "P1",
+      "area": "3-service",
+      "dependsOn": ["DEV-004", "DEC-001"],
+      "acceptanceCriteria": [
+        "Versions and audit events survive restart",
+        "Finalization is atomic and concurrency-safe",
+        "Recovery test reconstructs version lineage"
+      ],
+      "notes": "Storage selection waits for retention and integration constraints."
+    },
+    {
+      "id": "SRV-002",
+      "title": "Implement policy-neutral report use cases and in-memory adapter",
+      "status": "done",
+      "priority": "P1",
+      "area": "3-service",
+      "dependsOn": [
+        "DEV-004"
+      ],
+      "acceptanceCriteria": [
+        "Create draft, validate, finalize, retrieve history, compare, and amend are exposed through injected service ports",
+        "The in-memory adapter provides atomic report and audit writes with optimistic concurrency",
+        "Missing or deprecated references fail explicitly without partial persistence",
+        "Contract tests cover immutable results, concurrent finalization, and transaction rollback"
+      ],
+      "notes": "Verified by the service contract suite: six policy-neutral use cases use injected repositories, unit of work, clock, identity, and reference ports; the in-memory adapter provides per-report transaction isolation, explicit concurrency conflicts, rollback, and detached immutable results. This slice is for contract tests and local development only; restart durability, production storage, authorization, retention, and integrations remain open under SRV-001, DEC-001, and OPS-001."
+    },
+    {
+      "id": "REN-001",
+      "title": "Build presentation-neutral document model",
+      "status": "done",
+      "priority": "P1",
+      "area": "4-rendering",
+      "dependsOn": ["DEV-004", "DOC-002"],
+      "acceptanceCriteria": [
+        "Document model is derived only from a frozen report payload and explicit render config",
+        "Current catalog is not queried when rendering history",
+        "Content order is covered by tests"
+      ],
+      "notes": "Verified by six document-model tests: output is deterministic, deeply immutable, ordered only by explicit semantic configuration, detached from caller mutation, and derived from the frozen historical payload without current-catalog lookup. Missing optionals stay absent, amendment annotations stay outside visible clinical content, long/multiple rows remain layout-neutral, and incomplete mappings fail visibly. Sample-dependent styling and deterministic PDF generation remain open under DOC-002 and REN-002."
+    },
+    {
+      "id": "REN-002",
+      "title": "Generate deterministic clinical report PDFs",
+      "status": "todo",
+      "priority": "P1",
+      "area": "4-rendering",
+      "dependsOn": ["REN-001"],
+      "acceptanceCriteria": [
+        "PDF includes correct clinical content and issue identity",
+        "Export records renderer/config version and checksum",
+        "Long text, pagination, missing optionals, and font fallback are tested",
+        "Renderer-only changes remain clinically equal"
+      ],
+      "notes": "Target semantic and structural equivalence per R6, not pixel identity."
+    },
+    {
+      "id": "OPS-001",
+      "title": "Complete clinical production-readiness review",
+      "status": "todo",
+      "priority": "P1",
+      "area": "5-hardening",
+      "dependsOn": ["SRV-001", "REN-002", "DEC-001"],
+      "acceptanceCriteria": [
+        "Threat model and privacy review are approved",
+        "Backup and restore exercise succeeds",
+        "Authorization and audit-access tests pass",
+        "Load and failure-injection targets pass",
+        "No real clinical data is enabled before release approval"
+      ],
+      "notes": "Includes observability, redaction, retention, and operational runbooks."
+    }
+  ]
+}
