@@ -26,3 +26,4 @@ venv/
 
 # Local reference PDFs may contain personal/clinical data; never commit them.
 docs/samples/pdfs/*.pdf
+Cross-platform design system foundations/*
