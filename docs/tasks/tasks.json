@@ -252,6 +252,35 @@
         "An end-to-end test covers data input through the rendered document model"
       ],
       "notes": "Verified end to end: npm start loads the initial sample, pasted/file JSON is validated server-side, all payload fields reach the document model and preview, the amended sample displays V2 and corrected value 129, print CSS provides an A4 report view, and Print / Save PDF invokes the browser print flow. The delivery dashboard remains available through npm run dashboard."
+    },
+    {
+      "id": "APP-002",
+      "title": "Adopt the React UI as the local desktop report workflow",
+      "status": "done",
+      "priority": "P0",
+      "area": "6-desktop-ui",
+      "dependsOn": ["SRV-002", "REN-001", "APP-001"],
+      "acceptanceCriteria": [
+        "The Tauri/React product entry uses no product HTTP server or localhost dependency",
+        "The worklist, preview, finalization, amendment, and history use the in-memory service and document model",
+        "Validation, loading, empty, error, success, and print paths are covered by focused UI and workflow tests",
+        "The UI contains no hardcoded patient-identifiable sample data or out-of-scope authorization and backup claims"
+      ],
+      "notes": "Verified 2026-09-09: mock-ui is the PathForge desktop entry; ReportAdapter seeds approved fixtures through the existing in-memory service and renders immutable document models. Root verify passed (31 tests); mock lint/build passed; 13 UI tests and 7 Playwright workflows passed, including real finalization, amendment lineage, validation, preview, history, and print invocation. Browser Vite is development-only."
+    },
+    {
+      "id": "APP-003",
+      "title": "Verify the packaged Windows desktop application",
+      "status": "blocked",
+      "priority": "P0",
+      "area": "7-windows-delivery",
+      "dependsOn": ["APP-002"],
+      "acceptanceCriteria": [
+        "A Windows-capable environment builds the Tauri MSI or NSIS bundle",
+        "The packaged application launches without localhost or scripts/report-app.mjs",
+        "Print / Save as PDF works from the Windows desktop application"
+      ],
+      "notes": "The `desktop-windows` GitHub Actions job now provides the native verification route: it installs the pinned Node version, both lockfiles, and the stable MSVC Rust toolchain before running `npm run desktop:build`. This macOS host still cannot execute that job locally (no Cargo/Rustup); keep this task blocked until a Windows CI run verifies the MSI/NSIS build and packaged launch/print behavior."
     }
   ]
 }

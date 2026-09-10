@@ -5,7 +5,9 @@
   "description": "Small clinical-pathology report preview and PDF-printing prototype",
   "type": "module",
   "scripts": {
-    "start": "node scripts/report-app.mjs",
+    "start": "npm run desktop:dev",
+    "desktop:dev": "npm --prefix mock-ui run desktop:dev",
+    "desktop:build": "npm --prefix mock-ui run desktop:build",
     "report": "node scripts/report-app.mjs",
     "dashboard": "node scripts/task-dashboard.mjs",
     "format": "biome format --write scripts src test",
