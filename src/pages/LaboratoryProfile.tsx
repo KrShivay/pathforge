@@ -1,23 +1,46 @@
-import { RotateCcw, Save, Trash2, Upload } from "lucide-react";
+import { ImagePlus, RotateCcw, Save, Trash2, Upload } from "lucide-react";
 import { useState, type ChangeEvent } from "react";
 import PageHeading from "../components/layout/PageHeading";
 import { confirmDestructive, notifyError, notifySuccess } from "../lib/dialog";
 import { useBranding } from "../store/BrandingContext";
 import type { LaboratoryProfile } from "../store/branding";
 
-const FIELDS: Array<[keyof LaboratoryProfile, string, string]> = [
-  ["laboratoryName", "Laboratory name", "PathForge Clinical Laboratory"], ["shortName", "Short display name", "PathForge"], ["reportSubtitle", "Report subtitle", "Clinical Pathology Report"],
-  ["addressLine1", "Address line 1", ""], ["addressLine2", "Address line 2", ""], ["city", "City", ""], ["state", "State", ""], ["postcode", "Postcode", ""], ["country", "Country", ""],
-  ["phone", "Phone", ""], ["alternatePhone", "Alternate phone", ""], ["email", "Email", ""], ["website", "Website", ""], ["registrationNumber", "Registration number", ""],
-  ["accreditationName", "Accreditation name", ""], ["accreditationNumber", "Accreditation number", ""], ["workingHours", "Working hours", ""], ["footerNote", "Footer / contact note", ""],
-  ["technologistName", "Lab technologist name", ""], ["technologistDesignation", "Lab technologist designation", ""], ["pathologistName", "Consultant pathologist name", ""],
-  ["pathologistQualifications", "Consultant pathologist qualifications", ""], ["pathologistDesignation", "Consultant pathologist designation", ""],
+const PROFILE_FIELDS: Array<{
+  key: keyof LaboratoryProfile;
+  label: string;
+  placeholder: string;
+  required?: boolean;
+  type?: "email" | "text";
+}> = [
+  { key: "laboratoryName", label: "Laboratory name", placeholder: "PathForge Clinical Laboratory", required: true },
+  { key: "shortName", label: "Short display name", placeholder: "PathForge", required: true },
+  { key: "reportSubtitle", label: "Report subtitle", placeholder: "Clinical Pathology Report", required: true },
+  { key: "addressLine1", label: "Address", placeholder: "Street address" },
+  { key: "city", label: "City", placeholder: "City" },
+  { key: "country", label: "Country", placeholder: "Country" },
+  { key: "phone", label: "Phone", placeholder: "+91 …" },
+  { key: "email", label: "Email", placeholder: "reports@example.com", type: "email" },
+  { key: "pathologistName", label: "Consultant pathologist", placeholder: "Dr. …" },
+  { key: "pathologistQualifications", label: "Pathologist qualifications", placeholder: "MD, DNB …" },
 ];
 
 export default function LaboratoryProfilePage() {
   const { profile, updateProfile, restoreDefault } = useBranding();
   const [draft, setDraft] = useState(profile);
   const [processingLogo, setProcessingLogo] = useState(false);
+  const hasLogo = Boolean(draft.logoDataUrl?.trim());
+
+  async function saveProfile() {
+    const missing = PROFILE_FIELDS.slice(0, 3)
+      .filter(({ key }) => !draft[key].trim())
+      .map(({ label }) => label.toLowerCase());
+    if (missing.length > 0) {
+      await notifyError({ title: "Complete the report identity", text: `Enter ${missing.join(", ")} before saving.` });
+      return;
+    }
+    updateProfile(draft);
+    void notifySuccess({ title: "Laboratory profile saved" });
+  }
 
   async function onLogo(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -38,16 +61,39 @@ export default function LaboratoryProfilePage() {
   return <section className="viewport-page lab-profile-page" aria-busy={processingLogo}>
     <PageHeading
       title="Laboratory Profile"
-      subtitle="Identity used by the fixed PathForge navbar and report design."
-      actions={<button type="button" className="primary-button" onClick={() => { updateProfile(draft); void notifySuccess({ title: "Laboratory profile saved" }); }}><Save size={16} />Save profile</button>}
+      subtitle="Set the identity and sign-off details that appear on new reports."
+      actions={<button type="button" className="primary-button" onClick={() => void saveProfile()}><Save size={16} />Save profile</button>}
     />
     <div className="pf-card lab-profile-layout">
       <div className="card-body lab-profile-form">
-        <fieldset><legend>Brand mark</legend><div className="logo-editor">{draft.logoDataUrl ? <img src={draft.logoDataUrl} alt="Laboratory logo preview" /> : <div className="logo-placeholder" aria-hidden="true">{draft.shortName.slice(0, 2).toUpperCase()}</div>}<div><label className="secondary-button logo-upload"><Upload size={16} />{processingLogo ? "Processing…" : "Choose logo"}<input type="file" accept="image/png,image/jpeg,image/webp" onChange={onLogo} disabled={processingLogo} /></label>{draft.logoDataUrl && <button type="button" className="secondary-button" onClick={() => setDraft((value) => ({ ...value, logoDataUrl: "" }))}><Trash2 size={16} />Remove</button>}<p className="helper-text">PNG, JPEG or WebP; 32–1200 px; maximum 1 MB.</p></div></div></fieldset>
-        <fieldset><legend>Laboratory and report details</legend><div className="profile-fields">{FIELDS.map(([key, label, placeholder]) => <label key={key}>{label}<input value={draft[key]} placeholder={placeholder} onChange={(event) => setDraft((value) => ({ ...value, [key]: event.target.value }))} /></label>)}</div></fieldset>
+        <fieldset>
+          <legend>Report identity</legend>
+          <p className="fieldset-hint">These details appear in the report header and footer.</p>
+          <div className="profile-fields">
+            {PROFILE_FIELDS.slice(0, 3).map(({ key, label, placeholder, required }) => <label key={key}><span>{label}{required && <em>Required</em>}</span><input value={draft[key]} placeholder={placeholder} aria-required={required} required={required} onChange={(event) => setDraft((value) => ({ ...value, [key]: event.target.value }))} /></label>)}
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Contact and sign-off</legend>
+          <p className="fieldset-hint">Only the contact and consultant details needed for a clear report are shown here.</p>
+          <div className="profile-fields">
+            {PROFILE_FIELDS.slice(3).map(({ key, label, placeholder, type }) => <label key={key}><span>{label}</span><input type={type ?? "text"} value={draft[key]} placeholder={placeholder} onChange={(event) => setDraft((value) => ({ ...value, [key]: event.target.value }))} /></label>)}
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Laboratory logo <span className="fieldset-optional">Optional</span></legend>
+          <div className="logo-editor">
+            {hasLogo ? <img src={draft.logoDataUrl} alt="Laboratory logo preview" /> : <div className="logo-placeholder" aria-label="No laboratory logo added"><ImagePlus size={22} aria-hidden="true" /><span>No logo added</span></div>}
+            <div>
+              <label className="secondary-button logo-upload"><Upload size={16} />{processingLogo ? "Processing…" : hasLogo ? "Replace logo" : "Choose logo"}<input type="file" accept="image/png,image/jpeg,image/webp" onChange={onLogo} disabled={processingLogo} /></label>
+              {hasLogo && <button type="button" className="secondary-button" onClick={() => setDraft((value) => ({ ...value, logoDataUrl: "" }))}><Trash2 size={16} />Remove</button>}
+              <p className="helper-text">Shown on the report only when you add one. PNG, JPEG or WebP; 32–1200 px; maximum 1 MB.</p>
+            </div>
+          </div>
+        </fieldset>
         <button type="button" className="secondary-button" onClick={async () => { const accepted = await confirmDestructive({ title: "Restore default profile?", text: "This replaces the current laboratory profile. Finalized report snapshots are not changed.", confirmText: "Restore defaults", cancelText: "Keep profile" }); if (accepted) { restoreDefault(); location.reload(); } }}><RotateCcw size={16} />Restore defaults</button>
       </div>
-      <aside className="profile-preview" aria-label="Laboratory identity preview">{draft.logoDataUrl && <img src={draft.logoDataUrl} alt="" />}<strong>{draft.laboratoryName || "Laboratory name"}</strong><span>{draft.reportSubtitle || "Report subtitle"}</span><small>{[draft.city, draft.phone, draft.email].filter(Boolean).join(" · ")}</small></aside>
+      <aside className="profile-preview" aria-label="Laboratory identity preview">{hasLogo && <img src={draft.logoDataUrl} alt="" />}<span className="profile-preview-kicker">Report header preview</span><strong>{draft.laboratoryName || "Laboratory name"}</strong><span>{draft.reportSubtitle || "Report subtitle"}</span><small>{[draft.city, draft.phone, draft.email].filter(Boolean).join(" · ") || "Contact details will appear here"}</small></aside>
     </div>
   </section>;
 }

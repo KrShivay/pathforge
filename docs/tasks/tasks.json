@@ -315,6 +315,101 @@
         "A finalized report renders in the report screen without a domain validation crash"
       ],
       "notes": "Canonical model wired in: reportModel.ts reworked from a rival model into a presenter over buildReportDocumentModel + buildWorkspaceDocumentConfig. Draft support added (issue: null; finalized still requires issue identity) - recorded as Q16. Report styling lifted out of @media print into one shared rule set so the screen preview cannot diverge from print. Dead duplicates removed: src/domain/report-bridge.ts, src/domain/validation.ts. Tests added: test/rendering/workspace-config.test.mjs, test/workspace/cbc-report.test.mjs. Q17 (result flags) deferred by owner decision. REMAINING: manual GUI verification of the exit gate under npm run tauri dev - not performed, no GUI in this environment. FIX (GUI-reported): finalizing blanked the screen with \"finalized_by must be a non-empty string\". Finalization provenance recorded by the domain (finalized_by/finalized_at, or amended_by/amended_at/amendment_type/amendment_reason for an amendment, plus supersedes) was dropped in ReportContext's version-to-snapshot mapping and never reconstructed by the presenter. Propagated through ReportContext -> Report -> ReportEditor, and version reconstruction moved into report-bridge.buildWorkspaceReportVersion so there is one implementation. Validator unchanged. Regression tests: test/workspace/finalized-preview.test.mjs."
+    },
+    {
+      "id": "UI-006",
+      "title": "Keep New Report as a single navbar action",
+      "status": "in_progress",
+      "priority": "P1",
+      "area": "6-ui-quality",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "The top navigation retains the single New Report action",
+        "Duplicate Create Report or New Report buttons are removed from dashboard, worklist, history and other screen empty states",
+        "Screens explain that New Report is available in the top navigation when an empty state needs guidance"
+      ],
+      "notes": "Static source audit confirms one actual New Report button remains in TopNav; remaining references are the New Report page heading or empty-state guidance. Browser verification is pending because no in-app browser is available in this environment."
+    },
+    {
+      "id": "UI-001",
+      "title": "Restore and polish New Report wizard styling across screens",
+      "status": "in_progress",
+      "priority": "P1",
+      "area": "6-ui-quality",
+      "dependsOn": [
+        "APP-002"
+      ],
+      "acceptanceCriteria": [
+        "New Report header, stepper, step panels, fields, navigation and responsive states are styled consistently",
+        "The same theme and control treatment is applied to all wizard steps",
+        "Worklist, history, dashboard, patients, tests, profile and editor screens are checked for the same missing-style regression",
+        "Browser verification confirms the intended New Report UI is visible at desktop and narrow widths"
+      ],
+      "notes": "Added a final screen-only wizard layout layer covering the page shell, stepper, panels, controls, navigation and responsive behavior. Static cross-screen class audit completed; browser verification is pending because no in-app browser is available in this environment."
+    },
+    {
+      "id": "UI-002",
+      "title": "Expose the workspace lock screen control",
+      "status": "in_progress",
+      "priority": "P1",
+      "area": "6-ui-quality",
+      "dependsOn": [
+        "APP-002"
+      ],
+      "acceptanceCriteria": [
+        "A labeled Lock screen action is visible in the top navigation",
+        "Activating it shows a clear lock screen with an accessible unlock action",
+        "Unlocking returns to the same local page and does not introduce authentication or permission logic",
+        "Browser verification confirms the control is visible on desktop and mobile navigation"
+      ],
+      "notes": "Added the visible top-navigation action and local workspace lock overlay using the existing quiet-mode visual system. Browser verification is pending because no in-app browser is available in this environment."
+    },
+    {
+      "id": "UI-003",
+      "title": "Replace duplicated raw date filters with a polished shared range control",
+      "status": "in_progress",
+      "priority": "P1",
+      "area": "6-ui-quality",
+      "dependsOn": [
+        "APP-002"
+      ],
+      "acceptanceCriteria": [
+        "Worklist and Version History use one reusable date-range component",
+        "Start and end dates are clearly grouped, validated and independently clearable",
+        "The full selected end date is included by the shared filter logic",
+        "Browser verification confirms the control is readable and usable at desktop and narrow widths"
+      ],
+      "notes": "Added DateRangeFilter with grouped labels, calendar cue, clear-dates action, inline validation and responsive layout. MUI X date pickers were not added because the dependency is not installed; the shared native control keeps this prototype lightweight and theme-consistent. Browser verification is pending because no in-app browser is available in this environment."
+    },
+    {
+      "id": "UI-004",
+      "title": "Adopt a Helvetica-style application font fallback",
+      "status": "in_progress",
+      "priority": "P2",
+      "area": "6-ui-quality",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Screen UI uses Helvetica Neue, Helvetica, Arial and system fallbacks consistently",
+        "MUI autocomplete widgets use the same screen font",
+        "Print report typography remains unchanged",
+        "The downloaded font asset is used when it is present in the codebase"
+      ],
+      "notes": "No font asset file (.woff/.woff2/.ttf/.otf) was found outside node_modules, so the implementation uses the requested Helvetica-style system stack without fabricating an asset. Print report font rules remain unchanged. Browser verification is pending because no in-app browser is available in this environment."
+    },
+    {
+      "id": "UI-005",
+      "title": "Replace the default logo with a custom PathForge mark",
+      "status": "in_progress",
+      "priority": "P2",
+      "area": "6-ui-quality",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Navbar displays the custom PathForge vector mark",
+        "Browser favicon uses the same custom mark",
+        "The mark remains crisp at navigation and favicon sizes",
+        "Laboratory logos remain conditional and are not replaced by the product mark in report output"
+      ],
+      "notes": "Added public/pathforge-mark.svg and wired it to the navbar and favicon. The laboratory logo remains conditional on an uploaded logoDataUrl. Browser verification is pending because no in-app browser is available in this environment."
     }
   ]
 }

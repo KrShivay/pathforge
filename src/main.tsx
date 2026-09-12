@@ -3,7 +3,6 @@ import { createRoot } from "react-dom/client";
 import { ThemeProvider } from "@mui/material/styles";
 
 import "./index.css";
-import "./lib/nativeMenu";
 
 import App from "./App";
 import { muiTheme } from "./lib/muiTheme";

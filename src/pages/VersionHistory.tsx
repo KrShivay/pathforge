@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import CardHeading from "../components/common/CardHeading";
+import DateRangeFilter from "../components/common/DateRangeFilter";
 import PageHeading from "../components/layout/PageHeading";
 import { usePatients } from "../store/PatientContext";
 import { useReports } from "../store/ReportContext";
@@ -14,12 +15,10 @@ import { filterHistoryReports, formatDate, historyEventDate, parseDate } from ".
 
 interface VersionHistoryProps {
   onSelectReport: (reportId: string) => void;
-  onCreateReport?: () => void;
 }
 
 export default function VersionHistory({
   onSelectReport,
-  onCreateReport,
 }: VersionHistoryProps) {
   const { reports } = useReports();
   const { patients } = usePatients();
@@ -59,13 +58,20 @@ export default function VersionHistory({
           />
           <div className="report-filter-row">
             <label>Search<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Patient or report…" /></label>
-            <label>Event from<input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} aria-invalid={invalidRange} aria-describedby={invalidRange ? "history-date-error" : undefined} /></label>
-            <label>Event to<input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} aria-invalid={invalidRange} aria-describedby={invalidRange ? "history-date-error" : undefined} /></label>
+            <DateRangeFilter
+              id="history-date-range"
+              from={dateFrom}
+              to={dateTo}
+              fromLabel="Event from"
+              toLabel="Event to"
+              onFromChange={setDateFrom}
+              onToChange={setDateTo}
+              invalid={invalidRange}
+            />
             <label>Lifecycle<select value={lifecycle} onChange={(event) => setLifecycle(event.target.value)}><option value="all">All</option><option value="draft">Draft</option><option value="finalized">Finalized</option><option value="amended">Amendments</option></select></label>
             <label>Sort<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="newest">Newest</option><option value="oldest">Oldest</option></select></label>
             <button type="button" className="text-button" onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); setLifecycle("all"); setSort("newest"); }}>Clear filters</button>
           </div>
-          {invalidRange && <p id="history-date-error" className="form-error" role="alert">Choose an event range where the end date is on or after the start date.</p>}
         </div>
 
         {versionedReports.length > 0 ? (
@@ -136,13 +142,6 @@ export default function VersionHistory({
               Report versions and amendments will appear here as you create and
               finalize reports.
             </p>
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={onCreateReport}
-            >
-              Create Report
-            </button>
           </div>
         )}
       </div>

@@ -4,9 +4,9 @@ import {
   FlaskConical,
   History,
   Keyboard,
+  Lock,
   Plus,
   Settings2,
-  Stethoscope,
   Users,
 } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
@@ -16,6 +16,7 @@ interface TopNavProps {
   activePage: Page;
   onNavigate: (page: Page) => void | Promise<void>;
   onShowShortcuts: () => void;
+  onLock: () => void;
 }
 type MenuName = "reports" | "manage";
 
@@ -23,6 +24,7 @@ export default function TopNav({
   activePage,
   onNavigate,
   onShowShortcuts,
+  onLock,
 }: TopNavProps) {
   const [openMenu, setOpenMenu] = useState<MenuName | null>(null);
   const navRef = useRef<HTMLElement>(null);
@@ -86,7 +88,7 @@ export default function TopNav({
   );
 
   return <header className="top-nav">
-    <button type="button" className="top-nav-brand" onClick={() => void onNavigate("dashboard")} aria-label="PathForge dashboard"><span className="top-nav-brand-icon"><Stethoscope size={19} aria-hidden="true" /></span><span className="top-nav-brand-text"><strong>PathForge</strong><span>Clinical Pathology</span></span></button>
+    <button type="button" className="top-nav-brand" onClick={() => void onNavigate("dashboard")} aria-label="PathForge dashboard"><span className="top-nav-brand-icon"><img src="/pathforge-mark.svg" alt="" aria-hidden="true" /></span><span className="top-nav-brand-text"><strong>PathForge</strong><span>Clinical Pathology</span></span></button>
     <nav ref={navRef} className="top-nav-links" aria-label="Primary navigation">
       <button type="button" className="top-nav-new-report" onClick={() => void onNavigate("new-report")}><Plus size={15} aria-hidden="true" />New Report</button>
       {renderMenu("reports", "Reports", reportsTrigger)}
@@ -104,6 +106,19 @@ export default function TopNav({
       >
         <Keyboard size={15} aria-hidden="true" />
         <span className="top-nav-menu-label">Shortcuts</span>
+      </button>
+      <button
+        type="button"
+        className="top-nav-lock"
+        onClick={() => {
+          setOpenMenu(null);
+          onLock();
+        }}
+        title="Lock screen"
+        aria-label="Lock screen"
+      >
+        <Lock size={15} aria-hidden="true" />
+        <span className="top-nav-menu-label">Lock screen</span>
       </button>
     </nav>
   </header>;

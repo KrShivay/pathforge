@@ -2,7 +2,7 @@ import { createTheme } from "@mui/material/styles";
 
 /**
  * MUI is used only for the search / autocomplete widgets. This theme keeps those
- * widgets visually consistent with the hand-built design system (Inter, the
+ * widgets visually consistent with the hand-built design system (Helvetica, the
  * blue accent, 8px radius, slate borders).
  */
 export const muiTheme = createTheme({
@@ -14,7 +14,7 @@ export const muiTheme = createTheme({
   },
   shape: { borderRadius: 8 },
   typography: {
-    fontFamily: '"Inter", system-ui, sans-serif',
+    fontFamily: '"Helvetica Neue", Helvetica, Arial, system-ui, sans-serif',
     fontSize: 13.5,
   },
   components: {

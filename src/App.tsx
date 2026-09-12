@@ -1,4 +1,4 @@
-import { ArrowLeft, X } from "lucide-react";
+import { ArrowLeft, Lock, Unlock, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import TopNav, { type Page } from "./components/layout/TopNav";
 import { confirmDestructive } from "./lib/dialog";
@@ -17,6 +17,7 @@ export default function App() {
   const [reportOrigin, setReportOrigin] = useState<Page>("worklist");
   const [worklistFilter, setWorklistFilter] = useState<"all" | "draft" | "finalized" | "attention">("all");
   const [isShortcutHelpOpen, setIsShortcutHelpOpen] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
   const newReportDirtyRef = useRef(false);
   const editorDirtyRef = useRef(false);
   const shortcutDialogRef = useRef<HTMLElement>(null);
@@ -79,6 +80,7 @@ export default function App() {
         return;
       }
       if (isShortcutHelpOpen) return;
+      if (isLocked) return;
       if (isTextEntryTarget(event.target)) return;
 
       if (
@@ -114,7 +116,7 @@ export default function App() {
 
     window.addEventListener("keydown", handleShortcut);
     return () => window.removeEventListener("keydown", handleShortcut);
-  }, [isShortcutHelpOpen]);
+  }, [isLocked, isShortcutHelpOpen]);
 
   function trapShortcutDialogFocus(event: React.KeyboardEvent<HTMLElement>) {
     if (event.key !== "Tab") return;
@@ -140,9 +142,9 @@ export default function App() {
   ) : activePage === "dashboard" ? (
     <Dashboard onNavigate={handleNavigate} onSelectReport={handleSelectReport} />
   ) : activePage === "patients" ? <Patients />
-    : activePage === "worklist" ? <Worklist onSelectReport={handleSelectReport} onCreateReport={() => void handleNavigate("new-report")} initialFilter={worklistFilter} />
+    : activePage === "worklist" ? <Worklist onSelectReport={handleSelectReport} initialFilter={worklistFilter} />
     : activePage === "new-report" ? <NewReport onOpenReport={handleSelectReport} onDirtyChange={(dirty) => { newReportDirtyRef.current = dirty; }} />
-    : activePage === "history" ? <VersionHistory onSelectReport={handleSelectReport} onCreateReport={() => void handleNavigate("new-report")} />
+    : activePage === "history" ? <VersionHistory onSelectReport={handleSelectReport} />
     : activePage === "test-management" ? <TestManagement />
     : <LaboratoryProfilePage />;
 
@@ -151,10 +153,11 @@ export default function App() {
       activePage={activePage}
       onNavigate={handleNavigate}
       onShowShortcuts={openShortcutHelp}
+      onLock={() => setIsLocked(true)}
     />
     <main className="main-content">
       <div className="page-content">
-        {!selectedReportId && activePage !== "dashboard" && <div className="page-breadcrumb-bar"><button type="button" className="back-to-dashboard" onClick={() => void handleNavigate("dashboard")}><ArrowLeft size={13} />Dashboard</button><span className="breadcrumb-separator">/</span><span className="breadcrumb-current">{{ patients: "Patients", worklist: "Report Worklist", "new-report": "New Report", history: "Version History", "test-management": "Laboratory Tests", "lab-profile": "Laboratory Profile" }[activePage]}</span></div>}
+        {!selectedReportId && activePage !== "dashboard" && <nav className="page-breadcrumb-bar" aria-label="Breadcrumb"><button type="button" className="back-to-dashboard" onClick={() => void handleNavigate("dashboard")}><ArrowLeft size={13} aria-hidden="true" />Dashboard</button><span className="breadcrumb-separator" aria-hidden="true">/</span><span className="breadcrumb-current">{{ patients: "Patients", worklist: "Report Worklist", "new-report": "New Report", history: "Version History", "test-management": "Laboratory Tests", "lab-profile": "Laboratory Profile" }[activePage]}</span></nav>}
         {page}
       </div>
     </main>
@@ -214,6 +217,35 @@ export default function App() {
           </p>
         </section>
       </div>
+    )}
+    {isLocked && (
+      <section
+        className="quiet-mode"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="quiet-mode-title"
+      >
+        <div className="quiet-mode-stars" aria-hidden="true" />
+        <div className="quiet-mode-orbit quiet-mode-orbit-one" aria-hidden="true" />
+        <div className="quiet-mode-orbit quiet-mode-orbit-two" aria-hidden="true" />
+        <div className="quiet-mode-content">
+          <span className="quiet-mode-mark" aria-hidden="true">
+            <Lock size={21} />
+          </span>
+          <p className="quiet-mode-kicker">PathForge workspace</p>
+          <h1 id="quiet-mode-title">Workspace locked</h1>
+          <p className="quiet-mode-copy">
+            Report work is paused while the workspace is locked. Unlock to return to your local report workflow.
+          </p>
+          <button type="button" className="quiet-mode-open" onClick={() => setIsLocked(false)}>
+            <span className="quiet-mode-open-icon" aria-hidden="true">
+              <Unlock size={17} />
+            </span>
+            Unlock workspace
+          </button>
+          <p className="quiet-mode-hint">Local prototype · no sign-in required</p>
+        </div>
+      </section>
     )}
   </div>;
 }

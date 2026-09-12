@@ -7,6 +7,7 @@ import {
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import DateRangeFilter from "../components/common/DateRangeFilter";
 import PageHeading from "../components/layout/PageHeading";
 import { checkClinicalCompleteness } from "../domain/report-bridge.mjs";
 import { usePatients } from "../store/PatientContext";
@@ -20,7 +21,6 @@ import {
 
 interface WorklistProps {
   onSelectReport?: (reportId: string) => void;
-  onCreateReport?: () => void;
   initialFilter?: StatusFilter;
 }
 
@@ -28,7 +28,6 @@ type StatusFilter = "all" | "draft" | "finalized" | "attention";
 
 export default function Worklist({
   onSelectReport,
-  onCreateReport,
   initialFilter = "all",
 }: WorklistProps) {
   const { reports, hydrated } = useReports();
@@ -109,12 +108,19 @@ export default function Worklist({
             </button>
           </div>
           <div className="report-filter-row">
-            <label>Created from<input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} aria-invalid={invalidRange} aria-describedby={invalidRange ? "worklist-date-error" : undefined} /></label>
-            <label>Created to<input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} aria-invalid={invalidRange} aria-describedby={invalidRange ? "worklist-date-error" : undefined} /></label>
+            <DateRangeFilter
+              id="worklist-date-range"
+              from={dateFrom}
+              to={dateTo}
+              fromLabel="Created from"
+              toLabel="Created to"
+              onFromChange={setDateFrom}
+              onToChange={setDateTo}
+              invalid={invalidRange}
+            />
             <label>Sort<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="patient">Patient</option><option value="test">Test</option><option value="status">Status</option></select></label>
             <span className="result-count" role="status">{filteredReports.length} result{filteredReports.length === 1 ? "" : "s"}</span>
             {(search || statusFilter !== "all" || dateFrom || dateTo || sort !== "newest") && <button type="button" className="text-button" onClick={() => { setSearch(""); setStatusFilter("all"); setDateFrom(""); setDateTo(""); setSort("newest"); }}>Clear filters</button>}
-            {invalidRange && <p id="worklist-date-error" className="form-error report-filter-error" role="alert">Choose a date range where the end date is on or after the start date.</p>}
           </div>
 
           <div className="patients-search worklist-search">
@@ -214,17 +220,8 @@ export default function Worklist({
               <p>
                 {search || statusFilter !== "all" || dateFrom || dateTo || sort !== "newest"
                   ? "No pathology reports match your current filter criteria."
-                  : "Create a new pathology report to get started."}
+                  : "Use New Report in the top navigation to get started."}
               </p>
-              {!search && statusFilter === "all" && !dateFrom && !dateTo && sort === "newest" ? (
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={onCreateReport}
-                >
-                  Create Report
-                </button>
-              ) : null}
             </div>
           )}
         </div>

@@ -235,13 +235,7 @@ export default function Dashboard({
             <div className="dashboard-empty">
               <FileText size={32} />
               <p>No reports created yet.</p>
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => onNavigate("new-report")}
-              >
-                Create your first report
-              </button>
+              <span>Use <strong>New Report</strong> in the top navigation to get started.</span>
             </div>
           )}
         </section>
