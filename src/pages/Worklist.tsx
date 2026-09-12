@@ -132,7 +132,7 @@ export default function Worklist({
             <Search size={16} />
             <input
               type="text"
-              placeholder="Search by patient, ID, test, or specimen…"
+              placeholder="Search by patient, test, or specimen…"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
