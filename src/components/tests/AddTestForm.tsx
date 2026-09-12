@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Save, X } from "lucide-react";
 import { sanitizeText } from "../../domain/textRules.mjs";
 
@@ -26,13 +26,39 @@ export default function AddTestForm({
   onCancel,
   onSave,
 }: AddTestFormProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const onCancelRef = useRef(onCancel);
+  onCancelRef.current = onCancel;
+
   useEffect(() => {
+    returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onCancel();
+      if (event.key === "Escape") onCancelRef.current();
     }
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [onCancel]);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      requestAnimationFrame(() => returnFocusRef.current?.focus());
+    };
+  }, []);
+
+  function trapDialogFocus(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "Tab") return;
+    const focusable = [...(dialogRef.current?.querySelectorAll<HTMLElement>(
+      "button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href]",
+    ) ?? [])];
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -42,8 +68,10 @@ export default function AddTestForm({
   return (
     <div className="modal-overlay" onClick={onCancel}>
       <div
+        ref={dialogRef}
         className="patient-modal test-modal"
         onClick={(event) => event.stopPropagation()}
+        onKeyDown={trapDialogFocus}
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-test-title"

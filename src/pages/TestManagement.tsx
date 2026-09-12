@@ -503,6 +503,8 @@ export default function TestManagement() {
                       type="button"
                       className={`test-chevron-btn ${isExpanded ? "expanded" : ""}`}
                       onClick={() => toggleTest(test.id)}
+                      aria-expanded={isExpanded}
+                      aria-controls={`test-parameters-${test.id}`}
                       aria-label={
                         isExpanded
                           ? `Collapse ${test.name}`
@@ -514,7 +516,6 @@ export default function TestManagement() {
 
                     <div
                       className="test-item-avatar"
-                      onClick={() => toggleTest(test.id)}
                     >
                       <FlaskConical size={18} />
                     </div>
@@ -586,7 +587,6 @@ export default function TestManagement() {
                     ) : (
                       <div
                         className="test-item-info"
-                        onClick={() => toggleTest(test.id)}
                       >
                         <div className="test-item-title-row">
                           <strong className="test-item-title">
@@ -614,9 +614,9 @@ export default function TestManagement() {
                       </div>
                     )}
 
-                    <div className="test-item-actions">
+                    <div className="test-item-actions" role="group" aria-label={`${test.name} actions`}>
                       {isEditing ? (
-                        <>
+                        <div className="test-item-routine-actions">
                           <button
                             type="button"
                             className="icon-button"
@@ -636,28 +636,31 @@ export default function TestManagement() {
                           >
                             <X size={18} />
                           </button>
-                        </>
+                        </div>
                       ) : (
                         <>
-                          <button
-                            type="button"
-                            className="icon-button"
-                            title="Edit test"
-                            aria-label="Edit test"
-                            onClick={() => startEditTest(test)}
-                          >
-                            <Edit3 size={17} />
-                          </button>
-
-                          <button
-                            type="button"
-                            className="icon-button danger-button"
-                            title="Delete test"
-                            aria-label="Delete test"
-                            onClick={() => void handleDeleteTest(test)}
-                          >
-                            <Trash2 size={17} />
-                          </button>
+                          <div className="test-item-routine-actions">
+                            <button
+                              type="button"
+                              className="icon-button"
+                              title="Edit test"
+                              aria-label="Edit test"
+                              onClick={() => startEditTest(test)}
+                            >
+                              <Edit3 size={17} />
+                            </button>
+                          </div>
+                          <div className="test-item-danger-actions">
+                            <button
+                              type="button"
+                              className="icon-button danger-button"
+                              title="Delete test"
+                              aria-label="Delete test"
+                              onClick={() => void handleDeleteTest(test)}
+                            >
+                              <Trash2 size={17} />
+                            </button>
+                          </div>
                         </>
                       )}
                     </div>
@@ -665,7 +668,7 @@ export default function TestManagement() {
 
                   {/* PARAMETERS EXPANDED SECTION */}
                   {isExpanded && (
-                    <div className="test-parameters-section">
+                    <div id={`test-parameters-${test.id}`} className="test-parameters-section">
                       <div className="test-parameters-toolbar">
                         <div>
                           <h4>Test Parameters</h4>
@@ -837,7 +840,7 @@ export default function TestManagement() {
                                       )}
                                     </div>
 
-                                    <div className="parameters-row-actions">
+                                    <div className="parameters-row-actions" role="group" aria-label={`${parameter.name} actions`}>
                                       <button
                                         type="button"
                                         className="icon-button"
@@ -892,36 +895,39 @@ export default function TestManagement() {
                                       ) || "—"}
                                     </span>
 
-                                    <div className="parameters-row-actions">
-                                      <button
-                                        type="button"
-                                        className="icon-button"
-                                        title="Edit parameter"
-                                        aria-label={`Edit ${parameter.name}`}
-                                        onClick={() =>
-                                          startEditParameter(
-                                            test.id,
-                                            parameter
-                                          )
-                                        }
-                                      >
-                                        <Edit3 size={15} />
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        className="icon-button danger-button"
-                                        title="Delete parameter"
-                                        aria-label={`Delete ${parameter.name}`}
-                                        onClick={() =>
-                                          void handleDeleteParameter(
-                                            test.id,
-                                            parameter
-                                          )
-                                        }
-                                      >
-                                        <Trash2 size={15} />
-                                      </button>
+                                    <div className="parameters-row-actions" role="group" aria-label={`${parameter.name} actions`}>
+                                      <div className="parameters-row-routine-actions">
+                                        <button
+                                          type="button"
+                                          className="icon-button"
+                                          title="Edit parameter"
+                                          aria-label={`Edit ${parameter.name}`}
+                                          onClick={() =>
+                                            startEditParameter(
+                                              test.id,
+                                              parameter
+                                            )
+                                          }
+                                        >
+                                          <Edit3 size={15} />
+                                        </button>
+                                      </div>
+                                      <div className="parameters-row-danger-actions">
+                                        <button
+                                          type="button"
+                                          className="icon-button danger-button"
+                                          title="Delete parameter"
+                                          aria-label={`Delete ${parameter.name}`}
+                                          onClick={() =>
+                                            void handleDeleteParameter(
+                                              test.id,
+                                              parameter
+                                            )
+                                          }
+                                        >
+                                          <Trash2 size={15} />
+                                        </button>
+                                      </div>
                                     </div>
                                   </>
                                 )}

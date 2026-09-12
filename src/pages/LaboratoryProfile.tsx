@@ -1,9 +1,9 @@
-import { ImagePlus, RotateCcw, Save, Trash2, Upload } from "lucide-react";
+import { RotateCcw, Save, Trash2, Upload } from "lucide-react";
 import { useState, type ChangeEvent } from "react";
 import PageHeading from "../components/layout/PageHeading";
 import { confirmDestructive, notifyError, notifySuccess } from "../lib/dialog";
 import { useBranding } from "../store/BrandingContext";
-import type { LaboratoryProfile } from "../store/branding";
+import { getUsableLogoDataUrl, type LaboratoryProfile } from "../store/branding";
 
 const PROFILE_FIELDS: Array<{
   key: keyof LaboratoryProfile;
@@ -22,13 +22,15 @@ const PROFILE_FIELDS: Array<{
   { key: "email", label: "Email", placeholder: "reports@example.com", type: "email" },
   { key: "pathologistName", label: "Consultant pathologist", placeholder: "Dr. …" },
   { key: "pathologistQualifications", label: "Pathologist qualifications", placeholder: "MD, DNB …" },
+  { key: "pathologistDesignation", label: "Pathologist designation", placeholder: "Consultant pathologist" },
 ];
 
 export default function LaboratoryProfilePage() {
   const { profile, updateProfile, restoreDefault } = useBranding();
   const [draft, setDraft] = useState(profile);
   const [processingLogo, setProcessingLogo] = useState(false);
-  const hasLogo = Boolean(draft.logoDataUrl?.trim());
+  const logoDataUrl = getUsableLogoDataUrl(draft.logoDataUrl);
+  const hasLogo = Boolean(logoDataUrl);
 
   async function saveProfile() {
     const missing = PROFILE_FIELDS.slice(0, 3)
@@ -83,17 +85,23 @@ export default function LaboratoryProfilePage() {
         <fieldset>
           <legend>Laboratory logo <span className="fieldset-optional">Optional</span></legend>
           <div className="logo-editor">
-            {hasLogo ? <img src={draft.logoDataUrl} alt="Laboratory logo preview" /> : <div className="logo-placeholder" aria-label="No laboratory logo added"><ImagePlus size={22} aria-hidden="true" /><span>No logo added</span></div>}
-            <div>
+            {hasLogo ? <img src={logoDataUrl} alt="Laboratory logo preview" /> : <div className="logo-placeholder" aria-label="No laboratory logo uploaded"><span>No logo uploaded</span></div>}
+            <div className="logo-actions" role="group" aria-label="Laboratory logo actions">
               <label className="secondary-button logo-upload"><Upload size={16} />{processingLogo ? "Processing…" : hasLogo ? "Replace logo" : "Choose logo"}<input type="file" accept="image/png,image/jpeg,image/webp" onChange={onLogo} disabled={processingLogo} /></label>
               {hasLogo && <button type="button" className="secondary-button" onClick={() => setDraft((value) => ({ ...value, logoDataUrl: "" }))}><Trash2 size={16} />Remove</button>}
               <p className="helper-text">Shown on the report only when you add one. PNG, JPEG or WebP; 32–1200 px; maximum 1 MB.</p>
             </div>
           </div>
         </fieldset>
-        <button type="button" className="secondary-button" onClick={async () => { const accepted = await confirmDestructive({ title: "Restore default profile?", text: "This replaces the current laboratory profile. Finalized report snapshots are not changed.", confirmText: "Restore defaults", cancelText: "Keep profile" }); if (accepted) { restoreDefault(); location.reload(); } }}><RotateCcw size={16} />Restore defaults</button>
+        <div className="profile-reset-zone" role="group" aria-labelledby="profile-reset-title">
+          <div>
+            <h3 id="profile-reset-title">Reset profile</h3>
+            <p>Restore the default laboratory identity and contact details.</p>
+          </div>
+          <button type="button" className="secondary-button destructive-secondary-button" onClick={async () => { const accepted = await confirmDestructive({ title: "Restore default profile?", text: "This replaces the current laboratory profile. Finalized report snapshots are not changed.", confirmText: "Restore defaults", cancelText: "Keep profile" }); if (accepted) { restoreDefault(); location.reload(); } }}><RotateCcw size={16} />Restore defaults</button>
+        </div>
       </div>
-      <aside className="profile-preview" aria-label="Laboratory identity preview">{hasLogo && <img src={draft.logoDataUrl} alt="" />}<span className="profile-preview-kicker">Report header preview</span><strong>{draft.laboratoryName || "Laboratory name"}</strong><span>{draft.reportSubtitle || "Report subtitle"}</span><small>{[draft.city, draft.phone, draft.email].filter(Boolean).join(" · ") || "Contact details will appear here"}</small></aside>
+      <aside className="profile-preview" aria-label="Laboratory identity preview">{hasLogo && <img src={logoDataUrl} alt="" />}<span className="profile-preview-kicker">Report header preview</span><strong>{draft.laboratoryName || "Laboratory name"}</strong><span>{draft.reportSubtitle || "Report subtitle"}</span><small>{[draft.city, draft.phone, draft.email].filter(Boolean).join(" · ") || "Contact details will appear here"}</small></aside>
     </div>
   </section>;
 }

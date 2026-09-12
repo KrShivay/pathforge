@@ -1,5 +1,5 @@
 import { Plus, Search, Users, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import PageHeading from "../components/layout/PageHeading";
 import { SkeletonList } from "../components/common/Skeleton";
 import PatientForm from "../components/patients/PatientForm";
@@ -11,12 +11,15 @@ export default function Patients() {
 
   const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formDirty, setFormDirty] = useState(false);
+  const formDirtyRef = useRef(false);
+  const addPatientButtonRef = useRef<HTMLButtonElement>(null);
+  const patientDialogRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
 
   // An accidental close (backdrop click, Escape) while the form has input
   // would otherwise silently discard it with no way to recover.
   async function requestCloseModal() {
-    if (formDirty) {
+    if (formDirtyRef.current) {
       const proceed = await confirmDestructive({
         title: "Discard this patient?",
         text: "The information you entered has not been saved.",
@@ -25,18 +28,39 @@ export default function Patients() {
       });
       if (!proceed) return;
     }
+    formDirtyRef.current = false;
     setIsModalOpen(false);
   }
 
   useEffect(() => {
     if (!isModalOpen) return;
+    returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") void requestCloseModal();
     }
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isModalOpen, formDirty]);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      requestAnimationFrame(() => (returnFocusRef.current ?? addPatientButtonRef.current)?.focus());
+    };
+  }, [isModalOpen]);
+
+  function trapDialogFocus(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "Tab") return;
+    const focusable = [...(patientDialogRef.current?.querySelectorAll<HTMLElement>(
+      "button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href]",
+    ) ?? [])];
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
 
   const query = search.trim().toLowerCase();
   const filteredPatients = query
@@ -51,14 +75,15 @@ export default function Patients() {
     <div className="patients-page viewport-page">
       <div className="patients-header-bar">
         <PageHeading
-          title="Patients Directory"
+            title="Patients Directory"
           subtitle="Search patient records or register a new patient for pathology reporting."
           actions={
             <button
+              ref={addPatientButtonRef}
               type="button"
               className="primary-button"
               onClick={() => {
-                setFormDirty(false);
+                formDirtyRef.current = false;
                 setIsModalOpen(true);
               }}
             >
@@ -154,8 +179,10 @@ export default function Patients() {
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => void requestCloseModal()}>
           <div
+            ref={patientDialogRef}
             className="patient-modal"
             onClick={(event) => event.stopPropagation()}
+            onKeyDown={trapDialogFocus}
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-patient-title"
@@ -177,8 +204,10 @@ export default function Patients() {
 
             <PatientForm
               onSaved={() => setIsModalOpen(false)}
-              onCancel={() => setIsModalOpen(false)}
-              onDirtyChange={setFormDirty}
+              onCancel={() => void requestCloseModal()}
+              onDirtyChange={(dirty) => {
+                formDirtyRef.current = dirty;
+              }}
             />
           </div>
         </div>

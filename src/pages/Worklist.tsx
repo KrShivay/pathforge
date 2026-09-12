@@ -75,6 +75,7 @@ export default function Worklist({
             <button
               type="button"
               className={`filter-tab ${statusFilter === "all" ? "is-active" : ""}`}
+              aria-pressed={statusFilter === "all"}
               onClick={() => setStatusFilter("all")}
             >
               All
@@ -83,6 +84,7 @@ export default function Worklist({
             <button
               type="button"
               className={`filter-tab ${statusFilter === "draft" ? "is-active" : ""}`}
+              aria-pressed={statusFilter === "draft"}
               onClick={() => setStatusFilter("draft")}
             >
               <Clock size={13} />
@@ -92,6 +94,7 @@ export default function Worklist({
             <button
               type="button"
               className={`filter-tab ${statusFilter === "finalized" ? "is-active" : ""}`}
+              aria-pressed={statusFilter === "finalized"}
               onClick={() => setStatusFilter("finalized")}
             >
               <CheckCircle2 size={13} />
@@ -101,26 +104,30 @@ export default function Worklist({
             <button
               type="button"
               className={`filter-tab ${statusFilter === "attention" ? "is-active" : ""}`}
+              aria-pressed={statusFilter === "attention"}
               onClick={() => setStatusFilter("attention")}
             >
               Attention
               <span className="tab-count">{counts.attention}</span>
             </button>
           </div>
-          <div className="report-filter-row">
-            <DateRangeFilter
-              id="worklist-date-range"
-              from={dateFrom}
-              to={dateTo}
-              fromLabel="Created from"
-              toLabel="Created to"
-              onFromChange={setDateFrom}
-              onToChange={setDateTo}
-              invalid={invalidRange}
-            />
-            <label>Sort<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="patient">Patient</option><option value="test">Test</option><option value="status">Status</option></select></label>
-            <span className="result-count" role="status">{filteredReports.length} result{filteredReports.length === 1 ? "" : "s"}</span>
-            {(search || statusFilter !== "all" || dateFrom || dateTo || sort !== "newest") && <button type="button" className="text-button" onClick={() => { setSearch(""); setStatusFilter("all"); setDateFrom(""); setDateTo(""); setSort("newest"); }}>Clear filters</button>}
+          <div className="worklist-filter-group" role="group" aria-label="Date and sort filters">
+            <span className="filter-group-label">Date &amp; sort</span>
+            <div className="report-filter-row">
+              <DateRangeFilter
+                id="worklist-date-range"
+                from={dateFrom}
+                to={dateTo}
+                fromLabel="Created from"
+                toLabel="Created to"
+                onFromChange={setDateFrom}
+                onToChange={setDateTo}
+                invalid={invalidRange}
+              />
+              <label>Sort<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="patient">Patient</option><option value="test">Test</option><option value="status">Status</option></select></label>
+              <span className="result-count" role="status">{filteredReports.length} result{filteredReports.length === 1 ? "" : "s"}</span>
+              {(search || statusFilter !== "all" || dateFrom || dateTo || sort !== "newest") && <button type="button" className="text-button" onClick={() => { setSearch(""); setStatusFilter("all"); setDateFrom(""); setDateTo(""); setSort("newest"); }}>Clear filters</button>}
+            </div>
           </div>
 
           <div className="patients-search worklist-search">

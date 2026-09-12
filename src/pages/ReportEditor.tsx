@@ -7,11 +7,12 @@ import {
   GitBranchPlus,
   Loader2,
   Lock,
+  MoreHorizontal,
   Printer,
   Save,
   Stethoscope,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 
@@ -52,6 +53,8 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
   // Screen preview of the exact document that prints. Same component, same
   // canonical model - never a second layout.
   const [showPreview, setShowPreview] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
 
   const { patients } = usePatients();
   const { profile } = useBranding();
@@ -168,6 +171,30 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
         }),
   );
   useEffect(() => onDirtyChange?.(isDirty), [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    if (!showExportMenu) return;
+
+    const closeOutside = (event: PointerEvent) => {
+      if (!exportMenuRef.current?.contains(event.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setShowExportMenu(false);
+      exportMenuRef.current
+        ?.querySelector<HTMLButtonElement>(".editor-export-trigger")
+        ?.focus();
+    };
+
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [showExportMenu]);
 
   // ========================================
   // REPORT NOT FOUND
@@ -385,6 +412,26 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
     window.print();
   }
 
+  function handleExportMenuKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    const items = [
+      ...event.currentTarget.querySelectorAll<HTMLButtonElement>(
+        '[role="menuitem"]',
+      ),
+    ];
+    const index = items.indexOf(document.activeElement as HTMLButtonElement);
+
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const delta = event.key === "ArrowDown" ? 1 : -1;
+      items[(index + delta + items.length) % items.length]?.focus();
+    } else if (event.key === "Home" || event.key === "End") {
+      event.preventDefault();
+      items[event.key === "Home" ? 0 : items.length - 1]?.focus();
+    } else if (event.key === "Tab") {
+      setShowExportMenu(false);
+    }
+  }
+
   async function handleDownloadPdf() {
     setBusy(true);
     try {
@@ -460,25 +507,64 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
             Preview
           </button>
 
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={handlePrint}
-            disabled={busy}
-          >
-            <Printer size={16} />
-            Print
-          </button>
+          <div className="editor-export-menu" ref={exportMenuRef}>
+            <button
+              type="button"
+              className="secondary-button editor-export-trigger"
+              aria-haspopup="menu"
+              aria-expanded={showExportMenu}
+              aria-controls="report-export-menu"
+              onClick={() => {
+                const nextOpen = !showExportMenu;
+                setShowExportMenu(nextOpen);
+                if (nextOpen) {
+                  requestAnimationFrame(() =>
+                    exportMenuRef.current
+                      ?.querySelector<HTMLButtonElement>('[role="menuitem"]')
+                      ?.focus(),
+                  );
+                }
+              }}
+            >
+              <MoreHorizontal size={16} aria-hidden="true" />
+              Export
+            </button>
 
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={handleDownloadPdf}
-            disabled={busy}
-          >
-            <Download size={16} />
-            Download PDF
-          </button>
+            {showExportMenu ? (
+              <div
+                id="report-export-menu"
+                className="editor-export-list"
+                role="menu"
+                aria-label="Report export actions"
+                onKeyDown={handleExportMenuKeyDown}
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setShowExportMenu(false);
+                    handlePrint();
+                  }}
+                  disabled={busy}
+                >
+                  <Printer size={16} aria-hidden="true" />
+                  Print
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setShowExportMenu(false);
+                    void handleDownloadPdf();
+                  }}
+                  disabled={busy}
+                >
+                  <Download size={16} aria-hidden="true" />
+                  Download PDF
+                </button>
+              </div>
+            ) : null}
+          </div>
 
           {!isFinalized ? (
             <>

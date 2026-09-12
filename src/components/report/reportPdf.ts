@@ -2,6 +2,7 @@ import type { jsPDF } from "jspdf";
 import { isTauri } from "@tauri-apps/api/core";
 
 import type { ReportModel } from "./reportModel";
+import { getUsableLogoDataUrl } from "../../store/branding.ts";
 
 const NAVY: [number, number, number] = [31, 58, 95];
 const INK: [number, number, number] = [26, 26, 26];
@@ -46,9 +47,10 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
   };
 
   // ---- letterhead ----
-  const logoWidth = model.brand.logoDataUrl ? 20 : 0;
-  if (model.brand.logoDataUrl) {
-    try { doc.addImage(model.brand.logoDataUrl, MARGIN, y, logoWidth, 14); } catch { /* Invalid image data is omitted. */ }
+  const logoDataUrl = getUsableLogoDataUrl(model.brand.logoDataUrl);
+  const logoWidth = logoDataUrl ? 20 : 0;
+  if (logoDataUrl) {
+    try { doc.addImage(logoDataUrl, MARGIN, y, logoWidth, 14); } catch { /* Invalid image data is omitted. */ }
   }
   const letterheadX = MARGIN + logoWidth + (logoWidth ? 3 : 0);
   doc.setFont("helvetica", "bold").setFontSize(18).setTextColor(...NAVY);

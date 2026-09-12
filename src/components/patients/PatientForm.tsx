@@ -42,6 +42,7 @@ export default function PatientForm({
 
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
+  const [errorField, setErrorField] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -65,6 +66,13 @@ export default function PatientForm({
           ? sanitizeText(value, "general")
           : value;
     setForm((previous) => ({ ...previous, [key]: clean }));
+    setError("");
+    setErrorField(null);
+  }
+
+  function setValidationError(field: string, message: string) {
+    setError(message);
+    setErrorField(field);
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -75,12 +83,12 @@ export default function PatientForm({
     const phone = sanitizePhone(form.phone).trim();
     const age = Number(form.age);
 
-    if (!name) return setError("Patient name is required.");
+    if (!name) return setValidationError("name", "Patient name is required.");
     if (!form.age || Number.isNaN(age) || age < 0 || age > 150) {
-      return setError("Enter a valid age.");
+      return setValidationError("age", "Enter a valid age.");
     }
-    if (!form.gender) return setError("Select the patient's sex.");
-    if (!phone) return setError("Phone number is required.");
+    if (!form.gender) return setValidationError("gender", "Select the patient's sex.");
+    if (!phone) return setValidationError("phone", "Phone number is required.");
 
     const input: NewPatientInput = {
       name,
@@ -92,6 +100,7 @@ export default function PatientForm({
 
     setSaving(true);
     setError("");
+    setErrorField(null);
     try {
       const patient = await addPatient(input);
       setForm(emptyForm);
@@ -119,6 +128,9 @@ export default function PatientForm({
           <input
             id="pf-name"
             type="text"
+            required
+            aria-invalid={errorField === "name"}
+            aria-describedby={errorField === "name" ? "patient-form-error" : undefined}
             value={form.name}
             onChange={(event) => update("name", event.target.value)}
             placeholder="Full name"
@@ -132,6 +144,9 @@ export default function PatientForm({
           <input
             id="pf-age"
             type="number"
+            required
+            aria-invalid={errorField === "age"}
+            aria-describedby={errorField === "age" ? "patient-form-error" : undefined}
             min="0"
             max="150"
             value={form.age}
@@ -145,6 +160,9 @@ export default function PatientForm({
           <label htmlFor="pf-sex">Gender *</label>
           <select
             id="pf-sex"
+            required
+            aria-invalid={errorField === "gender"}
+            aria-describedby={errorField === "gender" ? "patient-form-error" : undefined}
             value={form.gender}
             onChange={(event) => update("gender", event.target.value)}
             disabled={disabled}
@@ -163,6 +181,9 @@ export default function PatientForm({
           <input
             id="pf-phone"
             type="tel"
+            required
+            aria-invalid={errorField === "phone"}
+            aria-describedby={errorField === "phone" ? "patient-form-error" : undefined}
             value={form.phone}
             onChange={(event) => {
               const value = event.target.value.replace(/\D/g, "").slice(0, 10);
@@ -197,7 +218,7 @@ export default function PatientForm({
         </div>
       </div>
 
-      {error ? <p className="form-error">{error}</p> : null}
+      {error ? <p id="patient-form-error" className="form-error" role="alert">{error}</p> : null}
 
       <div className="modal-actions">
         {onCancel ? (

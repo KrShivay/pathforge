@@ -1,4 +1,5 @@
 import type { ReportModel } from "./reportModel";
+import { getUsableLogoDataUrl } from "../../store/branding";
 
 interface PrintableReportProps {
   model: ReportModel;
@@ -11,13 +12,15 @@ interface PrintableReportProps {
  * rules in index.css, so `window.print()` drives paper printing.
  */
 export default function PrintableReport({ model }: PrintableReportProps) {
+  const logoDataUrl = getUsableLogoDataUrl(model.brand.logoDataUrl);
+
   return (
     <div
       className={`print-report${model.isFinalized ? "" : " pr-draft"}`}
     >
       <header className="pr-letterhead">
         <div className="pr-brand">
-          {model.brand.logoDataUrl && <img className="pr-logo" src={model.brand.logoDataUrl} alt="Laboratory logo" />}
+          {logoDataUrl && <img className="pr-logo" src={logoDataUrl} alt="Laboratory logo" />}
           <h1>{model.brand.name}</h1>
           <p className="pr-tagline">{model.brand.tagline}</p>
           <p className="pr-accred">{model.brand.strapline}</p>

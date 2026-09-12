@@ -223,20 +223,22 @@ export default function NewReport({
           <h1>New Report</h1>
           <p>Follow the steps to create and configure a pathology report.</p>
         </div>
-        <button
-          type="button"
-          className="secondary-button"
-          onClick={() => void save(false)}
-          disabled={!canSave || saving}
-          title={
-            canSave
-              ? "Save current progress as a draft"
-              : "Choose a patient, at least one test and a specimen first"
-          }
-        >
-          <Save size={15} />
-          Save as Draft
-        </button>
+        {step < STEPS.length - 1 ? (
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => void save(false)}
+            disabled={!canSave || saving}
+            title={
+              canSave
+                ? "Save current progress as a draft"
+                : "Choose a patient, at least one test and a specimen first"
+            }
+          >
+            <Save size={15} />
+            Save as Draft
+          </button>
+        ) : null}
       </div>
       {!canSave ? (
         <p className="wizard-prerequisite">
@@ -250,6 +252,10 @@ export default function NewReport({
         furthest={furthest}
         onJump={jumpTo}
       />
+
+      <div className="sr-only" role="status" aria-live="polite">
+        Step {step + 1} of {STEPS.length}: {STEPS[step]}
+      </div>
 
       <div className="wizard-body pf-card content-card-fill scrollable-container">
         {step === 0 && (
@@ -327,15 +333,17 @@ export default function NewReport({
           </button>
         ) : (
           <div className="wizard-nav-final">
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => void save(false)}
-              disabled={!canSave || saving}
-            >
-              <Save size={16} />
-              Save as Draft
-            </button>
+            <div className="wizard-secondary-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => void save(false)}
+                disabled={!canSave || saving}
+              >
+                <Save size={16} />
+                Save as Draft
+              </button>
+            </div>
             <button
               type="button"
               className="primary-button"

@@ -8,13 +8,14 @@ import {
   Settings2,
   Users,
 } from "lucide-react";
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 
 export type Page = "dashboard" | "patients" | "worklist" | "new-report" | "history" | "test-management" | "lab-profile";
 interface TopNavProps {
   activePage: Page;
   onNavigate: (page: Page) => void | Promise<void>;
   onLock: () => void;
+  lockButtonRef?: RefObject<HTMLButtonElement | null>;
 }
 type MenuName = "reports" | "manage";
 
@@ -22,6 +23,7 @@ export default function TopNav({
   activePage,
   onNavigate,
   onLock,
+  lockButtonRef,
 }: TopNavProps) {
   const [openMenu, setOpenMenu] = useState<MenuName | null>(null);
   const navRef = useRef<HTMLElement>(null);
@@ -70,6 +72,8 @@ export default function TopNav({
       nodes[(index + delta + nodes.length) % nodes.length]?.focus();
     } else if (event.key === "Home" || event.key === "End") {
       event.preventDefault(); nodes[event.key === "Home" ? 0 : nodes.length - 1]?.focus();
+    } else if (event.key === "Tab") {
+      setOpenMenu(null);
     }
   }
 
@@ -79,7 +83,7 @@ export default function TopNav({
         {label}<ChevronDown size={14} aria-hidden="true" />
       </button>
       {openMenu === name && <div id={`${name}-menu`} className="top-nav-menu-list" role="menu" aria-label={label} onKeyDown={(event) => onMenuKeyDown(event, name)}>
-        {items[name].map(({ page, label: itemLabel, icon: Icon }) => <button type="button" role="menuitem" key={page} className={activePage === page ? "is-active" : ""} onClick={() => { setOpenMenu(null); void onNavigate(page); }}><Icon size={15} aria-hidden="true" />{itemLabel}</button>)}
+        {items[name].map(({ page, label: itemLabel, icon: Icon }) => <button type="button" role="menuitem" key={page} className={activePage === page ? "is-active" : ""} aria-current={activePage === page ? "page" : undefined} onClick={() => { setOpenMenu(null); void onNavigate(page); }}><Icon size={15} aria-hidden="true" />{itemLabel}</button>)}
       </div>}
     </div>
   );
@@ -87,11 +91,12 @@ export default function TopNav({
   return <header className="top-nav">
     <button type="button" className="top-nav-brand" onClick={() => void onNavigate("dashboard")} aria-label="PathForge dashboard"><span className="top-nav-brand-icon"><img src="/pathforge-mark.svg" alt="" aria-hidden="true" /></span><span className="top-nav-brand-text"><strong>PathForge</strong><span>Clinical Pathology</span></span></button>
     <nav ref={navRef} className="top-nav-links" aria-label="Primary navigation">
-      <button type="button" className="top-nav-new-report" onClick={() => void onNavigate("new-report")}><Plus size={15} aria-hidden="true" />New Report</button>
+      <button type="button" className="top-nav-new-report" aria-label="New report" onClick={() => void onNavigate("new-report")}><Plus size={15} aria-hidden="true" />New Report</button>
       {renderMenu("reports", "Reports", reportsTrigger)}
       {renderMenu("manage", "Manage", manageTrigger)}
       <button
         type="button"
+        ref={lockButtonRef}
         className="top-nav-lock"
         onClick={() => {
           setOpenMenu(null);

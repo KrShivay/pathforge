@@ -262,7 +262,7 @@ export default function Dashboard({
                 const pt = getPatient(report.patientId);
                 return (
                   <button type="button" className="recent-report-item" key={report.id} onClick={() => onSelectReport(report.id)}>
-                    <div className="recent-report-icon" style={{ background: "rgba(245, 158, 11, 0.1)", color: "var(--pf-amber-500)" }}>
+                    <div className="recent-report-icon attention">
                       <AlertCircle size={16} />
                     </div>
                     <div className="recent-report-info">
@@ -278,9 +278,9 @@ export default function Dashboard({
               })}
             </div>
           ) : (
-            <div className="dashboard-empty" style={{ minHeight: "150px" }}>
-              <CheckCircle2 size={32} color="var(--pf-green-500)" style={{ opacity: 0.5 }} />
-              <p style={{ marginTop: "12px" }}>All drafts are clinically complete.</p>
+            <div className="dashboard-empty dashboard-empty-success">
+              <CheckCircle2 size={32} aria-hidden="true" />
+              <p>All drafts are clinically complete.</p>
             </div>
           )}
         </section>

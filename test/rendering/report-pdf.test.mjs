@@ -87,3 +87,25 @@ test('PDF does not truncate a long reference-range note to its first wrapped lin
   // wrapped line's word survives rather than the whole phrase as one string.
   assert.match(pdfText, /\(clinically\) Tj/);
 });
+
+test('PDF omits invalid legacy logo data instead of reserving logo space', async () => {
+  const pdfText = await renderPdfText(
+    baseModel({
+      brand: { name: 'PathForge', tagline: 'Tagline', strapline: 'Strapline', logoDataUrl: 'not-an-image' },
+    }),
+  );
+
+  assert.doesNotMatch(pdfText, /\/Subtype \/Image/);
+});
+
+test('PDF embeds a valid uploaded logo data URL', async () => {
+  const onePixelPng =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+  const pdfText = await renderPdfText(
+    baseModel({
+      brand: { name: 'PathForge', tagline: 'Tagline', strapline: 'Strapline', logoDataUrl: onePixelPng },
+    }),
+  );
+
+  assert.match(pdfText, /\/Subtype \/Image/);
+});

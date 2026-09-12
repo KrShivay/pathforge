@@ -7,7 +7,7 @@ import {
 import { accession, formatReportDate } from "./reportMeta";
 import { computeFlag, flagLabel, type ResultFlag } from "./flags";
 import { formatReferenceRange } from "./referenceRange";
-import { DEFAULT_LABORATORY_PROFILE, type LaboratoryProfile } from "../../store/branding";
+import { DEFAULT_LABORATORY_PROFILE, getUsableLogoDataUrl, type LaboratoryProfile } from "../../store/branding";
 
 /**
  * House-format *presenter*. It owns the wording of the printed page — brand
@@ -250,7 +250,7 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
       name: profile.laboratoryName || BRAND.name,
       tagline: profile.reportSubtitle || BRAND.tagline,
       strapline: [profile.accreditationName, profile.accreditationNumber, profile.registrationNumber].filter(Boolean).join(" · ") || BRAND.strapline,
-      logoDataUrl: profile.logoDataUrl,
+      logoDataUrl: getUsableLogoDataUrl(profile.logoDataUrl),
       contact: [profile.addressLine1, profile.addressLine2, profile.city, profile.state, profile.postcode, profile.country, profile.phone, profile.email, profile.website].filter(Boolean).join(" · "),
     },
     documentTitle: profile.reportSubtitle || "Pathology Report",

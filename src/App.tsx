@@ -19,6 +19,8 @@ export default function App() {
   const [isLocked, setIsLocked] = useState(false);
   const newReportDirtyRef = useRef(false);
   const editorDirtyRef = useRef(false);
+  const lockButtonRef = useRef<HTMLButtonElement>(null);
+  const unlockButtonRef = useRef<HTMLButtonElement>(null);
 
   async function confirmExit(): Promise<boolean> {
     const dirtyNew = activePage === "new-report" && !selectedReportId && newReportDirtyRef.current;
@@ -42,21 +44,7 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (isLocked) return;
-
-    function lockOnKeyDown(event: KeyboardEvent) {
-      const target = event.target;
-      if (
-        target instanceof HTMLElement &&
-        target.closest("button, a, input, textarea, select, [contenteditable='true']")
-      ) {
-        return;
-      }
-      setIsLocked(true);
-    }
-
-    window.addEventListener("keydown", lockOnKeyDown);
-    return () => window.removeEventListener("keydown", lockOnKeyDown);
+    if (isLocked) unlockButtonRef.current?.focus();
   }, [isLocked]);
 
   const page = selectedReportId ? (
@@ -75,10 +63,11 @@ export default function App() {
       activePage={activePage}
       onNavigate={handleNavigate}
       onLock={() => setIsLocked(true)}
+      lockButtonRef={lockButtonRef}
     />
     <main className="main-content">
       <div className="page-content">
-        {!selectedReportId && activePage !== "dashboard" && <nav className="page-breadcrumb-bar" aria-label="Breadcrumb"><button type="button" className="back-to-dashboard" onClick={() => void handleNavigate("dashboard")}><ArrowLeft size={13} aria-hidden="true" />Dashboard</button><span className="breadcrumb-separator" aria-hidden="true">/</span><span className="breadcrumb-current">{{ patients: "Patients", worklist: "Report Worklist", "new-report": "New Report", history: "Version History", "test-management": "Laboratory Tests", "lab-profile": "Laboratory Profile" }[activePage]}</span></nav>}
+        {!selectedReportId && activePage !== "dashboard" && <nav className="page-breadcrumb-bar" aria-label="Breadcrumb"><button type="button" className="back-to-dashboard" onClick={() => void handleNavigate("dashboard")}><ArrowLeft size={13} aria-hidden="true" />Dashboard</button><span className="breadcrumb-separator" aria-hidden="true">/</span><span className="breadcrumb-current" aria-current="page">{{ patients: "Patients", worklist: "Report Worklist", "new-report": "New Report", history: "Version History", "test-management": "Laboratory Tests", "lab-profile": "Laboratory Profile" }[activePage]}</span></nav>}
         {page}
       </div>
     </main>
@@ -88,6 +77,9 @@ export default function App() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="quiet-mode-title"
+        onKeyDown={(event) => {
+          if (event.key === "Tab") event.preventDefault();
+        }}
       >
         <div className="quiet-mode-stars" aria-hidden="true" />
         <div className="quiet-mode-orbit quiet-mode-orbit-one" aria-hidden="true" />
@@ -101,7 +93,7 @@ export default function App() {
           <p className="quiet-mode-copy">
             Report work is paused while the workspace is locked. Unlock to return to your local report workflow.
           </p>
-          <button type="button" className="quiet-mode-open" onClick={() => setIsLocked(false)}>
+          <button ref={unlockButtonRef} type="button" className="quiet-mode-open" onClick={() => { setIsLocked(false); requestAnimationFrame(() => lockButtonRef.current?.focus()); }}>
             <span className="quiet-mode-open-icon" aria-hidden="true">
               <Unlock size={17} />
             </span>
