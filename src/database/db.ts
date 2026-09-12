@@ -1,36 +1,254 @@
 import Database from "@tauri-apps/plugin-sql";
 import type { LaboratoryTest, TestParameter } from "../domain/laboratory";
 
-let database: Database | null = null;
+interface DatabaseLike {
+  select<T>(query: string, bindValues?: unknown[]): Promise<T>;
+  execute(query: string, bindValues?: unknown[]): Promise<unknown>;
+}
 
-export async function getDatabase(): Promise<Database> {
+interface BrowserDatabaseState {
+  patients: Array<Record<string, unknown>>;
+  reportWorkspaceState: string | null;
+  reportWorkspaceMeta: Array<Record<string, unknown>>;
+  workspaceTests: LaboratoryTest[];
+  workspaceTestsInitialized: boolean;
+}
+
+const BROWSER_DATABASE_KEY = "pathforge.browser-database.v1";
+
+function emptyBrowserDatabaseState(): BrowserDatabaseState {
+  return {
+    patients: [],
+    reportWorkspaceState: null,
+    reportWorkspaceMeta: [],
+    workspaceTests: [],
+    workspaceTestsInitialized: false,
+  };
+}
+
+function readBrowserDatabaseState(): BrowserDatabaseState {
+  try {
+    const raw = window.localStorage.getItem(BROWSER_DATABASE_KEY);
+    if (!raw) return emptyBrowserDatabaseState();
+    return { ...emptyBrowserDatabaseState(), ...JSON.parse(raw) };
+  } catch {
+    return emptyBrowserDatabaseState();
+  }
+}
+
+class BrowserDatabase implements DatabaseLike {
+  private state = readBrowserDatabaseState();
+
+  private persist(): void {
+    window.localStorage.setItem(
+      BROWSER_DATABASE_KEY,
+      JSON.stringify(this.state),
+    );
+  }
+
+  async select<T>(query: string): Promise<T> {
+    const normalized = query.replace(/\s+/g, " ").trim().toLowerCase();
+
+    if (
+      normalized.includes("from patients") &&
+      normalized.includes("patient_id")
+    ) {
+      if (normalized.includes("name, age, gender")) {
+        return [...this.state.patients]
+          .sort((a, b) =>
+            String(b.created_at).localeCompare(String(a.created_at)),
+          )
+          .map((patient) => ({ ...patient })) as T;
+      }
+      return this.state.patients.map((patient) => ({
+        patient_id: patient.patient_id,
+      })) as T;
+    }
+
+    if (normalized.includes("from report_workspace_state")) {
+      return this.state.reportWorkspaceState
+        ? ([{ state_json: this.state.reportWorkspaceState }] as T)
+        : ([] as T);
+    }
+
+    if (normalized.includes("from report_workspace_meta")) {
+      return this.state.reportWorkspaceMeta.map((meta) => ({ ...meta })) as T;
+    }
+
+    if (normalized.includes("from workspace_test_catalog_state")) {
+      return this.state.workspaceTestsInitialized
+        ? ([{ id: 1 }] as T)
+        : ([] as T);
+    }
+
+    if (normalized.includes("from workspace_tests")) {
+      return this.state.workspaceTests.map((test) => ({
+        id: test.id,
+        name: test.name,
+        department: test.department,
+        specimen: test.specimen ?? null,
+        created_at: test.createdAt,
+        updated_at: test.updatedAt ?? null,
+      })) as T;
+    }
+
+    if (normalized.includes("from workspace_test_parameters")) {
+      return this.state.workspaceTests.flatMap((test) =>
+        test.parameters.map((parameter) => ({
+          id: parameter.id,
+          test_id: test.id,
+          name: parameter.name,
+          result_type: parameter.type,
+          unit: parameter.unit ?? null,
+          reference_min: parameter.referenceRange?.min ?? null,
+          reference_max: parameter.referenceRange?.max ?? null,
+          reference_text: parameter.referenceRange?.text ?? null,
+          symbol: parameter.symbol ?? null,
+        })),
+      ) as T;
+    }
+
+    return [] as T;
+  }
+
+  async execute(query: string, values: unknown[] = []): Promise<unknown> {
+    const normalized = query.replace(/\s+/g, " ").trim().toLowerCase();
+
+    if (normalized.startsWith("insert into patients")) {
+      const [id, patientId, name, age, gender, phone, address, createdAt] =
+        values;
+      if (
+        this.state.patients.some((patient) => patient.patient_id === patientId)
+      ) {
+        throw new Error("UNIQUE constraint failed: patients.patient_id");
+      }
+      this.state.patients.push({
+        id,
+        patient_id: patientId,
+        name,
+        age,
+        gender,
+        phone,
+        address,
+        created_at: createdAt,
+      });
+    } else if (normalized.startsWith("insert into report_workspace_state")) {
+      this.state.reportWorkspaceState = String(values[0]);
+    } else if (normalized.startsWith("insert into report_workspace_meta")) {
+      const [reportId, patientId, testId, testName, department, createdAt] =
+        values;
+      const existing = this.state.reportWorkspaceMeta.find(
+        (meta) => meta.report_id === reportId,
+      );
+      const next = {
+        report_id: reportId,
+        patient_id: patientId,
+        test_id: testId,
+        test_name: testName,
+        department,
+        created_at: createdAt,
+      };
+      if (existing) Object.assign(existing, next);
+      else this.state.reportWorkspaceMeta.push(next);
+    } else if (normalized === "delete from workspace_test_parameters") {
+      for (const test of this.state.workspaceTests) test.parameters = [];
+    } else if (normalized === "delete from workspace_tests") {
+      this.state.workspaceTests = [];
+    } else if (normalized.startsWith("insert into workspace_tests")) {
+      const [id, name, department, specimen, createdAt, updatedAt] = values;
+      this.state.workspaceTests.push({
+        id: String(id),
+        name: String(name),
+        department: String(department),
+        specimen: specimen == null ? undefined : String(specimen),
+        parameters: [],
+        createdAt: String(createdAt),
+        updatedAt: updatedAt == null ? undefined : String(updatedAt),
+      });
+    } else if (normalized.startsWith("insert into workspace_test_parameters")) {
+      const [id, testId, name, type, unit, min, max, text, symbol] = values;
+      const test = this.state.workspaceTests.find(
+        (entry) => entry.id === testId,
+      );
+      if (test) {
+        test.parameters.push({
+          id: String(id),
+          name: String(name),
+          type: type as TestParameter["type"],
+          unit: unit == null ? undefined : String(unit),
+          symbol:
+            symbol == null ? undefined : (symbol as TestParameter["symbol"]),
+          referenceRange:
+            text != null
+              ? { text: String(text) }
+              : min != null || max != null
+                ? {
+                    min: min as number | undefined,
+                    max: max as number | undefined,
+                  }
+                : undefined,
+        });
+      }
+    } else if (
+      normalized.startsWith("insert into workspace_test_catalog_state")
+    ) {
+      this.state.workspaceTestsInitialized = true;
+    }
+
+    if (!/^begin$|^commit$|^rollback$/.test(normalized)) this.persist();
+    return {};
+  }
+}
+
+let database: DatabaseLike | null = null;
+let databasePromise: Promise<DatabaseLike> | null = null;
+let workspaceTestsWriteQueue = Promise.resolve();
+
+function isTauriRuntime(): boolean {
+  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
+
+export async function getDatabase(): Promise<DatabaseLike> {
   if (database) {
     return database;
   }
 
-  database = await Database.load("sqlite:pathforge.db");
+  if (!databasePromise) {
+    databasePromise = (
+      isTauriRuntime()
+        ? Database.load("sqlite:pathforge.db")
+        : Promise.resolve(new BrowserDatabase())
+    )
+      .then(async (db) => {
+        if (isTauriRuntime()) await initializeDatabase(db);
+        database = db;
+        return db;
+      })
+      .catch((error) => {
+        databasePromise = null;
+        throw error;
+      });
+  }
 
-  await initializeDatabase(database);
-
-  return database;
+  return databasePromise;
 }
 
 /** Add `columnDdl` to `table` only when the column is not already present. */
 async function ensureColumn(
-  db: Database,
+  db: DatabaseLike,
   table: string,
   column: string,
-  columnDdl: string
+  columnDdl: string,
 ): Promise<void> {
   const columns = await db.select<{ name: string }[]>(
-    `PRAGMA table_info(${table})`
+    `PRAGMA table_info(${table})`,
   );
   if (!columns.some((entry) => entry.name === column)) {
     await db.execute(`ALTER TABLE ${table} ADD COLUMN ${columnDdl}`);
   }
 }
 
-async function initializeDatabase(db: Database): Promise<void> {
+async function initializeDatabase(db: DatabaseLike): Promise<void> {
   // ================================
   // PATIENTS
   // ================================
@@ -206,7 +424,7 @@ export interface PersistedReportMeta {
 export async function loadReportWorkspaceState(): Promise<unknown | null> {
   const db = await getDatabase();
   const rows = await db.select<{ state_json: string }[]>(
-    "SELECT state_json FROM report_workspace_state WHERE id = 1"
+    "SELECT state_json FROM report_workspace_state WHERE id = 1",
   );
   if (!rows[0]?.state_json) return null;
 
@@ -223,11 +441,13 @@ export async function saveReportWorkspaceState(state: unknown): Promise<void> {
     `INSERT INTO report_workspace_state (id, state_json, updated_at)
      VALUES (1, $1, $2)
      ON CONFLICT(id) DO UPDATE SET state_json = excluded.state_json, updated_at = excluded.updated_at`,
-    [JSON.stringify(state), new Date().toISOString()]
+    [JSON.stringify(state), new Date().toISOString()],
   );
 }
 
-export async function loadReportWorkspaceMeta(): Promise<PersistedReportMeta[]> {
+export async function loadReportWorkspaceMeta(): Promise<
+  PersistedReportMeta[]
+> {
   const db = await getDatabase();
   const rows = await db.select<
     {
@@ -238,7 +458,9 @@ export async function loadReportWorkspaceMeta(): Promise<PersistedReportMeta[]> 
       department: string | null;
       created_at: string;
     }[]
-  >("SELECT report_id, patient_id, test_id, test_name, department, created_at FROM report_workspace_meta");
+  >(
+    "SELECT report_id, patient_id, test_id, test_name, department, created_at FROM report_workspace_meta",
+  );
 
   return rows.map((row) => ({
     reportId: row.report_id,
@@ -250,7 +472,9 @@ export async function loadReportWorkspaceMeta(): Promise<PersistedReportMeta[]> 
   }));
 }
 
-export async function saveReportWorkspaceMeta(meta: PersistedReportMeta): Promise<void> {
+export async function saveReportWorkspaceMeta(
+  meta: PersistedReportMeta,
+): Promise<void> {
   const db = await getDatabase();
   await db.execute(
     `INSERT INTO report_workspace_meta (
@@ -269,7 +493,7 @@ export async function saveReportWorkspaceMeta(meta: PersistedReportMeta): Promis
       meta.testName ?? null,
       meta.department ?? null,
       meta.createdAt,
-    ]
+    ],
   );
 }
 
@@ -279,7 +503,9 @@ export async function loadWorkspaceTests(): Promise<{
 }> {
   const db = await getDatabase();
   const [state, testRows, parameterRows] = await Promise.all([
-    db.select<{ id: number }[]>("SELECT id FROM workspace_test_catalog_state WHERE id = 1"),
+    db.select<{ id: number }[]>(
+      "SELECT id FROM workspace_test_catalog_state WHERE id = 1",
+    ),
     db.select<
       {
         id: string;
@@ -289,7 +515,9 @@ export async function loadWorkspaceTests(): Promise<{
         created_at: string;
         updated_at: string | null;
       }[]
-    >("SELECT id, name, department, specimen, created_at, updated_at FROM workspace_tests ORDER BY name"),
+    >(
+      "SELECT id, name, department, specimen, created_at, updated_at FROM workspace_tests ORDER BY name",
+    ),
     db.select<
       {
         id: string;
@@ -306,7 +534,7 @@ export async function loadWorkspaceTests(): Promise<{
       `SELECT id, test_id, name, result_type, unit, reference_min, reference_max,
               reference_text, symbol
        FROM workspace_test_parameters
-       ORDER BY rowid`
+       ORDER BY rowid`,
     ),
   ]);
 
@@ -351,24 +579,33 @@ export async function loadWorkspaceTests(): Promise<{
  * transaction so a failure part way through can never leave the catalog empty or
  * partially written — callers either get the new catalog or keep the old one.
  */
-export async function saveWorkspaceTests(tests: LaboratoryTest[]): Promise<void> {
-  const db = await getDatabase();
+export async function saveWorkspaceTests(
+  tests: LaboratoryTest[],
+): Promise<void> {
+  const write = workspaceTestsWriteQueue
+    .catch(() => {})
+    .then(async () => {
+      const db = await getDatabase();
 
-  await db.execute("BEGIN");
-  try {
-    await writeWorkspaceTests(db, tests);
-    await db.execute("COMMIT");
-  } catch (error) {
-    await db.execute("ROLLBACK").catch(() => {
-      // Preserve the original failure; a failed rollback is not more useful.
+      await db.execute("BEGIN");
+      try {
+        await writeWorkspaceTests(db, tests);
+        await db.execute("COMMIT");
+      } catch (error) {
+        await db.execute("ROLLBACK").catch(() => {
+          // Preserve the original failure; a failed rollback is not more useful.
+        });
+        throw error;
+      }
     });
-    throw error;
-  }
+
+  workspaceTestsWriteQueue = write.catch(() => {});
+  return write;
 }
 
 async function writeWorkspaceTests(
-  db: Database,
-  tests: LaboratoryTest[]
+  db: DatabaseLike,
+  tests: LaboratoryTest[],
 ): Promise<void> {
   await db.execute("DELETE FROM workspace_test_parameters");
   await db.execute("DELETE FROM workspace_tests");
@@ -384,7 +621,7 @@ async function writeWorkspaceTests(
         test.specimen ?? null,
         test.createdAt,
         test.updatedAt ?? null,
-      ]
+      ],
     );
 
     for (const parameter of test.parameters) {
@@ -403,7 +640,7 @@ async function writeWorkspaceTests(
           parameter.referenceRange?.max ?? null,
           parameter.referenceRange?.text ?? null,
           parameter.symbol ?? null,
-        ]
+        ],
       );
     }
   }
@@ -412,6 +649,6 @@ async function writeWorkspaceTests(
     `INSERT INTO workspace_test_catalog_state (id, initialized_at)
      VALUES (1, $1)
      ON CONFLICT(id) DO UPDATE SET initialized_at = excluded.initialized_at`,
-    [new Date().toISOString()]
+    [new Date().toISOString()],
   );
 }

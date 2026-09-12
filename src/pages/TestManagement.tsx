@@ -1,4 +1,3 @@
-import { useTests } from "../store/TestContext";
 import { useMemo, useState } from "react";
 import {
   Plus,
@@ -7,23 +6,20 @@ import {
   Save,
   X,
   FlaskConical,
-  ChevronDown,
   ChevronRight,
+  Search,
 } from "lucide-react";
+import { useTests } from "../store/TestContext";
 import { formatReferenceRange } from "../components/report/referenceRange";
+import PageHeading from "../components/layout/PageHeading";
 import AddTestForm from "../components/tests/AddTestForm";
 import AddParameterForm from "../components/tests/AddParameterForm";
 import { sanitizeText } from "../domain/textRules.mjs";
 import { confirmDestructive, notifySuccess, notifyWarning } from "../lib/dialog";
+import type { LaboratoryTest, TestParameter } from "../domain/types";
 
 /** Approved clinical text for test / parameter / department / unit names. */
 const cleanName = (value: string) => sanitizeText(value, "general").trim();
-
-import type {
-  LaboratoryTest,
-  TestParameter,
-} from "../domain/types";
-
 
 type EditingParameter = {
   testId: string;
@@ -44,23 +40,13 @@ export default function TestManagement() {
 
   const departments = getDepartments();
 
-  const [selectedDepartment, setSelectedDepartment] =
-    useState("");
-
-  const [expandedTests, setExpandedTests] =
-    useState<string[]>([]);
-
-  const [showAddTest, setShowAddTest] =
-    useState(false);
-
-  const [editingTestId, setEditingTestId] =
-    useState<string | null>(null);
-
-  const [editingParameter, setEditingParameter] =
-    useState<EditingParameter>(null);
-
-  const [showAddParameter, setShowAddParameter] =
-    useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [expandedTests, setExpandedTests] = useState<string[]>([]);
+  const [showAddTest, setShowAddTest] = useState(false);
+  const [editingTestId, setEditingTestId] = useState<string | null>(null);
+  const [editingParameter, setEditingParameter] = useState<EditingParameter>(null);
+  const [showAddParameter, setShowAddParameter] = useState<string | null>(null);
 
   const [newTest, setNewTest] = useState({
     name: "",
@@ -83,26 +69,28 @@ export default function TestManagement() {
     referenceText: "",
   });
 
-  const [editParameterData, setEditParameterData] =
-    useState({
-      name: "",
-      type: "number" as "number" | "text",
-      unit: "",
-      min: "",
-      max: "",
-      referenceText: "",
-    });
+  const [editParameterData, setEditParameterData] = useState({
+    name: "",
+    type: "number" as "number" | "text",
+    unit: "",
+    min: "",
+    max: "",
+    referenceText: "",
+  });
 
+  const query = search.trim().toLowerCase();
   const visibleTests = useMemo(() => {
-    if (!selectedDepartment) {
-      return tests;
-    }
-
-    return tests.filter(
-      (test) =>
-        test.department === selectedDepartment
-    );
-  }, [tests, selectedDepartment]);
+    return tests.filter((test) => {
+      const matchesDept =
+        !selectedDepartment || test.department === selectedDepartment;
+      const matchesQuery =
+        !query ||
+        `${test.name} ${test.department} ${test.specimen ?? ""}`
+          .toLowerCase()
+          .includes(query);
+      return matchesDept && matchesQuery;
+    });
+  }, [tests, selectedDepartment, query]);
 
   function toggleTest(testId: string) {
     setExpandedTests((previous) =>
@@ -112,50 +100,74 @@ export default function TestManagement() {
     );
   }
 
+  const allExpanded =
+    visibleTests.length > 0 &&
+    visibleTests.every((test) => expandedTests.includes(test.id));
+
+  function toggleAll() {
+    if (allExpanded) {
+      setExpandedTests([]);
+    } else {
+      setExpandedTests(visibleTests.map((test) => test.id));
+    }
+  }
+
   // ========================================
   // TEST MANAGEMENT
   // ========================================
 
-  function handleAddTest() {
-    if (
-      !newTest.name.trim() ||
-      !newTest.department.trim()
-    ) {
-      void notifyWarning({ title: "Missing details", text: "Enter a test name and department." });
-      return;
+  async function requestCloseAddTest() {
+    const isDirty = Boolean(
+      newTest.name.trim() || newTest.department.trim() || newTest.specimen.trim()
+    );
+    if (isDirty) {
+      const proceed = await confirmDestructive({
+        title: "Discard new test?",
+        text: "The details you entered have not been saved.",
+        confirmText: "Discard",
+        cancelText: "Keep editing",
+      });
+      if (!proceed) return;
     }
-
-    const test: LaboratoryTest = {
-      id: crypto.randomUUID(),
-
-      name: cleanName(newTest.name),
-
-      department: cleanName(newTest.department),
-
-      specimen: cleanName(newTest.specimen) || undefined,
-
-      parameters: [],
-
-      createdAt:
-        new Date().toISOString(),
-    };
-
-    addTest(test);
 
     setNewTest({
       name: "",
       department: "",
       specimen: "",
     });
-
     setShowAddTest(false);
+  }
 
-    void notifySuccess({ title: "Test added" });
+  function handleAddTest() {
+    if (!newTest.name.trim() || !newTest.department.trim()) {
+      void notifyWarning({
+        title: "Missing details",
+        text: "Enter a test name and department.",
+      });
+      return;
+    }
+
+    const test: LaboratoryTest = {
+      id: crypto.randomUUID(),
+      name: cleanName(newTest.name),
+      department: cleanName(newTest.department),
+      specimen: cleanName(newTest.specimen) || undefined,
+      parameters: [],
+      createdAt: new Date().toISOString(),
+    };
+
+    addTest(test);
+    setNewTest({
+      name: "",
+      department: "",
+      specimen: "",
+    });
+    setShowAddTest(false);
+    void notifySuccess({ title: "Test added successfully" });
   }
 
   function startEditTest(test: LaboratoryTest) {
     setEditingTestId(test.id);
-
     setEditTest({
       name: test.name,
       department: test.department,
@@ -164,10 +176,7 @@ export default function TestManagement() {
   }
 
   function saveTest(testId: string) {
-    if (
-      !editTest.name.trim() ||
-      !editTest.department.trim()
-    ) {
+    if (!editTest.name.trim() || !editTest.department.trim()) {
       void notifyWarning({
         title: "Missing details",
         text: "Test name and department are required.",
@@ -177,28 +186,26 @@ export default function TestManagement() {
 
     updateTest(testId, {
       name: cleanName(editTest.name),
-
       department: cleanName(editTest.department),
-
       specimen: cleanName(editTest.specimen) || undefined,
-
-      updatedAt:
-        new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
 
     setEditingTestId(null);
+    void notifySuccess({ title: "Test updated" });
   }
 
   async function handleDeleteTest(test: LaboratoryTest) {
     const confirmed = await confirmDestructive({
       title: "Delete this test?",
-      text: `"${test.name}" and all of its parameters will be removed.`,
+      text: `"${test.name}" and all of its parameters will be permanently removed.`,
       confirmText: "Delete test",
     });
     if (!confirmed) return;
 
     deleteTest(test.id);
     setExpandedTests((previous) => previous.filter((id) => id !== test.id));
+    void notifySuccess({ title: "Test deleted" });
   }
 
   // ========================================
@@ -218,7 +225,22 @@ export default function TestManagement() {
 
   function handleAddParameter(testId: string) {
     if (!newParameter.name.trim()) {
-      void notifyWarning({ title: "Missing details", text: "Enter a parameter name." });
+      void notifyWarning({
+        title: "Missing details",
+        text: "Enter a parameter name.",
+      });
+      return;
+    }
+
+    if (
+      newParameter.min !== "" &&
+      newParameter.max !== "" &&
+      Number(newParameter.min) > Number(newParameter.max)
+    ) {
+      void notifyWarning({
+        title: "Invalid reference range",
+        text: "Minimum reference cannot be greater than maximum reference.",
+      });
       return;
     }
 
@@ -231,7 +253,6 @@ export default function TestManagement() {
               newParameter.min !== ""
                 ? Number(newParameter.min)
                 : undefined,
-
             max:
               newParameter.max !== ""
                 ? Number(newParameter.max)
@@ -241,34 +262,23 @@ export default function TestManagement() {
 
     const parameter: TestParameter = {
       id: crypto.randomUUID(),
-
       name: cleanName(newParameter.name),
-
       type: newParameter.type,
-
       unit: cleanName(newParameter.unit),
-
       referenceRange,
     };
 
     addParameter(testId, parameter);
-
     resetNewParameter();
-
     setShowAddParameter(null);
 
     if (!expandedTests.includes(testId)) {
-      setExpandedTests((previous) => [
-        ...previous,
-        testId,
-      ]);
+      setExpandedTests((previous) => [...previous, testId]);
     }
+    void notifySuccess({ title: "Parameter added" });
   }
 
-  function startEditParameter(
-    testId: string,
-    parameter: TestParameter
-  ) {
+  function startEditParameter(testId: string, parameter: TestParameter) {
     setEditingParameter({
       testId,
       parameterId: parameter.id,
@@ -276,40 +286,38 @@ export default function TestManagement() {
 
     setEditParameterData({
       name: parameter.name,
-
       type: parameter.type === "text" ? "text" : "number",
-
       unit: parameter.unit ?? "",
-
       min:
-        parameter.referenceRange?.min !==
-        undefined
-          ? String(
-              parameter.referenceRange.min
-            )
+        parameter.referenceRange?.min !== undefined
+          ? String(parameter.referenceRange.min)
           : "",
-
       max:
-        parameter.referenceRange?.max !==
-        undefined
-          ? String(
-              parameter.referenceRange.max
-            )
+        parameter.referenceRange?.max !== undefined
+          ? String(parameter.referenceRange.max)
           : "",
-
-      referenceText:
-        parameter.referenceRange?.text ?? "",
+      referenceText: parameter.referenceRange?.text ?? "",
     });
   }
 
-  function saveParameter(
-    testId: string,
-    parameterId: string
-  ) {
+  function saveParameter(testId: string, parameterId: string) {
+    if (!editParameterData.name.trim()) {
+      void notifyWarning({
+        title: "Missing details",
+        text: "Parameter name is required.",
+      });
+      return;
+    }
+
     if (
-      !editParameterData.name.trim()
+      editParameterData.min !== "" &&
+      editParameterData.max !== "" &&
+      Number(editParameterData.min) > Number(editParameterData.max)
     ) {
-      void notifyWarning({ title: "Missing details", text: "Parameter name is required." });
+      void notifyWarning({
+        title: "Invalid reference range",
+        text: "Minimum reference cannot be greater than maximum reference.",
+      });
       return;
     }
 
@@ -322,7 +330,6 @@ export default function TestManagement() {
               editParameterData.min !== ""
                 ? Number(editParameterData.min)
                 : undefined,
-
             max:
               editParameterData.max !== ""
                 ? Number(editParameterData.max)
@@ -332,15 +339,13 @@ export default function TestManagement() {
 
     updateParameter(testId, parameterId, {
       name: cleanName(editParameterData.name),
-
       type: editParameterData.type,
-
       unit: cleanName(editParameterData.unit),
-
       referenceRange,
     });
 
     setEditingParameter(null);
+    void notifySuccess({ title: "Parameter updated" });
   }
 
   async function handleDeleteParameter(
@@ -354,531 +359,579 @@ export default function TestManagement() {
     });
     if (!confirmed) return;
 
-    deleteParameter(
-      testId,
-      parameter.id
-    );
+    deleteParameter(testId, parameter.id);
+    void notifySuccess({ title: "Parameter deleted" });
   }
 
   return (
-    <div className="test-management-page">
-
-      <div className="test-management-header">
-        <div>
-          <h2>
-            Laboratory Test Management
-          </h2>
-
-          <p>
-            Create and manage laboratory tests,
-            parameters, units and reference ranges.
-          </p>
-        </div>
-
-        <button
-          className="primary-button"
-          onClick={() =>
-            setShowAddTest(true)
+    <div className="test-management-page viewport-page">
+      <div className="test-mgmt-header-bar">
+        <PageHeading
+          title="Laboratory Test Management"
+          subtitle="Configure laboratory tests, parameters, units and reference ranges."
+          actions={
+            <button
+              type="button"
+              className="primary-button"
+              onClick={() => setShowAddTest(true)}
+            >
+              <Plus size={16} />
+              Add Test
+            </button>
           }
-        >
-          <Plus size={18} />
-          Add Test
-        </button>
+        />
+
+        {/* SEARCH AND DEPARTMENT FILTER TOOLBAR */}
+        <div className="page-toolbar test-page-toolbar">
+          <div className="patients-search">
+            <Search size={16} />
+            <input
+              type="text"
+              placeholder="Search tests by name, department, or specimen…"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            {search ? (
+              <button
+                type="button"
+                className="search-clear-btn"
+                onClick={() => setSearch("")}
+                aria-label="Clear search"
+              >
+                <X size={14} />
+              </button>
+            ) : null}
+          </div>
+
+          <div className="test-toolbar-filters">
+            <div className="department-filter">
+              <label htmlFor="dept-select">Department:</label>
+              <select
+                id="dept-select"
+                value={selectedDepartment}
+                onChange={(event) => setSelectedDepartment(event.target.value)}
+              >
+                <option value="">All Departments ({departments.length})</option>
+                {departments.map((department) => (
+                  <option key={department} value={department}>
+                    {department}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* ADD TEST */}
-
+      {/* ADD TEST MODAL */}
       {showAddTest && (
         <AddTestForm
           value={newTest}
           departments={departments}
           onChange={setNewTest}
-          onCancel={() => setShowAddTest(false)}
+          onCancel={() => void requestCloseAddTest()}
           onSave={handleAddTest}
         />
       )}
 
-      {/* FILTER */}
-
-      <div className="test-filter-bar">
-
-        <label>
-          Department:
-        </label>
-
-        <select
-          value={selectedDepartment}
-          onChange={(event) =>
-            setSelectedDepartment(
-              event.target.value
-            )
-          }
-        >
-          <option value="">
-            All Departments
-          </option>
-
-          {departments.map(
-            (department) => (
-              <option
-                key={department}
-                value={department}
-              >
-                {department}
-              </option>
-            )
-          )}
-        </select>
-
-        <span className="test-count">
-          {visibleTests.length} Test
-          {visibleTests.length !== 1
-            ? "s"
-            : ""}
-        </span>
-
-      </div>
-
-      {/* TEST LIST */}
-
-      <div className="test-management-list">
-
-        {visibleTests.length === 0 && (
-          <div className="placeholder-card">
-
-            <FlaskConical size={36} />
-
-            <h3>
-              No laboratory tests found
-            </h3>
-
+      {/* TEST CATALOG CARD */}
+      <div className="patients-card test-catalog-card content-card-fill">
+        <div className="patients-card-header test-catalog-header">
+          <div>
+            <h3>Laboratory Tests</h3>
             <p>
-              Create your first laboratory test
-              to begin.
+              {visibleTests.length} test{visibleTests.length === 1 ? "" : "s"}{" "}
+              {query || selectedDepartment
+                ? "matching filters"
+                : "configured in catalog"}
             </p>
-
           </div>
-        )}
 
-        {visibleTests.map((test) => {
-
-          const isExpanded =
-            expandedTests.includes(test.id);
-
-          const isEditing =
-            editingTestId === test.id;
-
-          return (
-            <div
-              className="test-management-card"
-              key={test.id}
+          {visibleTests.length > 0 ? (
+            <button
+              type="button"
+              className="secondary-button collapse-toggle-button"
+              onClick={toggleAll}
             >
+              {allExpanded ? "Collapse All" : "Expand All"}
+            </button>
+          ) : null}
+        </div>
 
-              {/* TEST HEADER */}
-
-              <div className="test-card-header">
-
+        <div className="test-catalog-list scrollable-container">
+          {visibleTests.length === 0 ? (
+            <div className="no-results test-no-results">
+              <FlaskConical size={38} />
+              <h3>No laboratory tests found</h3>
+              <p>
+                {query || selectedDepartment
+                  ? "No tests match your current search or department filter."
+                  : "Create your first laboratory test to configure parameters and reference ranges."}
+              </p>
+              {query || selectedDepartment ? (
                 <button
-                  className="expand-button"
-                  onClick={() =>
-                    toggleTest(test.id)
-                  }
+                  type="button"
+                  className="secondary-button"
+                  style={{ marginTop: 14 }}
+                  onClick={() => {
+                    setSearch("");
+                    setSelectedDepartment("");
+                  }}
                 >
-                  {isExpanded ? (
-                    <ChevronDown size={20} />
-                  ) : (
-                    <ChevronRight size={20} />
-                  )}
+                  Clear filters
                 </button>
+              ) : null}
+            </div>
+          ) : (
+            visibleTests.map((test) => {
+              const isExpanded = expandedTests.includes(test.id);
+              const isEditing = editingTestId === test.id;
 
-                {isEditing ? (
-                  <div className="test-edit-fields">
-
-                    <input
-                      value={editTest.name}
-                      onChange={(event) =>
-                        setEditTest({
-                          ...editTest,
-                          name:
-                            event.target.value,
-                        })
-                      }
-                    />
-
-                    <input
-                      value={
-                        editTest.department
-                      }
-                      onChange={(event) =>
-                        setEditTest({
-                          ...editTest,
-                          department:
-                            event.target.value,
-                        })
-                      }
-                    />
-
-                    <input
-                      placeholder="Specimen"
-                      value={
-                        editTest.specimen
-                      }
-                      onChange={(event) =>
-                        setEditTest({
-                          ...editTest,
-                          specimen:
-                            event.target.value,
-                        })
-                      }
-                    />
-
-                  </div>
-                ) : (
-                  <div className="test-card-info">
-
-                    <h3>
-                      {test.name}
-                    </h3>
-
-                    <div className="test-meta">
-
-                      <span>
-                        {test.department}
-                      </span>
-
-                      <span>
-                        Specimen:{" "}
-                        {test.specimen || "-"}
-                      </span>
-
-                      <span>
-                        {test.parameters.length} Parameters
-                      </span>
-
-                    </div>
-                  </div>
-                )}
-
-                <div className="test-card-actions">
-
-                  {isEditing ? (
-                    <>
-                      <button
-                        className="icon-button"
-                        onClick={() =>
-                          saveTest(test.id)
-                        }
-                      >
-                        <Save size={18} />
-                      </button>
-
-                      <button
-                        className="icon-button"
-                        onClick={() =>
-                          setEditingTestId(null)
-                        }
-                      >
-                        <X size={18} />
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        className="icon-button"
-                        onClick={() =>
-                          startEditTest(test)
-                        }
-                      >
-                        <Edit3 size={18} />
-                      </button>
-
-                      <button
-                        className="icon-button danger-button"
-                        onClick={() =>
-                          handleDeleteTest(test)
-                        }
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </>
-                  )}
-
-                </div>
-              </div>
-
-              {/* PARAMETERS */}
-
-              {isExpanded && (
-                <div className="parameter-section">
-
-                  <div className="parameter-section-header">
-
-                    <div>
-                      <h4>
-                        Test Parameters
-                      </h4>
-
-                      <p>
-                        Configure result fields,
-                        units and reference ranges.
-                      </p>
-                    </div>
-
+              return (
+                <div
+                  className={`test-item-card ${isExpanded ? "is-expanded" : ""}`}
+                  key={test.id}
+                >
+                  {/* TEST HEADER ROW */}
+                  <div className="test-item-header">
                     <button
-                      className="secondary-button"
-                      onClick={() => {
-                        resetNewParameter();
-                        setShowAddParameter(
-                          test.id
-                        );
-                      }}
+                      type="button"
+                      className={`test-chevron-btn ${isExpanded ? "expanded" : ""}`}
+                      onClick={() => toggleTest(test.id)}
+                      aria-label={
+                        isExpanded
+                          ? `Collapse ${test.name}`
+                          : `Expand ${test.name}`
+                      }
                     >
-                      <Plus size={16} />
-                      Add Parameter
+                      <ChevronRight size={18} />
                     </button>
 
+                    <div
+                      className="test-item-avatar"
+                      onClick={() => toggleTest(test.id)}
+                    >
+                      <FlaskConical size={18} />
+                    </div>
+
+                    {isEditing ? (
+                      <div className="test-inline-edit-fields">
+                        <div className="test-edit-field">
+                          <label htmlFor={`edit-name-${test.id}`}>
+                            Test Name
+                          </label>
+                          <input
+                            id={`edit-name-${test.id}`}
+                            aria-label="Test name"
+                            value={editTest.name}
+                            onChange={(event) =>
+                              setEditTest({
+                                ...editTest,
+                                name: sanitizeText(
+                                  event.target.value,
+                                  "general"
+                                ),
+                              })
+                            }
+                          />
+                        </div>
+
+                        <div className="test-edit-field">
+                          <label htmlFor={`edit-dept-${test.id}`}>
+                            Department
+                          </label>
+                          <input
+                            id={`edit-dept-${test.id}`}
+                            aria-label="Department"
+                            list="department-options"
+                            value={editTest.department}
+                            onChange={(event) =>
+                              setEditTest({
+                                ...editTest,
+                                department: sanitizeText(
+                                  event.target.value,
+                                  "general"
+                                ),
+                              })
+                            }
+                          />
+                        </div>
+
+                        <div className="test-edit-field">
+                          <label htmlFor={`edit-spec-${test.id}`}>
+                            Specimen
+                          </label>
+                          <input
+                            id={`edit-spec-${test.id}`}
+                            aria-label="Specimen"
+                            placeholder="e.g. Serum"
+                            value={editTest.specimen}
+                            onChange={(event) =>
+                              setEditTest({
+                                ...editTest,
+                                specimen: sanitizeText(
+                                  event.target.value,
+                                  "general"
+                                ),
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className="test-item-info"
+                        onClick={() => toggleTest(test.id)}
+                      >
+                        <div className="test-item-title-row">
+                          <strong className="test-item-title">
+                            {test.name}
+                          </strong>
+                          <span className="test-badge department">
+                            {test.department}
+                          </span>
+                          {test.specimen ? (
+                            <span className="test-badge specimen">
+                              Specimen: {test.specimen}
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <div className="test-item-subtext">
+                          <span>
+                            {test.parameters.length}{" "}
+                            {test.parameters.length === 1
+                              ? "parameter"
+                              : "parameters"}{" "}
+                            configured
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="test-item-actions">
+                      {isEditing ? (
+                        <>
+                          <button
+                            type="button"
+                            className="icon-button"
+                            title="Save test"
+                            aria-label="Save test"
+                            onClick={() => saveTest(test.id)}
+                          >
+                            <Save size={18} />
+                          </button>
+
+                          <button
+                            type="button"
+                            className="icon-button"
+                            title="Cancel editing"
+                            aria-label="Cancel editing"
+                            onClick={() => setEditingTestId(null)}
+                          >
+                            <X size={18} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            className="icon-button"
+                            title="Edit test"
+                            aria-label="Edit test"
+                            onClick={() => startEditTest(test)}
+                          >
+                            <Edit3 size={17} />
+                          </button>
+
+                          <button
+                            type="button"
+                            className="icon-button danger-button"
+                            title="Delete test"
+                            aria-label="Delete test"
+                            onClick={() => void handleDeleteTest(test)}
+                          >
+                            <Trash2 size={17} />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
 
-                  {/* ADD PARAMETER */}
+                  {/* PARAMETERS EXPANDED SECTION */}
+                  {isExpanded && (
+                    <div className="test-parameters-section">
+                      <div className="test-parameters-toolbar">
+                        <div>
+                          <h4>Test Parameters</h4>
+                          <p>
+                            Configure measurable parameters, units, and clinical
+                            reference ranges for {test.name}
+                          </p>
+                        </div>
 
-                  {showAddParameter === test.id && (
-                    <AddParameterForm
-                      value={newParameter}
-                      onChange={setNewParameter}
-                      onCancel={() => setShowAddParameter(null)}
-                      onSave={() => handleAddParameter(test.id)}
-                    />
-                  )}
-
-                  {/* PARAMETERS TABLE */}
-
-                  {test.parameters.length === 0 ? (
-                    <div className="empty-parameters">
-                      No parameters configured yet.
-                    </div>
-                  ) : (
-                    <div className="parameters-table">
-
-                      <div className="parameters-header">
-                        <span>Parameter</span>
-                        <span>Type</span>
-                        <span>Unit</span>
-                        <span>Reference Range</span>
-                        <span>Actions</span>
+                        <button
+                          type="button"
+                          className="secondary-button add-parameter-button"
+                          onClick={() => {
+                            resetNewParameter();
+                            setShowAddParameter(test.id);
+                          }}
+                        >
+                          <Plus size={15} />
+                          Add Parameter
+                        </button>
                       </div>
 
-                      {test.parameters.map(
-                        (parameter) => {
-
-                          const isEditingParameter =
-                            editingParameter?.testId ===
-                              test.id &&
-                            editingParameter?.parameterId ===
-                              parameter.id;
-
-                          return (
-                            <div
-                              className="parameters-row"
-                              key={parameter.id}
-                            >
-
-                              {isEditingParameter ? (
-                                <>
-                                  <input
-                                    value={
-                                      editParameterData.name
-                                    }
-                                    onChange={(event) =>
-                                      setEditParameterData({
-                                        ...editParameterData,
-                                        name:
-                                          event.target
-                                            .value,
-                                      })
-                                    }
-                                  />
-
-                                  <select
-                                    value={
-                                      editParameterData.type
-                                    }
-                                    onChange={(event) =>
-                                      setEditParameterData({
-                                        ...editParameterData,
-                                        type:
-                                          event.target
-                                            .value as
-                                            | "number"
-                                            | "text",
-                                      })
-                                    }
-                                  >
-                                    <option value="number">
-                                      Number
-                                    </option>
-
-                                    <option value="text">
-                                      Text
-                                    </option>
-                                  </select>
-
-                                  <input
-                                    value={
-                                      editParameterData.unit
-                                    }
-                                    onChange={(event) =>
-                                      setEditParameterData({
-                                        ...editParameterData,
-                                        unit:
-                                          event.target
-                                            .value,
-                                      })
-                                    }
-                                  />
-
-                                  <div className="reference-edit">
-
-                                    <input
-                                      type="number"
-                                      placeholder="Min"
-                                      value={
-                                        editParameterData.min
-                                      }
-                                      onChange={(event) =>
-                                        setEditParameterData({
-                                          ...editParameterData,
-                                          min:
-                                            event.target
-                                              .value,
-                                        })
-                                      }
-                                    />
-
-                                    <input
-                                      type="number"
-                                      placeholder="Max"
-                                      value={
-                                        editParameterData.max
-                                      }
-                                      onChange={(event) =>
-                                        setEditParameterData({
-                                          ...editParameterData,
-                                          max:
-                                            event.target
-                                              .value,
-                                        })
-                                      }
-                                    />
-
-                                    <input
-                                      placeholder="Text"
-                                      value={
-                                        editParameterData.referenceText
-                                      }
-                                      onChange={(event) =>
-                                        setEditParameterData({
-                                          ...editParameterData,
-                                          referenceText:
-                                            event.target
-                                              .value,
-                                        })
-                                      }
-                                    />
-
-                                  </div>
-
-                                  <div className="parameter-actions">
-
-                                    <button
-                                      className="icon-button"
-                                      onClick={() =>
-                                        saveParameter(
-                                          test.id,
-                                          parameter.id
-                                        )
-                                      }
-                                    >
-                                      <Save size={17} />
-                                    </button>
-
-                                    <button
-                                      className="icon-button"
-                                      onClick={() =>
-                                        setEditingParameter(
-                                          null
-                                        )
-                                      }
-                                    >
-                                      <X size={17} />
-                                    </button>
-
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <span>
-                                    {parameter.name}
-                                  </span>
-
-                                  <span>
-                                    {parameter.type}
-                                  </span>
-
-                                  <span>
-                                    {parameter.unit || "-"}
-                                  </span>
-
-                                  <span>
-                                    {formatReferenceRange(
-                                      parameter.referenceRange
-                                    )}
-                                  </span>
-
-                                  <div className="parameter-actions">
-
-                                    <button
-                                      className="icon-button"
-                                      onClick={() =>
-                                        startEditParameter(
-                                          test.id,
-                                          parameter
-                                        )
-                                      }
-                                    >
-                                      <Edit3 size={17} />
-                                    </button>
-
-                                    <button
-                                      className="icon-button danger-button"
-                                      onClick={() =>
-                                        handleDeleteParameter(
-                                          test.id,
-                                          parameter
-                                        )
-                                      }
-                                    >
-                                      <Trash2 size={17} />
-                                    </button>
-
-                                  </div>
-                                </>
-                              )}
-
-                            </div>
-                          );
-                        }
+                      {/* ADD PARAMETER INLINE FORM */}
+                      {showAddParameter === test.id && (
+                        <AddParameterForm
+                          value={newParameter}
+                          onChange={setNewParameter}
+                          onCancel={() => setShowAddParameter(null)}
+                          onSave={() => handleAddParameter(test.id)}
+                        />
                       )}
 
+                      {/* PARAMETERS TABLE */}
+                      {test.parameters.length === 0 ? (
+                        <div className="test-parameters-empty">
+                          <p>No parameters configured yet.</p>
+                          <span>
+                            Click "Add Parameter" to define measurement fields
+                            and reference ranges.
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="test-parameters-table">
+                          <div className="parameters-table-header">
+                            <span>Parameter</span>
+                            <span>Type</span>
+                            <span>Unit</span>
+                            <span>Reference Range</span>
+                            <span style={{ textAlign: "right" }}>Actions</span>
+                          </div>
+
+                          {test.parameters.map((parameter) => {
+                            const isEditingParam =
+                              editingParameter?.testId === test.id &&
+                              editingParameter?.parameterId === parameter.id;
+
+                            return (
+                              <div
+                                className={`parameters-table-row ${isEditingParam ? "is-editing" : ""}`}
+                                key={parameter.id}
+                              >
+                                {isEditingParam ? (
+                                  <>
+                                    <input
+                                      aria-label="Parameter name"
+                                      placeholder="Name"
+                                      value={editParameterData.name}
+                                      onChange={(event) =>
+                                        setEditParameterData({
+                                          ...editParameterData,
+                                          name: sanitizeText(
+                                            event.target.value,
+                                            "general"
+                                          ),
+                                        })
+                                      }
+                                    />
+
+                                    <select
+                                      aria-label="Result type"
+                                      value={editParameterData.type}
+                                      onChange={(event) => {
+                                        const type = event.target.value as
+                                          | "number"
+                                          | "text";
+                                        setEditParameterData(
+                                          type === "text"
+                                            ? {
+                                                ...editParameterData,
+                                                type,
+                                                min: "",
+                                                max: "",
+                                              }
+                                            : {
+                                                ...editParameterData,
+                                                type,
+                                                referenceText: "",
+                                              }
+                                        );
+                                      }}
+                                    >
+                                      <option value="number">Numeric</option>
+                                      <option value="text">Text</option>
+                                    </select>
+
+                                    <input
+                                      aria-label="Unit"
+                                      placeholder="Unit"
+                                      value={editParameterData.unit}
+                                      onChange={(event) =>
+                                        setEditParameterData({
+                                          ...editParameterData,
+                                          unit: sanitizeText(
+                                            event.target.value,
+                                            "general"
+                                          ),
+                                        })
+                                      }
+                                    />
+
+                                    <div className="reference-inline-edit">
+                                      {editParameterData.type === "number" ? (
+                                        <>
+                                          <input
+                                            aria-label="Minimum reference"
+                                            type="number"
+                                            step="any"
+                                            placeholder="Min"
+                                            value={editParameterData.min}
+                                            onChange={(event) =>
+                                              setEditParameterData({
+                                                ...editParameterData,
+                                                min: event.target.value,
+                                              })
+                                            }
+                                          />
+                                          <span className="range-dash">–</span>
+                                          <input
+                                            aria-label="Maximum reference"
+                                            type="number"
+                                            step="any"
+                                            placeholder="Max"
+                                            value={editParameterData.max}
+                                            onChange={(event) =>
+                                              setEditParameterData({
+                                                ...editParameterData,
+                                                max: event.target.value,
+                                              })
+                                            }
+                                          />
+                                        </>
+                                      ) : (
+                                        <input
+                                          aria-label="Text reference"
+                                          placeholder="Expected text"
+                                          value={
+                                            editParameterData.referenceText
+                                          }
+                                          onChange={(event) =>
+                                            setEditParameterData({
+                                              ...editParameterData,
+                                              referenceText: sanitizeText(
+                                                event.target.value,
+                                                "general"
+                                              ),
+                                            })
+                                          }
+                                        />
+                                      )}
+                                    </div>
+
+                                    <div className="parameters-row-actions">
+                                      <button
+                                        type="button"
+                                        className="icon-button"
+                                        title="Save parameter"
+                                        aria-label="Save parameter"
+                                        onClick={() =>
+                                          saveParameter(
+                                            test.id,
+                                            parameter.id
+                                          )
+                                        }
+                                      >
+                                        <Save size={16} />
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        className="icon-button"
+                                        title="Cancel editing"
+                                        aria-label="Cancel editing"
+                                        onClick={() =>
+                                          setEditingParameter(null)
+                                        }
+                                      >
+                                        <X size={16} />
+                                      </button>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <>
+                                    <strong className="parameter-name-cell">
+                                      {parameter.name}
+                                    </strong>
+
+                                    <span>
+                                      <span
+                                        className={`param-type-tag ${parameter.type}`}
+                                      >
+                                        {parameter.type === "number"
+                                          ? "Numeric"
+                                          : "Text"}
+                                      </span>
+                                    </span>
+
+                                    <span className="parameter-unit-cell">
+                                      {parameter.unit || "—"}
+                                    </span>
+
+                                    <span className="parameter-range-cell">
+                                      {formatReferenceRange(
+                                        parameter.referenceRange
+                                      ) || "—"}
+                                    </span>
+
+                                    <div className="parameters-row-actions">
+                                      <button
+                                        type="button"
+                                        className="icon-button"
+                                        title="Edit parameter"
+                                        aria-label={`Edit ${parameter.name}`}
+                                        onClick={() =>
+                                          startEditParameter(
+                                            test.id,
+                                            parameter
+                                          )
+                                        }
+                                      >
+                                        <Edit3 size={15} />
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        className="icon-button danger-button"
+                                        title="Delete parameter"
+                                        aria-label={`Delete ${parameter.name}`}
+                                        onClick={() =>
+                                          void handleDeleteParameter(
+                                            test.id,
+                                            parameter
+                                          )
+                                        }
+                                      >
+                                        <Trash2 size={15} />
+                                      </button>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
-
                 </div>
-              )}
-
-            </div>
-          );
-        })}
-
+              );
+            })
+          )}
+        </div>
       </div>
     </div>
   );

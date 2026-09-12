@@ -391,3 +391,48 @@ test('transaction rolls back version and audit writes when finalization cannot a
     ['report_draft_created'],
   );
 });
+
+test('a failed durability write (onCommit) leaves the adapter as if the transaction never ran', async () => {
+  const values = await fixtures();
+  let failNextCommit = true;
+  const adapter = createInMemoryServiceAdapter({
+    catalogs: [values.catalogV1, values.catalogV2],
+    onCommit() {
+      if (failNextCommit) {
+        failNextCommit = false;
+        throw new Error('simulated durable-storage failure');
+      }
+    },
+  });
+  const service = createReportService({
+    ...adapter,
+    clock: createFixedClock('2026-07-02T14:10:00Z'),
+    idGenerator: createSequentialIdGenerator('test'),
+  });
+
+  await assert.rejects(
+    service.createDraft({
+      reportId: 'R-COMMIT-FAIL',
+      sourceCatalogVersion: 'V1',
+      resolvedPayload: structuredClone(values.initial.resolved_payload),
+      actor: 'pathologist:kk',
+    }),
+    /simulated durable-storage failure/,
+  );
+
+  // The caller was told the draft was never created, so the adapter must not
+  // silently hold it either — a reader (or a retry) must see no such report.
+  assert.deepEqual(adapter.snapshot().reports, []);
+  await assert.rejects(service.retrieveHistory({ reportId: 'R-COMMIT-FAIL' }), MissingReferenceError);
+
+  // A retry after the transient failure must succeed as a fresh draft, not
+  // fail with a spurious concurrency conflict against state that was
+  // reportedly never written.
+  const retried = await service.createDraft({
+    reportId: 'R-COMMIT-FAIL',
+    sourceCatalogVersion: 'V1',
+    resolvedPayload: structuredClone(values.initial.resolved_payload),
+    actor: 'pathologist:kk',
+  });
+  assert.equal(retried.reportVersion.version, 1);
+});

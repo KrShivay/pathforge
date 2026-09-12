@@ -27,6 +27,12 @@ export default function Stepper({
               type="button"
               className="wizard-step-button"
               disabled={!reachable}
+              title={
+                reachable
+                  ? `Go to ${label}`
+                  : "Complete the previous step first"
+              }
+              aria-current={state === "current" ? "step" : undefined}
               onClick={() => reachable && onJump(index)}
             >
               <span className="wizard-step-marker">

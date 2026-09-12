@@ -71,6 +71,37 @@ test('results are grouped into one section per originating test, headed by its n
   );
 });
 
+test('two tests without a test_id but with different test_names stay in separate sections', () => {
+  // groupResultsByTest (src/components/report/groupResults.ts), which drives
+  // the live editor table, falls back to test_name when test_id is absent.
+  // The document-model config must group results the same way, or the
+  // printed report/PDF can silently merge and mislabel what the editor shows
+  // as two distinct tests.
+  const report = workspaceReport({
+    resolved_payload: buildResolvedPayload({
+      specimenType: 'Serum',
+      clinicalHistory: '',
+      findings: '',
+      diagnosis: '',
+      testResults: [
+        { testName: 'Urinalysis', parameterId: 'color', parameterName: 'Color', value: 'Yellow' },
+        { testName: 'Stool Exam', parameterId: 'consistency', parameterName: 'Consistency', value: 'Formed' },
+      ],
+    }),
+  });
+
+  const model = buildReportDocumentModel(report, buildWorkspaceDocumentConfig(report));
+  const groups = model.sections.filter((section) => section.semantic_role === 'clinical-results');
+
+  assert.deepEqual(
+    groups.map((section) => [section.heading, section.fields.length]),
+    [
+      ['Urinalysis', 1],
+      ['Stool Exam', 1],
+    ],
+  );
+});
+
 test('a draft is modeled with no issue identity; finalizing supplies it', () => {
   const draft = workspaceReport();
   const draftModel = buildReportDocumentModel(draft, buildWorkspaceDocumentConfig(draft));

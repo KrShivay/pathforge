@@ -234,6 +234,28 @@ export function checkClinicalCompleteness(content) {
   if (asText(content.clinicalHistory).length > 5000) {
     issues.push({ field: 'clinicalHistory', message: 'Clinical history cannot exceed 5000 characters.' });
   }
+
+  // Two result rows that resolve to the same payload key (same test + same
+  // parameter) collapse into one entry in buildResolvedPayload's plain-object
+  // assignment — the second value silently overwrites the first. Flag this
+  // before finalization instead of losing a clinical result with no trace.
+  const seenFieldIds = new Set();
+  for (const result of content.testResults ?? []) {
+    const testId = typeof result.testId === 'string' ? result.testId.trim() : '';
+    const fieldId = testId
+      ? `${RESULT_FIELD_PREFIX}${testId}::${result.parameterId}`
+      : `${RESULT_FIELD_PREFIX}${result.parameterId}`;
+    if (seenFieldIds.has(fieldId)) {
+      issues.push({
+        field: fieldId,
+        message: result.testName
+          ? `Result for "${result.parameterName || result.parameterId}" (${result.testName}) is entered more than once; only one value would be kept.`
+          : `Result for "${result.parameterName || result.parameterId}" is entered more than once; only one value would be kept.`,
+      });
+    }
+    seenFieldIds.add(fieldId);
+  }
+
   for (const result of content.testResults ?? []) {
     if (!asText(result.value).trim()) {
       const testId = typeof result.testId === 'string' ? result.testId.trim() : '';

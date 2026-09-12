@@ -1,7 +1,4 @@
-import Swal, {
-  type SweetAlertIcon,
-  type SweetAlertResult,
-} from "sweetalert2";
+import Swal, { type SweetAlertIcon, type SweetAlertResult } from "sweetalert2";
 
 /**
  * The one PathForge dialog theme. Every Swal.fire() in the app goes through a
@@ -50,7 +47,7 @@ export function escapeHtml(value: unknown): string {
         ">": "&gt;",
         '"': "&quot;",
         "'": "&#39;",
-      })[character] ?? character
+      })[character] ?? character,
   );
 }
 
@@ -130,7 +127,7 @@ export async function confirmAction(options: ConfirmOptions): Promise<boolean> {
 
 /** Destructive confirm — red action button, plus a Cancel. */
 export async function confirmDestructive(
-  options: ConfirmOptions
+  options: ConfirmOptions,
 ): Promise<boolean> {
   const result = await dialog.fire({
     icon: options.icon ?? "warning",
@@ -196,12 +193,11 @@ interface FinalizedDialogInput {
  * light action below. The X closes without running either action.
  */
 export async function showFinalizedDialog(
-  input: FinalizedDialogInput
+  input: FinalizedDialogInput,
 ): Promise<FinalizedChoice> {
   const card = `
     <p class="pf-swal-lead">This report is locked. Use an amendment to make changes.</p>
     <dl class="pf-swal-card">
-      <div><dt>Report No.</dt><dd>${escapeHtml(input.reportNo)}</dd></div>
       <div><dt>Version</dt><dd>${escapeHtml(input.version)}</dd></div>
       <div><dt>Finalized on</dt><dd>${escapeHtml(input.finalizedOn)}</dd></div>
     </dl>`;

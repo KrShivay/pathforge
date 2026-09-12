@@ -1,29 +1,38 @@
-import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Save } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 import { notifyError, notifySuccess } from "../lib/dialog";
 
-import { useReports, type Report, type TestResult } from "../store/ReportContext";
-import { useTests } from "../store/TestContext";
-import { usePatients } from "../store/PatientContext";
 import type { LaboratoryTest } from "../domain/types";
+import { usePatients } from "../store/PatientContext";
+import {
+  useReports,
+  type Report,
+  type TestResult,
+} from "../store/ReportContext";
+import { useTests } from "../store/TestContext";
 
 import {
   buildReportModel,
   type ReportModel,
 } from "../components/report/reportModel";
 import ReportPreviewModal from "../components/report/ReportPreviewModal";
-import Stepper from "../components/report/wizard/Stepper";
-import PatientStep from "../components/report/wizard/PatientStep";
-import TestSpecimenStep from "../components/report/wizard/TestSpecimenStep";
-import ResultsStep, { resultKey } from "../components/report/wizard/ResultsStep";
 import ClinicalStep, {
   type ClinicalDetails,
 } from "../components/report/wizard/ClinicalStep";
+import PatientStep from "../components/report/wizard/PatientStep";
+import ResultsStep, {
+  resultKey,
+} from "../components/report/wizard/ResultsStep";
 import ReviewStep from "../components/report/wizard/ReviewStep";
+import Stepper from "../components/report/wizard/Stepper";
+import TestSpecimenStep from "../components/report/wizard/TestSpecimenStep";
 
 interface NewReportProps {
   onOpenReport: (reportId: string) => void;
+  /** Reports whether the wizard has any unsaved progress, so the host app can
+   * confirm before navigating away discards it. */
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 const STEPS = [
@@ -38,7 +47,10 @@ function distinct(values: string[]): string[] {
   return [...new Set(values.filter((value) => value.trim() !== ""))];
 }
 
-export default function NewReport({ onOpenReport }: NewReportProps) {
+export default function NewReport({
+  onOpenReport,
+  onDirtyChange,
+}: NewReportProps) {
   const { addReport } = useReports();
   const { tests } = useTests();
   const { getPatient } = usePatients();
@@ -61,12 +73,25 @@ export default function NewReport({ onOpenReport }: NewReportProps) {
     diagnosis: "",
   });
 
+  useEffect(() => {
+    const hasProgress =
+      patientId !== "" ||
+      selectedTestIds.length > 0 ||
+      specimenType.trim() !== "" ||
+      Object.values(results).some((value) => value.trim() !== "") ||
+      clinical.clinicalHistory.trim() !== "" ||
+      clinical.findings.trim() !== "" ||
+      clinical.diagnosis.trim() !== "";
+    onDirtyChange?.(hasProgress);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patientId, selectedTestIds, specimenType, results, clinical]);
+
   const selectedTests = useMemo(
     () =>
       selectedTestIds
         .map((id) => tests.find((test) => test.id === id))
         .filter((test): test is LaboratoryTest => test !== undefined),
-    [selectedTestIds, tests]
+    [selectedTestIds, tests],
   );
 
   const stepValid = [
@@ -102,7 +127,7 @@ export default function NewReport({ onOpenReport }: NewReportProps) {
         unit: parameter.unit ?? "",
         referenceRange: parameter.referenceRange,
         value: results[resultKey(test.id, parameter.id)] ?? "",
-      }))
+      })),
     );
 
     return {
@@ -114,9 +139,9 @@ export default function NewReport({ onOpenReport }: NewReportProps) {
       diagnosis: clinical.diagnosis,
       testId: selectedTests.map((test) => test.id).join(","),
       testName: selectedTests.map((test) => test.name).join(", "),
-      department: distinct(
-        selectedTests.map((test) => test.department)
-      ).join(", "),
+      department: distinct(selectedTests.map((test) => test.department)).join(
+        ", ",
+      ),
       testResults,
       status: "draft",
       version: 1,
@@ -175,11 +200,11 @@ export default function NewReport({ onOpenReport }: NewReportProps) {
   }
 
   return (
-    <div className="wizard-page">
+    <div className="wizard-page viewport-page">
       <div className="wizard-header">
         <div>
           <h1>New Report</h1>
-          <p>Follow the steps to create a pathology report.</p>
+          <p>Follow the steps to create and configure a pathology report.</p>
         </div>
         <button
           type="button"
@@ -188,14 +213,19 @@ export default function NewReport({ onOpenReport }: NewReportProps) {
           disabled={!canSave || saving}
           title={
             canSave
-              ? "Save the current progress as a draft"
+              ? "Save current progress as a draft"
               : "Choose a patient, at least one test and a specimen first"
           }
         >
-          <Save size={16} />
+          <Save size={15} />
           Save as Draft
         </button>
       </div>
+      {!canSave ? (
+        <p className="wizard-prerequisite">
+          To save a draft, choose a patient, at least one test, and a specimen.
+        </p>
+      ) : null}
 
       <Stepper
         steps={STEPS}
@@ -204,7 +234,7 @@ export default function NewReport({ onOpenReport }: NewReportProps) {
         onJump={setStep}
       />
 
-      <div className="wizard-body">
+      <div className="wizard-body content-card-fill scrollable-container">
         {step === 0 && (
           <PatientStep
             selectedPatientId={patientId}

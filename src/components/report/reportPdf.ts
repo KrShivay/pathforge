@@ -75,27 +75,41 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
   }
 
   // ---- patient / specimen band ----
-  const bandRowH = 9;
-  const rows = model.band.length;
-  const bandH = bandRowH * Math.ceil(rows / 2);
+  // Row height adapts to the longest wrapped value in that row so long
+  // patient/specimen text is never cut down to its first line (it prints in
+  // full in the on-screen preview, so the PDF must match).
+  const bandRowMinH = 9;
+  const bandColW = CONTENT_W / 2 - 8;
+  const bandLineH = 3.8;
+  doc.setFont("helvetica", "bold").setFontSize(9);
+  const bandCells = model.band.map((entry) => ({
+    entry,
+    lines: doc.splitTextToSize(entry.value, bandColW) as string[],
+  }));
+  const bandRows: (typeof bandCells)[number][][] = [];
+  for (let i = 0; i < bandCells.length; i += 2) {
+    bandRows.push(bandCells.slice(i, i + 2));
+  }
+  const bandRowHeights = bandRows.map((row) => {
+    const maxLines = Math.max(1, ...row.map((cell) => cell.lines.length));
+    return Math.max(bandRowMinH, 7 + (maxLines - 1) * bandLineH);
+  });
+  const bandH = bandRowHeights.reduce((sum, h) => sum + h, 0);
   need(bandH);
   doc.setDrawColor(...HAIRLINE).setLineWidth(0.2);
   doc.rect(MARGIN, y, CONTENT_W, bandH);
   doc.line(MARGIN + CONTENT_W / 2, y, MARGIN + CONTENT_W / 2, y + bandH);
-  model.band.forEach((entry, index) => {
-    const col = index % 2;
-    const row = Math.floor(index / 2);
-    const cx = MARGIN + 3 + col * (CONTENT_W / 2);
-    const cy = y + row * bandRowH;
-    if (row > 0) doc.line(MARGIN, cy, MARGIN + CONTENT_W, cy);
-    doc.setFont("helvetica", "bold").setFontSize(6.5).setTextColor(...MUTED);
-    doc.text(entry.label.toUpperCase(), cx, cy + 3.5);
-    doc.setFont("helvetica", "bold").setFontSize(9).setTextColor(...INK);
-    doc.text(
-      doc.splitTextToSize(entry.value, CONTENT_W / 2 - 8)[0] ?? entry.value,
-      cx,
-      cy + 7.5
-    );
+  let bandCy = y;
+  bandRows.forEach((row, rowIndex) => {
+    if (rowIndex > 0) doc.line(MARGIN, bandCy, MARGIN + CONTENT_W, bandCy);
+    row.forEach((cell, col) => {
+      const cx = MARGIN + 3 + col * (CONTENT_W / 2);
+      doc.setFont("helvetica", "bold").setFontSize(6.5).setTextColor(...MUTED);
+      doc.text(cell.entry.label.toUpperCase(), cx, bandCy + 3.5);
+      doc.setFont("helvetica", "bold").setFontSize(9).setTextColor(...INK);
+      doc.text(cell.lines, cx, bandCy + 7.5);
+    });
+    bandCy += bandRowHeights[rowIndex] ?? bandRowMinH;
   });
   y += bandH + 8;
 
@@ -151,9 +165,18 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
 
       drawResultsHeader();
 
+      const REFERENCE_W = 42;
       for (const row of group.rows) {
+        // Measure at the size actually drawn below (8.5 normal) so the
+        // wrapped line count matches what's rendered.
+        doc.setFont("helvetica", "normal").setFontSize(8.5);
         const nameLines = doc.splitTextToSize(row.name, PARAM_W);
-        const rowH = Math.max(5.5, nameLines.length * 4);
+        const referenceLines = doc.splitTextToSize(row.reference, REFERENCE_W);
+        const rowH = Math.max(
+          5.5,
+          nameLines.length * 4,
+          referenceLines.length * 4
+        );
         if (y + rowH + 2 > FOOTER_Y - 4) {
           doc.addPage();
           y = MARGIN;
@@ -168,11 +191,7 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
         doc.text(row.value, cols[1] ?? MARGIN, y + 3);
         doc.setFont("helvetica", "normal");
         doc.text(row.unit, cols[2] ?? MARGIN, y + 3);
-        doc.text(
-          doc.splitTextToSize(row.reference, 42)[0] ?? row.reference,
-          cols[3] ?? MARGIN,
-          y + 3
-        );
+        doc.text(referenceLines, cols[3] ?? MARGIN, y + 3);
         if (row.flag) {
           doc.setFont("helvetica", "bold");
           doc.setTextColor(...(row.flag === "H" ? FLAG_HIGH : FLAG_LOW));

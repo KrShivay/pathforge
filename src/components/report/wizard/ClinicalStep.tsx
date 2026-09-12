@@ -21,43 +21,55 @@ export default function ClinicalStep({ value, onChange }: ClinicalStepProps) {
         diagnosis are required before a report can be finalized.
       </p>
 
-      <div className="wizard-field">
-        <label htmlFor="cd-history">Clinical History</label>
-        <textarea
-          id="cd-history"
-          rows={3}
-          value={value.clinicalHistory}
-          onChange={(event) =>
-            onChange({ clinicalHistory: clean(event.target.value) })
-          }
-          placeholder="Relevant history provided with the request…"
-        />
-      </div>
+      <div className="clinical-step-grid">
+        <div className="wizard-field">
+          <div className="wizard-field-header">
+            <label htmlFor="cd-history">Clinical History</label>
+            <span className="field-tag optional">Optional</span>
+          </div>
+          <textarea
+            id="cd-history"
+            rows={2}
+            value={value.clinicalHistory}
+            onChange={(event) =>
+              onChange({ clinicalHistory: clean(event.target.value) })
+            }
+            placeholder="Relevant history provided with the request…"
+            autoFocus
+          />
+        </div>
 
-      <div className="wizard-field">
-        <label htmlFor="cd-findings">Findings / Microscopic Findings</label>
-        <textarea
-          id="cd-findings"
-          rows={5}
-          value={value.findings}
-          onChange={(event) =>
-            onChange({ findings: clean(event.target.value) })
-          }
-          placeholder="Gross and microscopic findings…"
-        />
-      </div>
+        <div className="wizard-field">
+          <div className="wizard-field-header">
+            <label htmlFor="cd-findings">Findings / Microscopic Findings</label>
+            <span className="field-tag required">Required to finalize</span>
+          </div>
+          <textarea
+            id="cd-findings"
+            rows={4}
+            value={value.findings}
+            onChange={(event) =>
+              onChange({ findings: clean(event.target.value) })
+            }
+            placeholder="Gross and microscopic findings…"
+          />
+        </div>
 
-      <div className="wizard-field">
-        <label htmlFor="cd-diagnosis">Diagnosis</label>
-        <textarea
-          id="cd-diagnosis"
-          rows={3}
-          value={value.diagnosis}
-          onChange={(event) =>
-            onChange({ diagnosis: clean(event.target.value) })
-          }
-          placeholder="Final impression / diagnosis…"
-        />
+        <div className="wizard-field">
+          <div className="wizard-field-header">
+            <label htmlFor="cd-diagnosis">Final Diagnosis</label>
+            <span className="field-tag required">Required to finalize</span>
+          </div>
+          <textarea
+            id="cd-diagnosis"
+            rows={3}
+            value={value.diagnosis}
+            onChange={(event) =>
+              onChange({ diagnosis: clean(event.target.value) })
+            }
+            placeholder="Final impression / diagnosis…"
+          />
+        </div>
       </div>
     </div>
   );

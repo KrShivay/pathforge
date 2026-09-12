@@ -1,33 +1,34 @@
-import { useEffect, useMemo, useState } from "react";
 import {
-  Save,
   CheckCircle2,
-  FileText,
-  GitBranchPlus,
-  Lock,
-  Printer,
   Download,
   Eye,
+  FileText,
+  GitBranchPlus,
   Loader2,
+  Lock,
+  Printer,
+  Save,
 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
-import { useReports, type TestResult } from "../store/ReportContext";
-import { usePatients } from "../store/PatientContext";
-import { sanitizeText } from "../domain/textRules.mjs";
 import PrintableReport from "../components/report/PrintableReport";
 import ReportPreviewModal from "../components/report/ReportPreviewModal";
 import ResultsTable from "../components/report/ResultsTable";
-import { downloadReportPdf } from "../components/report/reportPdf";
-import { buildReportModel } from "../components/report/reportModel";
 import { formatReportDate } from "../components/report/reportMeta";
+import { buildReportModel } from "../components/report/reportModel";
+import { downloadReportPdf } from "../components/report/reportPdf";
+import { sanitizeText } from "../domain/textRules.mjs";
 import {
   confirmAction,
+  confirmDestructive,
   notifyError,
   notifyErrorList,
   notifySuccess,
   promptText,
   showFinalizedDialog,
 } from "../lib/dialog";
+import { usePatients } from "../store/PatientContext";
+import { useReports, type TestResult } from "../store/ReportContext";
 
 interface ReportEditorProps {
   reportId: string;
@@ -35,17 +36,9 @@ interface ReportEditorProps {
   onOpenReport: (reportId: string) => void;
 }
 
-function ReportEditor({
-  reportId,
-  onBack,
-  onOpenReport,
-}: ReportEditorProps) {
-  const {
-    getReport,
-    updateReport,
-    finalizeReport,
-    createAmendment,
-  } = useReports();
+function ReportEditor({ reportId, onBack, onOpenReport }: ReportEditorProps) {
+  const { getReport, updateReport, finalizeReport, createAmendment } =
+    useReports();
 
   const [busy, setBusy] = useState(false);
 
@@ -91,8 +84,7 @@ function ReportEditor({
 
     setFormData({
       specimenType: foundReport.specimenType ?? "",
-      clinicalHistory:
-        foundReport.clinicalHistory ?? "",
+      clinicalHistory: foundReport.clinicalHistory ?? "",
       findings: foundReport.findings ?? "",
       diagnosis: foundReport.diagnosis ?? "",
       testResults: foundReport.testResults ?? [],
@@ -101,7 +93,7 @@ function ReportEditor({
   }, [savedContentSignature]);
 
   const patient = patients.find(
-    (candidate) => candidate.id === foundReport?.patientId
+    (candidate) => candidate.id === foundReport?.patientId,
   );
 
   // Single source of truth for the report's printable / PDF content. Built here
@@ -141,7 +133,7 @@ function ReportEditor({
             },
           })
         : null,
-    [foundReport, patient, formData]
+    [foundReport, patient, formData],
   );
 
   // ========================================
@@ -153,10 +145,7 @@ function ReportEditor({
       <div className="report-not-found">
         <h2>Report not found</h2>
 
-        <button
-          className="secondary-button"
-          onClick={onBack}
-        >
+        <button className="secondary-button" onClick={onBack}>
           Back to Worklist
         </button>
       </div>
@@ -166,17 +155,41 @@ function ReportEditor({
   const report = foundReport;
   const model = reportModel;
 
-  const isFinalized =
-    report.status === "finalized";
+  const isFinalized = report.status === "finalized";
+
+  // Unsaved edits relative to what's actually persisted. Compared against the
+  // same fields `savedContentSignature` tracks, so this flips back to false
+  // the moment a save (or the initial load) catches formData up.
+  const isDirty =
+    !isFinalized &&
+    JSON.stringify(formData) !==
+      JSON.stringify({
+        specimenType: report.specimenType ?? "",
+        clinicalHistory: report.clinicalHistory ?? "",
+        findings: report.findings ?? "",
+        diagnosis: report.diagnosis ?? "",
+        testResults: report.testResults ?? [],
+      });
+
+  async function handleBack() {
+    if (isDirty) {
+      const proceed = await confirmDestructive({
+        title: "Discard unsaved changes?",
+        text: "This report has edits that have not been saved. Leaving now will discard them.",
+        confirmText: "Discard",
+        cancelText: "Keep editing",
+      });
+      if (!proceed) return;
+    }
+    onBack();
+  }
 
   // ========================================
   // HANDLE FORM CHANGE
   // ========================================
 
   function handleChange(
-    event: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement
-    >
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) {
     if (isFinalized) return;
 
@@ -191,7 +204,7 @@ function ReportEditor({
   function handleResultChange(
     testId: string,
     parameterId: string,
-    value: string
+    value: string,
   ) {
     if (isFinalized) return;
 
@@ -201,7 +214,7 @@ function ReportEditor({
       testResults: previous.testResults.map((result) =>
         result.testId === testId && result.parameterId === parameterId
           ? { ...result, value: clean }
-          : result
+          : result,
       ),
     }));
   }
@@ -293,7 +306,7 @@ function ReportEditor({
     if (!result.valid) {
       void notifyErrorList(
         "Cannot finalize this report",
-        result.errors.map((issue) => issue.message)
+        result.errors.map((issue) => issue.message),
       );
       return;
     }
@@ -307,7 +320,7 @@ function ReportEditor({
       reportNo: finalized?.issueNumber ?? model.reportNo,
       version: finalized?.version ?? report.version,
       finalizedOn: formatReportDate(
-        finalized?.finalizedAt ?? new Date().toISOString()
+        finalized?.finalizedAt ?? new Date().toISOString(),
       ),
     });
     if (choice === "download") await handleDownloadPdf();
@@ -390,290 +403,256 @@ function ReportEditor({
   // ========================================
 
   return (
-    <div className="report-editor-page">
-
+    <div className="report-editor-page viewport-page">
       {/* ========================================
           EDITOR TOP BAR
       ======================================== */}
 
       <div className="editor-topbar print-hide">
-
-        <div>
-
+        <div className="editor-topbar-left">
           <button
+            type="button"
             className="back-button"
-            onClick={onBack}
+            onClick={() => void handleBack()}
           >
             ← Back to Worklist
           </button>
 
           <div className="report-title-row">
-
             <div>
               <h2>Report Editor</h2>
-
               <p>
-                {patient?.name ??
-                  "Unknown Patient"}{" "}
-                ·{" "}
-                {patient?.patientId ??
-                  "Unknown ID"}
+                <strong>{patient?.name ?? "Unknown Patient"}</strong>
+                {patient?.gender ? (
+                  <span>
+                    {" "}
+                    · {patient.age}y / {patient.gender}
+                  </span>
+                ) : null}
               </p>
             </div>
 
             <span
-              className={`version-badge ${
-                isFinalized
-                  ? "finalized"
-                  : "draft"
-              }`}
+              className={`version-badge ${isFinalized ? "finalized" : "draft"}`}
             >
               Version {report.version}
             </span>
-
           </div>
 
           {isFinalized && (
             <div className="finalized-notice">
-
-              <Lock size={16} />
-
+              <Lock size={15} />
               <span>
-                This report is finalized and
-                cannot be edited. Create an
-                amendment to make changes.
+                Finalized &amp; locked. Create an amendment to modify.
               </span>
-
             </div>
           )}
-
         </div>
 
         <div className="editor-actions">
-
           <button
+            type="button"
             className="secondary-button"
             onClick={() => setShowPreview(true)}
           >
-            <Eye size={17} />
+            <Eye size={16} />
             Preview
           </button>
 
           <button
+            type="button"
             className="secondary-button"
             onClick={handlePrint}
+            disabled={busy}
           >
-            <Printer size={17} />
+            <Printer size={16} />
             Print
           </button>
 
           <button
+            type="button"
             className="secondary-button"
             onClick={handleDownloadPdf}
             disabled={busy}
           >
-            <Download size={17} />
+            <Download size={16} />
             Download PDF
           </button>
 
           {!isFinalized ? (
             <>
-
               <button
+                type="button"
                 className="secondary-button"
                 onClick={saveChanges}
                 disabled={busy}
               >
-                <Save size={17} />
+                <Save size={16} />
                 Save Changes
               </button>
 
               <button
+                type="button"
                 className="primary-button"
                 onClick={handleFinalize}
                 disabled={busy}
               >
                 {busy ? (
-                  <Loader2 size={17} className="spin" />
+                  <Loader2 size={16} className="spin" />
                 ) : (
-                  <CheckCircle2 size={17} />
+                  <CheckCircle2 size={16} />
                 )}
                 {busy ? "Finalizing…" : "Finalize Report"}
               </button>
-
             </>
           ) : (
             <button
+              type="button"
               className="primary-button"
               onClick={handleCreateAmendment}
               disabled={busy}
             >
-              <GitBranchPlus size={17} />
+              <GitBranchPlus size={16} />
               Create Amendment
             </button>
           )}
-
         </div>
-
       </div>
 
       {/* ========================================
-          NORMAL EDITOR
+          DUAL-PANEL CLINICAL WORKSTATION
       ======================================== */}
 
       <div
-        className={`report-editor-card print-hide ${
-          isFinalized
-            ? "read-only"
-            : ""
+        className={`report-editor-workspace print-hide ${
+          isFinalized ? "read-only" : ""
         }`}
       >
-
-        {/* SPECIMEN */}
-
-        <div className="editor-section">
-
-          <div className="editor-section-title">
-
-            <FileText size={19} />
-
-            <div>
-              <h3>
-                Specimen Details
-              </h3>
-
-              <p>
-                Basic information about
-                the specimen
-              </p>
+        {/* LEFT COLUMN: Specimen Details & Results Table */}
+        <div className="editor-left-column">
+          <div className="editor-card specimen-card">
+            <div className="editor-card-header">
+              <div className="editor-section-title">
+                <FileText size={16} />
+                <div>
+                  <h3>Specimen Details</h3>
+                  <p>Sample identification &amp; origin</p>
+                </div>
+              </div>
             </div>
 
+            <div className="editor-card-body">
+              <div className="form-group specimen-form-group">
+                <label htmlFor="ed-specimen-type">Specimen Type</label>
+                <input
+                  id="ed-specimen-type"
+                  type="text"
+                  name="specimenType"
+                  value={formData.specimenType}
+                  onChange={handleChange}
+                  disabled={isFinalized || busy}
+                  placeholder="Enter specimen type (e.g. Whole Blood, Serum, Urine)…"
+                  autoFocus={!isFinalized}
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="form-group">
-
-            <label>
-              Specimen Type
-            </label>
-
-            <input
-              type="text"
-              name="specimenType"
-              value={
-                formData.specimenType
-              }
-              onChange={handleChange}
-              disabled={isFinalized || busy}
-              placeholder="Enter specimen type"
-            />
-
-          </div>
-
-        </div>
-
-        <ResultsTable
-          results={formData.testResults}
-          disabled={isFinalized || busy}
-          onResultChange={handleResultChange}
-        />
-
-        {/* CLINICAL HISTORY */}
-
-        <div className="editor-section">
-
-          <div className="editor-section-title">
-
-            <FileText size={19} />
-
-            <div>
-              <h3>
-                Clinical History
-              </h3>
-
-              <p>
-                Relevant patient history
-              </p>
+          <div className="editor-card results-card">
+            <div className="editor-card-header">
+              <div className="editor-section-title">
+                <FileText size={16} />
+                <div>
+                  <h3>Laboratory Results</h3>
+                  <p>
+                    {formData.testResults.length}{" "}
+                    {formData.testResults.length === 1
+                      ? "parameter"
+                      : "parameters"}{" "}
+                    measured
+                  </p>
+                </div>
+              </div>
             </div>
 
+            <div className="editor-card-body results-card-body">
+              <ResultsTable
+                results={formData.testResults}
+                disabled={isFinalized || busy}
+                onResultChange={handleResultChange}
+              />
+            </div>
           </div>
-
-          <textarea
-            name="clinicalHistory"
-            value={
-              formData.clinicalHistory
-            }
-            onChange={handleChange}
-            rows={4}
-            disabled={isFinalized || busy}
-            placeholder="Enter clinical history"
-          />
-
         </div>
 
-        {/* FINDINGS */}
-
-        <div className="editor-section">
-
-          <div className="editor-section-title">
-
-            <FileText size={19} />
-
-            <div>
-              <h3>
-                Microscopic Findings
-              </h3>
-
-              <p>
-                Detailed pathology
-                observations
-              </p>
+        {/* RIGHT COLUMN: Clinical Narrative & Findings */}
+        <div className="editor-right-column">
+          <div className="editor-card narrative-card">
+            <div className="editor-card-header">
+              <div className="editor-section-title">
+                <FileText size={16} />
+                <div>
+                  <h3>Clinical Narrative &amp; Diagnosis</h3>
+                  <p>History, observations, and final pathological diagnosis</p>
+                </div>
+              </div>
             </div>
 
-          </div>
+            <div className="editor-card-body narrative-card-body">
+              <div className="narrative-field">
+                <div className="narrative-label-row">
+                  <label htmlFor="ed-clinical-history">Clinical History</label>
+                  <span className="field-pill optional">Optional</span>
+                </div>
+                <textarea
+                  id="ed-clinical-history"
+                  name="clinicalHistory"
+                  value={formData.clinicalHistory}
+                  onChange={handleChange}
+                  rows={3}
+                  disabled={isFinalized || busy}
+                  placeholder="Enter patient history, symptoms, or indications provided with the request…"
+                />
+              </div>
 
-          <textarea
-            name="findings"
-            value={formData.findings}
-            onChange={handleChange}
-            rows={7}
-            disabled={isFinalized || busy}
-            placeholder="Enter microscopic findings"
-          />
+              <div className="narrative-field">
+                <div className="narrative-label-row">
+                  <label htmlFor="ed-findings">Microscopic Findings</label>
+                  <span className="field-pill required">
+                    Required to finalize
+                  </span>
+                </div>
+                <textarea
+                  id="ed-findings"
+                  name="findings"
+                  value={formData.findings}
+                  onChange={handleChange}
+                  rows={5}
+                  disabled={isFinalized || busy}
+                  placeholder="Describe gross and microscopic pathological findings and morphology…"
+                />
+              </div>
 
-        </div>
-
-        {/* DIAGNOSIS */}
-
-        <div className="editor-section">
-
-          <div className="editor-section-title">
-
-            <FileText size={19} />
-
-            <div>
-              <h3>
-                Diagnosis
-              </h3>
-
-              <p>
-                Final pathological
-                diagnosis
-              </p>
+              <div className="narrative-field">
+                <div className="narrative-label-row">
+                  <label htmlFor="ed-diagnosis">Diagnosis</label>
+                  <span className="field-pill required">
+                    Required to finalize
+                  </span>
+                </div>
+                <textarea
+                  id="ed-diagnosis"
+                  name="diagnosis"
+                  value={formData.diagnosis}
+                  onChange={handleChange}
+                  rows={4}
+                  disabled={isFinalized || busy}
+                  placeholder="Enter final clinical and pathological diagnosis / impression…"
+                />
+              </div>
             </div>
-
           </div>
-
-          <textarea
-            name="diagnosis"
-            value={formData.diagnosis}
-            onChange={handleChange}
-            rows={5}
-            disabled={isFinalized || busy}
-            placeholder="Enter final diagnosis"
-          />
-
         </div>
-
       </div>
 
       {/* Hidden on screen; the only node @media print renders. The PDF and the

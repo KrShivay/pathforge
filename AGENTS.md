@@ -6,6 +6,14 @@ integrations, compliance, distributed systems, or speculative scale work without
 explicit owner approval. Prioritize the working data -> report preview ->
 print/save-as-PDF path.
 
+## Permissions and authorization guardrails
+
+- This prototype does not implement enterprise permissions, user roles, identity providers, approval flows, or audit-based authorization gating. See [SCOPE.md](SCOPE.md) and [docs/requirements/business-requirements.md](docs/requirements/business-requirements.md).
+- Treat authorization as a deferred requirement, not an active implementation target. Do not invent RBAC, login state, signed actions, role checks, or permission middleware unless the owner explicitly approves a scope change.
+- If a task requires a real access-control model, stop and ask for scope approval instead of adding speculative abstractions or placeholder "permission" logic.
+- Keep terminology in the domain model descriptive rather than security-enforcing; for example, use "authorized actor" only as a business requirement reference, not as a real enforcement mechanism in code.
+- Prefer the working path: local report editing, validation, preview, and PDF output. Do not drift into enterprise security, policy, or compliance work.
+
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 

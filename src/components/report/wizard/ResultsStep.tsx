@@ -32,6 +32,10 @@ export default function ResultsStep({
     [selectedTestIds, tests]
   );
 
+  const firstResultKey = selectedTests[0]?.parameters[0]
+    ? resultKey(selectedTests[0].id, selectedTests[0].parameters[0].id)
+    : null;
+
   return (
     <div className="wizard-panel">
       <h2>Results</h2>
@@ -87,6 +91,7 @@ export default function ResultsStep({
                               sanitizeText(event.target.value, "result")
                             )
                           }
+                          autoFocus={key === firstResultKey}
                         />
                       </td>
                       <td className="unit-cell">{parameter.unit || "—"}</td>

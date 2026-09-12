@@ -60,6 +60,7 @@ export default function TestSpecimenStep({
         <label>Laboratory tests</label>
         <Autocomplete
           multiple
+          autoFocus
           disableCloseOnSelect
           options={[...tests].sort((a, b) =>
             a.department.localeCompare(b.department)

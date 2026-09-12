@@ -1,12 +1,12 @@
 import { useMemo } from "react";
 
+import type { LaboratoryTest } from "../../../domain/types";
 import { usePatients } from "../../../store/PatientContext";
 import { useTests } from "../../../store/TestContext";
-import type { LaboratoryTest } from "../../../domain/types";
-import { formatReferenceRange } from "../referenceRange";
 import { computeFlag } from "../flags";
-import { resultKey } from "./ResultsStep";
+import { formatReferenceRange } from "../referenceRange";
 import type { ClinicalDetails } from "./ClinicalStep";
+import { resultKey } from "./ResultsStep";
 
 interface ReviewStepProps {
   patientId: string;
@@ -32,7 +32,7 @@ export default function ReviewStep({
       selectedTestIds
         .map((id) => tests.find((test) => test.id === id))
         .filter((test): test is LaboratoryTest => test !== undefined),
-    [selectedTestIds, tests]
+    [selectedTestIds, tests],
   );
 
   return (
@@ -46,11 +46,7 @@ export default function ReviewStep({
         <div className="review-item">
           <span>Patient</span>
           <strong>{patient?.name ?? "—"}</strong>
-          <em>
-            {patient
-              ? `${patient.patientId} · ${patient.age}y · ${patient.gender}`
-              : ""}
-          </em>
+          <em>{patient ? `${patient.age}y · ${patient.gender}` : ""}</em>
         </div>
         <div className="review-item">
           <span>Specimen</span>
@@ -63,7 +59,7 @@ export default function ReviewStep({
           </strong>
           <em>
             {[...new Set(selectedTests.map((test) => test.department))].join(
-              ", "
+              ", ",
             )}
           </em>
         </div>
@@ -88,7 +84,7 @@ export default function ReviewStep({
                 const flag = computeFlag(
                   value,
                   parameter.referenceRange?.min,
-                  parameter.referenceRange?.max
+                  parameter.referenceRange?.max,
                 );
                 return (
                   <tr key={parameter.id}>

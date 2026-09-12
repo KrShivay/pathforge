@@ -1,5 +1,5 @@
+import { Search, UserCheck, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Search, UserPlus, UserCheck } from "lucide-react";
 
 import { usePatients } from "../../../store/PatientContext";
 import PatientForm from "../../patients/PatientForm";
@@ -20,21 +20,25 @@ export default function PatientStep({
 }: PatientStepProps) {
   const { patients } = usePatients();
   const [mode, setMode] = useState<Mode>(
-    patients.length > 0 ? "existing" : "new"
+    patients.length > 0 ? "existing" : "new",
   );
   const [search, setSearch] = useState("");
 
   const query = search.trim().toLowerCase();
-  const matches = useMemo(() => {
-    if (!query) return patients.slice(0, 8);
-    return patients
-      .filter((patient) =>
-        `${patient.name} ${patient.patientId} ${patient.phone}`
-          .toLowerCase()
-          .includes(query)
-      )
-      .slice(0, 12);
+  const allMatches = useMemo(() => {
+    if (!query) return patients;
+    return patients.filter((patient) =>
+      `${patient.name} ${patient.patientId} ${patient.phone}`
+        .toLowerCase()
+        .includes(query),
+    );
   }, [patients, query]);
+  const matchLimit = query ? 12 : 8;
+  const matches = useMemo(
+    () => allMatches.slice(0, matchLimit),
+    [allMatches, matchLimit],
+  );
+  const hiddenMatchCount = allMatches.length - matches.length;
 
   const selected = patients.find((patient) => patient.id === selectedPatientId);
 
@@ -55,7 +59,7 @@ export default function PatientStep({
           <UserCheck size={18} />
           <span>
             <strong>Use an existing patient</strong>
-            Search by name, Patient ID or phone
+            Search by name or phone
           </span>
         </button>
 
@@ -67,7 +71,7 @@ export default function PatientStep({
           <UserPlus size={18} />
           <span>
             <strong>Create a new patient</strong>
-            Patient ID is generated automatically
+            Patient record is created automatically
           </span>
         </button>
       </div>
@@ -102,7 +106,7 @@ export default function PatientStep({
                   >
                     <span className="patient-pick-name">{patient.name}</span>
                     <span className="patient-pick-meta">
-                      {patient.patientId} · {patient.age}y · {patient.gender}
+                      {patient.age}y · {patient.gender}
                       {patient.phone ? ` · ${patient.phone}` : ""}
                     </span>
                   </button>
@@ -111,12 +115,19 @@ export default function PatientStep({
               {matches.length === 0 ? (
                 <li className="form-hint">No patient matches “{search}”.</li>
               ) : null}
+              {hiddenMatchCount > 0 ? (
+                <li className="form-hint">
+                  {hiddenMatchCount} more{" "}
+                  {hiddenMatchCount === 1 ? "match" : "matches"} — refine your
+                  search to narrow the list.
+                </li>
+              ) : null}
             </ul>
           )}
 
           {selected ? (
             <p className="selection-confirm">
-              Selected: <strong>{selected.name}</strong> ({selected.patientId})
+              Selected: <strong>{selected.name}</strong>
             </p>
           ) : null}
         </div>

@@ -43,16 +43,23 @@ export function buildWorkspaceDocumentConfig(reportInput) {
   const byTest = new Map();
   for (const [fieldId, entry] of Object.entries(payload)) {
     if (!fieldId.startsWith(RESULT_FIELD_PREFIX)) continue;
-    const testId = typeof entry.test_id === 'string' && entry.test_id ? entry.test_id : 'unassigned';
-    let section = byTest.get(testId);
+    const testId = typeof entry.test_id === 'string' && entry.test_id ? entry.test_id : '';
+    const testName = typeof entry.test_name === 'string' && entry.test_name ? entry.test_name : '';
+    // Must match groupResultsByTest's (src/components/report/groupResults.ts)
+    // fallback exactly: two tests without a test_id but with different
+    // test_names are distinct groups in the live editor table, and grouping
+    // them here by test_id alone would silently merge and mislabel them in
+    // the printed report/PDF.
+    const groupKey = testId || testName || 'unassigned';
+    let section = byTest.get(groupKey);
     if (!section) {
       section = {
-        section_id: `results.${testId}`,
+        section_id: `results.${groupKey}`,
         semantic_role: 'clinical-results',
         ...(typeof entry.test_name === 'string' && entry.test_name ? { heading: entry.test_name } : {}),
         fields: [],
       };
-      byTest.set(testId, section);
+      byTest.set(groupKey, section);
       sections.push(section);
     }
     section.fields.push(field(fieldId, 'result-value'));

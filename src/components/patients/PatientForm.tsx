@@ -1,17 +1,17 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import {
-  usePatients,
-  type NewPatientInput,
-} from "../../store/PatientContext";
 import { sanitizePhone, sanitizeText } from "../../domain/textRules.mjs";
 import { notifySuccess } from "../../lib/dialog";
+import { usePatients, type NewPatientInput } from "../../store/PatientContext";
 
 interface PatientFormProps {
   onSaved: (patientId: string) => void;
   onCancel?: () => void;
   submitLabel?: string;
   busy?: boolean;
+  /** Reports whether the form has any entered value, so a host modal can
+   * confirm before an accidental close (backdrop click, Escape) discards it. */
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 const SEX_OPTIONS = ["Female", "Male", "Other"] as const;
@@ -26,6 +26,7 @@ export default function PatientForm({
   onCancel,
   submitLabel = "Save Patient",
   busy = false,
+  onDirtyChange,
 }: PatientFormProps) {
   const { addPatient, previewPatientId } = usePatients();
 
@@ -38,6 +39,11 @@ export default function PatientForm({
   });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    onDirtyChange?.(Object.values(form).some((value) => value.trim() !== ""));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form]);
 
   // Shown for information only. The real ID is generated at save time so it can
   // never drift or be edited (spec §6).
@@ -86,14 +92,14 @@ export default function PatientForm({
       const patient = await addPatient(input);
       void notifySuccess({
         title: "Patient created",
-        text: `${patient.name} · ${patient.patientId}`,
+        text: `${patient.name} is ready for reporting.`,
       });
       onSaved(patient.id);
     } catch (saveError) {
       setError(
         saveError instanceof Error
           ? `Could not save the patient: ${saveError.message}`
-          : "Could not save the patient."
+          : "Could not save the patient.",
       );
     } finally {
       setSaving(false);
@@ -131,7 +137,7 @@ export default function PatientForm({
         </div>
 
         <div className="form-group">
-          <label htmlFor="pf-sex">Sex *</label>
+          <label htmlFor="pf-sex">Gender *</label>
           <select
             id="pf-sex"
             value={form.gender}
@@ -153,25 +159,31 @@ export default function PatientForm({
             id="pf-phone"
             type="tel"
             value={form.phone}
-            onChange={(event) => update("phone", event.target.value)}
-            placeholder="e.g. +91 98765 43210"
+            onChange={(event) => {
+              const value = event.target.value.replace(/\D/g, "").slice(0, 10);
+              update("phone", value);
+            }}
+            placeholder="987XXXX321"
+            inputMode="numeric"
+            maxLength={10}
+            pattern="[0-9]{10}"
             disabled={disabled}
           />
         </div>
 
         <div className="form-group full-width">
-          <label htmlFor="pf-address">Address</label>
+          <label htmlFor="pf-address">Address (Optional)</label>
           <textarea
             id="pf-address"
             rows={2}
             value={form.address}
             onChange={(event) => update("address", event.target.value)}
-            placeholder="Optional"
+            placeholder="123 Main St, Springfield"
             disabled={disabled}
           />
         </div>
 
-        <div className="form-group full-width">
+        <div style={{ display: "none" }}>
           <label>Patient ID</label>
           <div className="patient-id-preview">
             <strong>{idPreview}</strong>

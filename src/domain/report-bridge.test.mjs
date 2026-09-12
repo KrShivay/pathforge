@@ -146,6 +146,41 @@ test('checkClinicalCompleteness flags missing required content and blank results
   assert.deepEqual(issues.map((issue) => issue.field).sort(), ['diagnosis', 'result.hb', 'specimenType']);
 });
 
+test('checkClinicalCompleteness flags two results that collapse onto the same payload key', () => {
+  // buildResolvedPayload keys results by test+parameter; two rows sharing that
+  // key would silently overwrite each other with no validation error unless
+  // this is caught up front.
+  const duplicate = [
+    { parameterId: 'glucose', parameterName: 'Glucose', testId: 'lft', testName: 'LFT', value: '90' },
+    { parameterId: 'glucose', parameterName: 'Glucose', testId: 'lft', testName: 'LFT', value: '150' },
+  ];
+  const issues = checkClinicalCompleteness({
+    specimenType: 'Serum',
+    findings: 'x',
+    diagnosis: 'x',
+    testResults: duplicate,
+  });
+  assert.deepEqual(
+    issues.map((issue) => issue.field),
+    ['result.lft::glucose'],
+  );
+  assert.match(issues[0]?.message ?? '', /entered more than once/);
+
+  const distinctTests = [
+    { parameterId: 'glucose', parameterName: 'Glucose', testId: 'lft', testName: 'LFT', value: '90' },
+    { parameterId: 'glucose', parameterName: 'Glucose', testId: 'rft', testName: 'RFT', value: '150' },
+  ];
+  assert.deepEqual(
+    checkClinicalCompleteness({
+      specimenType: 'Serum',
+      findings: 'x',
+      diagnosis: 'x',
+      testResults: distinctTests,
+    }),
+    [],
+  );
+});
+
 test('groupForPreview yields a stable narrative/results shape for drafts and finalized', () => {
   const preview = groupForPreview({
     resolved_payload: buildResolvedPayload(sampleContent()),

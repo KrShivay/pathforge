@@ -123,18 +123,36 @@ export function createInMemoryServiceAdapter(options = {}) {
   /** @type {Map<string, Promise<void>>} */
   const transactionTails = new Map();
 
-  /** @returns {Required<PersistedServiceState>} */
-  function snapshot() {
+  /**
+   * @param {string} [overrideReportId] a report whose in-flight (not-yet-committed) state should
+   *   be substituted in place of whatever `storedReports`/`storedAudit` currently hold for it
+   * @param {StoredReport} [overrideReport]
+   * @param {import('./ports.mjs').ServiceAuditEvent[]} [overrideAudit]
+   * @returns {Required<PersistedServiceState>}
+   */
+  function snapshot(overrideReportId, overrideReport, overrideAudit) {
+    const reportIds = new Set(storedReports.keys());
+    if (overrideReportId) reportIds.add(overrideReportId);
+    const auditIds = new Set(storedAudit.keys());
+    if (overrideReportId) auditIds.add(overrideReportId);
+
     return {
-      reports: [...storedReports.entries()].map(([reportId, stored]) => ({
-        reportId,
-        revision: stored.revision,
-        versions: [...stored.versions.values()].map((version) => immutableCopy(version)),
-      })),
-      audit: [...storedAudit.entries()].map(([reportId, events]) => ({
-        reportId,
-        events: events.map((event) => immutableCopy(event)),
-      })),
+      reports: [...reportIds].map((reportId) => {
+        const effective =
+          reportId === overrideReportId && overrideReport ? overrideReport : storedReports.get(reportId);
+        return {
+          reportId,
+          revision: effective?.revision ?? 0,
+          versions: [...(effective?.versions.values() ?? [])].map((version) => immutableCopy(version)),
+        };
+      }),
+      audit: [...auditIds].map((reportId) => {
+        const effective = reportId === overrideReportId && overrideAudit ? overrideAudit : storedAudit.get(reportId);
+        return {
+          reportId,
+          events: (effective ?? []).map((event) => immutableCopy(event)),
+        };
+      }),
     };
   }
 
@@ -223,9 +241,15 @@ export function createInMemoryServiceAdapter(options = {}) {
           },
         };
         const result = await work({ reports: transactionalReports, audit: transactionalAudit });
+        // Persist before committing to the in-memory maps: if `onCommit` (the
+        // durable write) throws, the adapter must still look like the
+        // transaction never happened, matching the failure the caller sees.
+        // Committing first would leave the in-memory state ahead of what was
+        // actually saved, so a reported failure could still be visible to
+        // later reads/retries against this adapter.
+        await options.onCommit?.(snapshot(reportId, workingReport, workingAudit));
         storedReports.set(reportId, workingReport);
         storedAudit.set(reportId, workingAudit);
-        await options.onCommit?.(snapshot());
         return result;
       } finally {
         release();

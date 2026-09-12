@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
 import {
-  FlaskConical,
-  Stethoscope,
   ChevronDown,
+  FlaskConical,
+  LayoutDashboard,
+  Stethoscope,
 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * Every destination the app can navigate to. Kept here (not in a page) so the
@@ -18,7 +19,7 @@ export type Page =
   | "test-management";
 
 interface TopNavProps {
-  onNavigate: (page: Page) => void;
+  onNavigate: (page: Page) => void | Promise<void>;
 }
 
 /**
@@ -44,11 +45,11 @@ export default function TopNav({ onNavigate }: TopNavProps) {
       <button
         type="button"
         className="top-nav-brand"
-        onClick={() => onNavigate("dashboard")}
+        onClick={() => void onNavigate("dashboard")}
         title="PathForge — go to dashboard"
       >
         <span className="top-nav-brand-icon">
-          <Stethoscope size={22} />
+          <Stethoscope size={19} />
         </span>
         <span className="top-nav-brand-text">
           <strong>PathForge</strong>
@@ -59,6 +60,15 @@ export default function TopNav({ onNavigate }: TopNavProps) {
       <div className="top-nav-spacer" />
 
       <div className="top-nav-user">
+        <button
+          type="button"
+          className="top-nav-menu-trigger"
+          onClick={() => void onNavigate("dashboard")}
+          title="Open Dashboard"
+        >
+          <LayoutDashboard size={15} />
+          <span className="top-nav-menu-label">Dashboard</span>
+        </button>
         <div className="top-nav-menu" ref={menuRef}>
           <button
             type="button"
@@ -66,10 +76,11 @@ export default function TopNav({ onNavigate }: TopNavProps) {
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((open) => !open)}
-            title="Menu"
+            title="Catalog & Settings Menu"
           >
-            <FlaskConical size={16} />
-            <ChevronDown size={14} />
+            <FlaskConical size={15} />
+            <span className="top-nav-menu-label">Lab Catalog</span>
+            <ChevronDown size={13} />
           </button>
 
           {menuOpen && (
@@ -79,11 +90,11 @@ export default function TopNav({ onNavigate }: TopNavProps) {
                 role="menuitem"
                 onClick={() => {
                   setMenuOpen(false);
-                  onNavigate("test-management");
+                  void onNavigate("test-management");
                 }}
               >
                 <FlaskConical size={15} />
-                Test Management
+                Laboratory Tests
               </button>
             </div>
           )}

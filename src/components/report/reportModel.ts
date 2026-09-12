@@ -6,6 +6,7 @@ import {
 } from "../../rendering/index.mjs";
 import { accession, formatReportDate } from "./reportMeta";
 import { computeFlag, flagLabel, type ResultFlag } from "./flags";
+import { formatReferenceRange } from "./referenceRange";
 
 /**
  * House-format *presenter*. It owns the wording of the printed page — brand
@@ -145,16 +146,11 @@ function referenceLabel(content: Record<string, unknown>): string {
   const range = content.reference_range as
     | { low?: number; high?: number }
     | undefined;
-
-  if (range) {
-    const bounds = [range.low, range.high].filter(
-      (bound): bound is number => typeof bound === "number"
-    );
-    if (bounds.length > 0) return bounds.join(" – ");
-  }
-
-  const asText = text(content.reference_text);
-  return asText.trim() ? asText : DASH;
+  return formatReferenceRange({
+    min: range?.low,
+    max: range?.high,
+    text: text(content.reference_text) || undefined,
+  });
 }
 
 /** First field value of the section carrying the given semantic role. */
