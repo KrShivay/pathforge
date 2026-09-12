@@ -116,6 +116,41 @@ export function createReportService(ports) {
       });
     },
 
+    /**
+     * Replace a draft version's clinical payload in place under optimistic
+     * concurrency. Finalized versions are rejected by the domain (INV-1).
+     * @param {{identity: import('../domain/contracts.mjs').ReportVersionIdentity, expectedRevision: number, resolvedPayload: import('../domain/contracts.mjs').ResolvedPayload, actor: string}} command
+     */
+    async updateDraft(command) {
+      const reportId = requireNonEmptyString(command.identity.report_id, 'identity.report_id');
+      const expectedRevision = requireRevision(command.expectedRevision);
+      const actor = requireNonEmptyString(command.actor, 'actor');
+      const occurredAt = readClock(clock);
+
+      return unitOfWork.execute(reportId, async ({ reports, audit }) => {
+        const actualRevision = await reports.getRevision(reportId);
+        assertExpectedRevision(reportId, expectedRevision, actualRevision);
+        const existing = await requireVersion(reports, command.identity);
+        let baseline;
+        if (existing.supersedes) baseline = await requireVersion(reports, existing.supersedes);
+        const next = replaceDraftPayload(existing, command.resolvedPayload);
+        await requireValidReferences(referenceRepository, next, baseline);
+        const auditEvent = immutableCopy({
+          event_id: await nextId(idGenerator, 'audit-event'),
+          event_type: /** @type {const} */ ('report_draft_updated'),
+          report_version: { report_id: reportId, version: next.version },
+          actor,
+          occurred_at: occurredAt,
+          details: { source_catalog_version: next.source_catalog_version },
+        });
+        await reports.putVersion(next);
+        await audit.append(auditEvent);
+        const revision = expectedRevision + 1;
+        await reports.setRevision(reportId, revision);
+        return immutableCopy({ reportVersion: next, revision, auditEvent });
+      });
+    },
+
     /** @param {{identity: import('../domain/contracts.mjs').ReportVersionIdentity}} query */
     async validate(query) {
       const reportVersion = await requireVersion(reportRepository, query.identity);

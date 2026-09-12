@@ -1,78 +1,52 @@
 # Delivery Plan
 
-[`../SCOPE.md`](../SCOPE.md) is authoritative. The deliverable is a local-only
-Windows desktop prototype: it must not require an HTTP server, localhost, cloud
-hosting, SQLite, or an external integration. The task ledger is
-[`tasks/tasks.json`](tasks/tasks.json).
+This is the implementation handoff for the current prototype. [`../SCOPE.md`](../SCOPE.md)
+is authoritative; the task ledger is [`tasks/tasks.json`](tasks/tasks.json).
 
-## Current state and migration boundary
+## Current state
 
-- Keep: `src/domain/`, `src/service/`, and `src/rendering/`; their fixture,
-  immutable-version, amendment, and presentation-neutral model behavior is the
-  application core.
-- Adopt: `mock-ui/app/` and `mock-ui/src-tauri/` as the desktop application
-  entry. The package and Tauri metadata now identify PathForge; its browser
-  Vite command is development-only.
-  Its layout, navigation, keyboard behavior, and print CSS are useful, but its
-  fixtures, Zod-only schema, React context state, synthetic preview, and static
-  history are not the application source of truth.
-- Retire from the product path: `scripts/report-app.mjs`, its HTTP tests, and
-  the legacy HTTP preview command. They may remain temporary developer tooling
-  only until the desktop workflow replaces their coverage. Root `npm start` now
-  launches the Tauri desktop entry.
+Done: fixture validation, historical-value preservation, semantic comparison,
+simple amendment/version behavior, an in-memory service, and the
+presentation-neutral document model.
 
-Why: keeping the proven domain core avoids a rewrite, while moving the UI to
-typed local adapters removes the current split-brain fixture state and the
-localhost dependency.
+Current priority: connect fixture-shaped input to a usable report preview and a
+Print / Save as PDF action. `npm run tauri dev` must run that product surface
+(the React + Tauri app under `src/`).
 
-## Ordered work packages
+## Active prototype sequence
 
-1. **Desktop entry and migration boundary** — make `mock-ui/` the single
-   React/Tauri product entry and separate any browser-only development command
-   from the packaged desktop launch. Acceptance: `npm start` and
-   `npm run desktop:build` resolve through `mock-ui`, Tauri launches without
-   `scripts/report-app.mjs` or a product HTTP endpoint, and packaging metadata
-   says PathForge, not UI mock.
-2. **Domain/service adapter** — add a typed UI-facing adapter over
-   `src/service/` and `src/rendering/`. Map validation to actionable UI errors;
-   expose finalization, amendment, history, and document-model construction
-   entirely in-process. Acceptance: invalid input never finalizes; immutable
-   versions and baselines come from the service, not UI fixtures.
-3. **Local application state** — replace `report-context.tsx` fixture state with
-   adapter-backed in-memory state for one desktop session. Add a local file only
-   if restart persistence is proven necessary. Acceptance: samples, selection,
-   and history reflect service data; no SQLite or network API exists.
-4. **Editor and workflow** — connect new reports, result editing, keyboard
-   traversal, validation, flags, review, finalization, amendments, and history.
-   Acceptance: workflow tests cover entry through finalization and amendment,
-   including empty, loading, validation-error, and success states.
-5. **Preview and print** — render `buildReportDocumentModel` in React,
-   preserving every configured clinical field and historical snapshot value.
-   Keep the browser/WebView print dialog as the PDF route and exclude controls
-   from print CSS. Acceptance: readable A4 output and catalog changes cannot
-   alter finalized history.
-6. **Windows delivery** — complete only the Tauri configuration, native CI
-   verification, and docs needed for local Windows use. Acceptance: the
-   `desktop-windows` CI job runs the pinned Node/Rust toolchains and
-   `npm run desktop:build`; Windows build/launch does not depend on localhost
-   and contains no secrets or patient-identifiable data.
-7. **Cleanup and release verification** — remove obsolete product-path server
-   code only after desktop tests replace it; retain dashboard tooling separately
-   if useful. Acceptance: checks pass, no debug/dead route remains, and ledger
-   evidence plus launch instructions describe the desktop architecture.
+1. Keep the runtime and one-command verification green.
+2. Accept fixture-shaped report data through the structured report UI (patient,
+   laboratory test, per-parameter results) and show validation errors. The
+   earlier "pasted or sample report JSON" wording described the retired
+   `scripts/report-app.mjs` surface; the product now uses structured controls
+   (see R-json in requirements/open-questions.md). Fixture JSON remains the
+   authority for domain tests, not a user-facing input mode.
+3. Build the document model from the validated report.
+4. Render one readable house-format preview without hiding clinical fields.
+5. Verify browser printing and Save as PDF behavior.
+6. Use the supplied PDFs only for a short directional visual review; do not copy
+   vendor quirks or delay the prototype for exhaustive profiling.
 
-## Verification
+Exit gate: a user can run `npm run tauri dev`, load report data, see a correct
+preview, and print or save it as PDF.
 
-Run the relevant commands after each package, then the full set at the end:
+## Deferred until explicit owner approval
 
-```sh
-npm run verify
-(cd mock-ui && npm run lint && npm test && npm run build && npm run test:e2e)
-(cd mock-ui && npm run desktop:build) # locally on a Windows-capable environment;
-                                      # desktop-windows runs this in CI
-node .gitnexus/run.cjs detect-changes --scope all
-```
+- Production databases and recovery infrastructure.
+- Enterprise authorization, roles, retention, compliance, or signatures.
+- External systems and integrations.
+- Distributed systems, speculative scale work, or performance optimization.
+- Server-side archival PDF infrastructure and multiple report/template systems.
 
-Before any source-symbol edit, run GitNexus upstream impact analysis and report
-any `HIGH`, `CRITICAL`, or `UNKNOWN` result. Before committing, rerun graph
-change analysis; a partial or truncated result is not a clean result.
+## Definition of done for every task
+
+- Acceptance criteria are met and linked to code, a decision, or evidence.
+- Relevant tests run; formatting, lint, and type checks are clean.
+- No debug output, secrets, or patient-identifiable data is committed.
+- New uncertainty is recorded in `requirements/open-questions.md`.
+- If an invariant is affected, the task includes a regression test naming that invariant.
+
+## Progress workflow
+
+Edit only `status`, `notes`, and newly added tasks in `tasks/tasks.json`; task IDs and completed acceptance evidence should remain stable. Keep no more than one task per area `in_progress`. Split work that cannot be accepted independently. The dashboard is a view, while Git history is the audit trail.

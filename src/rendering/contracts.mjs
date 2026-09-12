@@ -64,10 +64,14 @@
 /**
  * Immutable input to a future formatter/PDF renderer. It contains semantic
  * structure and frozen clinical snapshots, but no coordinates or styling.
+ *
+ * A draft is modeled with `issue: null`; issue identity exists only once the
+ * version is finalized.
  * @typedef {{
  *   model_schema: 'pathforge.report-document/v1',
  *   report_version: import('../domain/contracts.mjs').ReportVersionIdentity,
- *   issue: {number: string, date: string},
+ *   lifecycle_state: 'draft' | 'finalized',
+ *   issue: {number: string, date: string} | null,
  *   lineage: {supersedes: import('../domain/contracts.mjs').ReportVersionIdentity | null},
  *   provenance: {
  *     source_catalog_version: string,

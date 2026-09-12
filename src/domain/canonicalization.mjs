@@ -1,6 +1,5 @@
-import { createHash } from 'node:crypto';
-
 import { cloneDomainValue, isPlainObject } from './internal.mjs';
+import { sha256Hex } from './sha256.mjs';
 import { DomainValidationError, validateResolvedPayload } from './validation.mjs';
 
 const NON_CLINICAL_PAYLOAD_ANNOTATIONS = new Set(['_comment', 'changed_in_this_version']);
@@ -68,5 +67,5 @@ export function stableClinicalSerialization(reportOrPayload) {
  * @param {unknown} reportOrPayload
  */
 export function semanticFingerprint(reportOrPayload) {
-  return createHash('sha256').update(stableClinicalSerialization(reportOrPayload)).digest('hex');
+  return sha256Hex(stableClinicalSerialization(reportOrPayload));
 }

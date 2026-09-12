@@ -179,7 +179,24 @@ test('invalid or incomplete semantic mappings fail visibly', async () => {
   delete draft.finalized_at;
   delete draft.finalized_by;
 
-  assert.throws(() => buildReportDocumentModel(draft, renderConfig), DocumentModelValidationError);
+  // A draft is modeled so preview/print/PDF share one document model, but it
+  // carries no issue identity until it is finalized.
+  const draftModel = buildReportDocumentModel(draft, renderConfig);
+  assert.equal(draftModel.lifecycle_state, 'draft');
+  assert.equal(draftModel.issue, null);
+
+  // Issue identity stays mandatory once the version claims to be finalized.
+  const finalizedWithoutIssue = structuredClone(report);
+  delete finalizedWithoutIssue.issue_number;
+  delete finalizedWithoutIssue.issue_date;
+  // Rejected by the domain validator before the renderer is even reached.
+  assert.throws(
+    () => buildReportDocumentModel(finalizedWithoutIssue, renderConfig),
+    (error) => {
+      assert.match(error.message, /issue_number must be a non-empty string/);
+      return true;
+    },
+  );
 
   const incompleteConfig = structuredClone(renderConfig);
   incompleteConfig.sections[0].fields.pop();

@@ -13,6 +13,6 @@
     "target": "es2024",
     "types": ["node"]
   },
-  "include": ["scripts/report-app.mjs", "src/**/*.mjs"],
+  "include": ["src/**/*.mjs"],
   "exclude": ["node_modules"]
 }

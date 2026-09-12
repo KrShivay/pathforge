@@ -8,17 +8,6 @@ report data into one house-format preview that can be printed or saved as PDF.
 Read [SCOPE.md](SCOPE.md) before planning work; it is the authority on what is in
 and out of scope.
 
-## Repository layout
-
-- `src/` contains the actual application domain, rendering, and service code.
-- `mock-ui/app/` contains the React/Tauri desktop product entry. Its screens
-  are adapter-backed and seeded from the checked-in report and catalog fixtures
-  in memory.
-- `scripts/` contains the legacy HTTP preview tooling and task dashboard; the
-  HTTP preview is not the product launch path.
-- `test/` contains tests for the production domain and report pipeline.
-- `docs/` contains requirements, decisions, fixtures, and design guidance.
-
 ## Local setup
 
 Prerequisites: Git, a Node version manager, and the Node.js version recorded in
@@ -29,22 +18,20 @@ dependencies.
 ```sh
 nvm use
 npm ci
-(cd mock-ui && npm ci)
+cp .env.example .env
 npm run verify
-npm run build
-npm start
+npm run tauri dev
 ```
 
-`npm start` launches the PathForge Tauri desktop shell. For browser-only UI
-development, run `cd mock-ui && npm run browser:dev`; this Vite server is a
-development aid and is not required by a packaged desktop build. The internal
-task dashboard remains available through `npm run dashboard`. Native ESM runs
-directly in Node, so `npm run build` validates the core source rather than
-emitting generated JavaScript. Use `npm run desktop:build` to build the Tauri
-desktop bundle. The `desktop-windows` GitHub Actions job is the native Windows
-verification route: it installs both lockfiles and the MSVC Rust toolchain, then
-runs this same build command. A passing local macOS build is not a substitute
-for that Windows job.
+The React + Tauri desktop app under `src/` is the product. `npm run tauri dev`
+runs the native shell with the local SQLite database; `npm run dev` serves the
+same UI in a browser for quick iteration, and `npm run build` produces the
+production web bundle. Load report data, generate the preview, then use
+**Print / Save PDF**. The internal task dashboard remains available through
+`npm run dashboard`.
+
+The standalone app in [`desktop/`](desktop/) is frozen UX reference only — it is
+not a build target and is not wired into `npm run verify` or CI.
 
 `npm run verify` is the local and CI quality gate. It checks formatting, lint,
 types, unit tests, domain fixtures, and the task ledger. Run `npm run format`

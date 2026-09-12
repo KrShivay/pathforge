@@ -152,6 +152,57 @@ test('validate and retrieval expose missing version/report references instead of
   assert.ok(Object.isFrozen(validation));
 });
 
+test('updateDraft replaces a draft payload under optimistic concurrency and rejects finalized versions', async () => {
+  const values = await fixtures();
+  const { service, created } = await createInitialDraft(values, 'R-DRAFT');
+
+  const edited = structuredClone(values.initial.resolved_payload);
+  edited['test.fasting_glucose'].value = 101;
+  const updated = await service.updateDraft({
+    identity: { report_id: 'R-DRAFT', version: 1 },
+    expectedRevision: created.revision,
+    resolvedPayload: edited,
+    actor: 'pathologist:kk',
+  });
+  assert.equal(updated.reportVersion.resolved_payload['test.fasting_glucose'].value, 101);
+  assert.equal(updated.reportVersion.lifecycle_state, 'draft');
+  assert.equal(updated.revision, 2);
+  assert.equal(updated.auditEvent.event_type, 'report_draft_updated');
+
+  await assert.rejects(
+    service.updateDraft({
+      identity: { report_id: 'R-DRAFT', version: 1 },
+      expectedRevision: 1,
+      resolvedPayload: edited,
+      actor: 'pathologist:kk',
+    }),
+    ConcurrencyConflictError,
+  );
+
+  await service.finalize({
+    identity: { report_id: 'R-DRAFT', version: 1 },
+    expectedRevision: 2,
+    issueNumber: 'ISSUE-1',
+    issueDate: '2026-07-02',
+    actor: 'pathologist:kk',
+  });
+  await assert.rejects(
+    service.updateDraft({
+      identity: { report_id: 'R-DRAFT', version: 1 },
+      expectedRevision: 3,
+      resolvedPayload: edited,
+      actor: 'pathologist:kk',
+    }),
+    /only a draft payload can be replaced/,
+  );
+
+  const history = await service.retrieveHistory({ reportId: 'R-DRAFT' });
+  assert.deepEqual(
+    history.auditEvents.map((event) => event.event_type),
+    ['report_draft_created', 'report_draft_updated', 'report_version_finalized'],
+  );
+});
+
 test('finalize is append-audited, immutable, and guarded by a per-report optimistic revision', async () => {
   const values = await fixtures();
   const { service, created } = await createInitialDraft(values, 'R-FINAL');
@@ -339,4 +390,49 @@ test('transaction rolls back version and audit writes when finalization cannot a
     history.auditEvents.map((event) => event.event_type),
     ['report_draft_created'],
   );
+});
+
+test('a failed durability write (onCommit) leaves the adapter as if the transaction never ran', async () => {
+  const values = await fixtures();
+  let failNextCommit = true;
+  const adapter = createInMemoryServiceAdapter({
+    catalogs: [values.catalogV1, values.catalogV2],
+    onCommit() {
+      if (failNextCommit) {
+        failNextCommit = false;
+        throw new Error('simulated durable-storage failure');
+      }
+    },
+  });
+  const service = createReportService({
+    ...adapter,
+    clock: createFixedClock('2026-07-02T14:10:00Z'),
+    idGenerator: createSequentialIdGenerator('test'),
+  });
+
+  await assert.rejects(
+    service.createDraft({
+      reportId: 'R-COMMIT-FAIL',
+      sourceCatalogVersion: 'V1',
+      resolvedPayload: structuredClone(values.initial.resolved_payload),
+      actor: 'pathologist:kk',
+    }),
+    /simulated durable-storage failure/,
+  );
+
+  // The caller was told the draft was never created, so the adapter must not
+  // silently hold it either — a reader (or a retry) must see no such report.
+  assert.deepEqual(adapter.snapshot().reports, []);
+  await assert.rejects(service.retrieveHistory({ reportId: 'R-COMMIT-FAIL' }), MissingReferenceError);
+
+  // A retry after the transient failure must succeed as a fresh draft, not
+  // fail with a spurious concurrency conflict against state that was
+  // reportedly never written.
+  const retried = await service.createDraft({
+    reportId: 'R-COMMIT-FAIL',
+    sourceCatalogVersion: 'V1',
+    resolvedPayload: structuredClone(values.initial.resolved_payload),
+    actor: 'pathologist:kk',
+  });
+  assert.equal(retried.reportVersion.version, 1);
 });

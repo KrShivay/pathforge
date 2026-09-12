@@ -1,6 +1,12 @@
 {
   "version": 1,
-  "statuses": ["todo", "in_progress", "blocked", "deferred", "done"],
+  "statuses": [
+    "todo",
+    "in_progress",
+    "blocked",
+    "deferred",
+    "done"
+  ],
   "tasks": [
     {
       "id": "DOC-001",
@@ -21,7 +27,9 @@
       "status": "deferred",
       "priority": "P0",
       "area": "0-evidence",
-      "dependsOn": ["DOC-001"],
+      "dependsOn": [
+        "DOC-001"
+      ],
       "acceptanceCriteria": [
         "Each sample has tagged descriptive observations",
         "Section and field inventory includes cardinality and provenance",
@@ -36,7 +44,9 @@
       "status": "deferred",
       "priority": "P0",
       "area": "0-evidence",
-      "dependsOn": ["DOC-001"],
+      "dependsOn": [
+        "DOC-001"
+      ],
       "acceptanceCriteria": [
         "Lifecycle and transition set are confirmed",
         "Snapshot boundary and identifier reuse policy are confirmed",
@@ -51,7 +61,9 @@
       "status": "done",
       "priority": "P0",
       "area": "0-evidence",
-      "dependsOn": ["DOC-002"],
+      "dependsOn": [
+        "DOC-002"
+      ],
       "acceptanceCriteria": [
         "Canonical payload and version identity decision passes INV-1 through INV-10",
         "Lifecycle and audit decision names unresolved assumptions",
@@ -65,7 +77,9 @@
       "status": "done",
       "priority": "P0",
       "area": "1-setup",
-      "dependsOn": ["DOC-001"],
+      "dependsOn": [
+        "DOC-001"
+      ],
       "acceptanceCriteria": [
         "Runtime and dependency versions are pinned",
         "A clean checkout has documented install, verify, build, and start commands",
@@ -80,7 +94,9 @@
       "status": "done",
       "priority": "P1",
       "area": "1-setup",
-      "dependsOn": ["SET-001"],
+      "dependsOn": [
+        "SET-001"
+      ],
       "acceptanceCriteria": [
         "CI installs from the lockfile",
         "CI runs the same verification command used locally",
@@ -94,7 +110,9 @@
       "status": "done",
       "priority": "P1",
       "area": "1-setup",
-      "dependsOn": ["DOC-001"],
+      "dependsOn": [
+        "DOC-001"
+      ],
       "acceptanceCriteria": [
         "An .mjs entry point reads docs/tasks/tasks.json",
         "Summary counts and full task details can be viewed locally",
@@ -109,7 +127,10 @@
       "status": "done",
       "priority": "P0",
       "area": "2-domain-core",
-      "dependsOn": ["SET-001", "DEC-002"],
+      "dependsOn": [
+        "SET-001",
+        "DEC-002"
+      ],
       "acceptanceCriteria": [
         "Catalog and report fixtures validate with actionable errors",
         "Contracts separate clinical, catalog, and presentation state",
@@ -123,7 +144,9 @@
       "status": "done",
       "priority": "P0",
       "area": "2-domain-core",
-      "dependsOn": ["DEV-001"],
+      "dependsOn": [
+        "DEV-001"
+      ],
       "acceptanceCriteria": [
         "Comparison identifies added, removed, and changed clinical values",
         "Presentation and issue metadata are excluded",
@@ -138,7 +161,9 @@
       "status": "done",
       "priority": "P0",
       "area": "2-domain-core",
-      "dependsOn": ["DEV-001"],
+      "dependsOn": [
+        "DEV-001"
+      ],
       "acceptanceCriteria": [
         "Finalization creates a stable immutable version and audit event",
         "Amendment begins from the superseded resolved payload",
@@ -153,7 +178,10 @@
       "status": "done",
       "priority": "P0",
       "area": "2-domain-core",
-      "dependsOn": ["DEV-002", "DEV-003"],
+      "dependsOn": [
+        "DEV-002",
+        "DEV-003"
+      ],
       "acceptanceCriteria": [
         "Historical stability, amendment baseline, semantic equality, deleted reference, and audit reconstruction tests pass",
         "Tests name the invariant they protect",
@@ -167,7 +195,10 @@
       "status": "deferred",
       "priority": "P1",
       "area": "3-service",
-      "dependsOn": ["DEV-004", "DEC-001"],
+      "dependsOn": [
+        "DEV-004",
+        "DEC-001"
+      ],
       "acceptanceCriteria": [
         "Versions and audit events survive restart",
         "Finalization is atomic and concurrency-safe",
@@ -198,7 +229,10 @@
       "status": "done",
       "priority": "P1",
       "area": "4-rendering",
-      "dependsOn": ["DEV-004", "DOC-002"],
+      "dependsOn": [
+        "DEV-004",
+        "DOC-002"
+      ],
       "acceptanceCriteria": [
         "Document model is derived only from a frozen report payload and explicit render config",
         "Current catalog is not queried when rendering history",
@@ -212,7 +246,9 @@
       "status": "deferred",
       "priority": "P1",
       "area": "4-rendering",
-      "dependsOn": ["REN-001"],
+      "dependsOn": [
+        "REN-001"
+      ],
       "acceptanceCriteria": [
         "PDF includes correct clinical content and issue identity",
         "Export records renderer/config version and checksum",
@@ -227,7 +263,11 @@
       "status": "deferred",
       "priority": "P1",
       "area": "5-hardening",
-      "dependsOn": ["SRV-001", "REN-002", "DEC-001"],
+      "dependsOn": [
+        "SRV-001",
+        "REN-002",
+        "DEC-001"
+      ],
       "acceptanceCriteria": [
         "Threat model and privacy review are approved",
         "Backup and restore exercise succeeds",
@@ -243,7 +283,9 @@
       "status": "done",
       "priority": "P0",
       "area": "4-rendering",
-      "dependsOn": ["REN-001"],
+      "dependsOn": [
+        "REN-001"
+      ],
       "acceptanceCriteria": [
         "npm start opens the report product rather than the internal task dashboard",
         "A fixture-shaped report can be loaded or pasted and validated",
@@ -255,32 +297,24 @@
     },
     {
       "id": "APP-002",
-      "title": "Adopt the React UI as the local desktop report workflow",
-      "status": "done",
+      "title": "Make the canonical document model the product path and add the on-screen preview",
+      "status": "in_progress",
       "priority": "P0",
-      "area": "6-desktop-ui",
-      "dependsOn": ["SRV-002", "REN-001", "APP-001"],
-      "acceptanceCriteria": [
-        "The Tauri/React product entry uses no product HTTP server or localhost dependency",
-        "The worklist, preview, finalization, amendment, and history use the in-memory service and document model",
-        "Validation, loading, empty, error, success, and print paths are covered by focused UI and workflow tests",
-        "The UI contains no hardcoded patient-identifiable sample data or out-of-scope authorization and backup claims"
+      "area": "4-rendering",
+      "dependsOn": [
+        "APP-001"
       ],
-      "notes": "Verified 2026-09-09: mock-ui is the PathForge desktop entry; ReportAdapter seeds approved fixtures through the existing in-memory service and renders immutable document models. Root verify passed (31 tests); mock lint/build passed; 13 UI tests and 7 Playwright workflows passed, including real finalization, amendment lineage, validation, preview, history, and print invocation. Browser Vite is development-only."
-    },
-    {
-      "id": "APP-003",
-      "title": "Verify the packaged Windows desktop application",
-      "status": "blocked",
-      "priority": "P0",
-      "area": "7-windows-delivery",
-      "dependsOn": ["APP-002"],
       "acceptanceCriteria": [
-        "A Windows-capable environment builds the Tauri MSI or NSIS bundle",
-        "The packaged application launches without localhost or scripts/report-app.mjs",
-        "Print / Save as PDF works from the Windows desktop application"
+        "The React product path builds its report through src/rendering/document-model.mjs",
+        "No second document-model implementation remains in the UI layer",
+        "A draft is representable in the document model; finalized reports still require issue identity",
+        "CBC result entry reaches the document model with name, value, unit and reference range intact",
+        "The report editor shows an on-screen preview rendered from the same node that prints",
+        "Preview, browser print and PDF share one report presentation structure",
+        "npm run verify passes",
+        "A finalized report renders in the report screen without a domain validation crash"
       ],
-      "notes": "The `desktop-windows` GitHub Actions job now provides the native verification route: it installs the pinned Node version, both lockfiles, and the stable MSVC Rust toolchain before running `npm run desktop:build`. This macOS host still cannot execute that job locally (no Cargo/Rustup); keep this task blocked until a Windows CI run verifies the MSI/NSIS build and packaged launch/print behavior."
+      "notes": "Canonical model wired in: reportModel.ts reworked from a rival model into a presenter over buildReportDocumentModel + buildWorkspaceDocumentConfig. Draft support added (issue: null; finalized still requires issue identity) - recorded as Q16. Report styling lifted out of @media print into one shared rule set so the screen preview cannot diverge from print. Dead duplicates removed: src/domain/report-bridge.ts, src/domain/validation.ts. Tests added: test/rendering/workspace-config.test.mjs, test/workspace/cbc-report.test.mjs. Q17 (result flags) deferred by owner decision. REMAINING: manual GUI verification of the exit gate under npm run tauri dev - not performed, no GUI in this environment. FIX (GUI-reported): finalizing blanked the screen with \"finalized_by must be a non-empty string\". Finalization provenance recorded by the domain (finalized_by/finalized_at, or amended_by/amended_at/amendment_type/amendment_reason for an amendment, plus supersedes) was dropped in ReportContext's version-to-snapshot mapping and never reconstructed by the presenter. Propagated through ReportContext -> Report -> ReportEditor, and version reconstruction moved into report-bridge.buildWorkspaceReportVersion so there is one implementation. Validator unchanged. Regression tests: test/workspace/finalized-preview.test.mjs."
     }
   ]
 }

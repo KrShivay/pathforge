@@ -18,6 +18,8 @@ Unresolved items requiring a domain owner. Agents: when a decision depends on an
 ## Rendering & PDF
 - **Q7.** Must historical **renderer versions** remain executable, or only historical *payloads* remain renderable by the current renderer?
 - **Q8.** Which supplied PDF variations (if any) are ever normative vs. all illustrative? (Manifest marks all `illustrative`.) — *Partly resolved by R-fmt: samples are directional, not a format to reproduce.*
+- **Q16.** Should an **unfinalized draft** be representable as a document model at all, and is `issue: null` the right representation for "no issue identity yet"? The preview/print/PDF paths need one model for both draft and finalized reports, so `buildReportDocumentModel` was widened to accept drafts and emit `issue: null`; issue identity remains mandatory once finalized. Alternatives: a separate draft projection, or a provisional issue identifier (rejected — an issue number is a real clinical identifier and must not be invented). — `ASSUMPTION`
+- **Q17.** No domain rule defines how a result `flag` (H/L/abnormal) is derived, even though `resolved_payload` entries support a `flag` field (`contracts.mjs`, `validation.mjs`). Deriving it mechanically from a numeric value vs its frozen reference range is arithmetic rather than clinical inference, but no requirement authorises it. **Deferred by owner decision:** no flag is computed and the report shows no Flag column until a domain owner specifies the rule. — `UNKNOWN`
 
 ## Amendment sub-questions (opened by R9)
 - **Q9a.** Is the amended report's new "issue number" the same identifier space as an invoice/accession number, or a distinct report-issue sequence? (Owner used "invoice/issue number" interchangeably.)
@@ -43,6 +45,6 @@ Unresolved items requiring a domain owner. Agents: when a decision depends on an
 | **R10** (was Q10) | Disciplines in scope | **Clinical pathology only** (lab-panel style: values, units, reference ranges, tables). No histopathology. | `CONFIRMED_REQUIREMENT` |
 | **R13** (was Q13) | Scale | Current prototype has **one or two non-concurrent users**. Do not add scale infrastructure or optimization without explicit approval. | `CONFIRMED_REQUIREMENT` |
 | **R-fmt** (was part of Q8) | Sample authority | Sample PDFs are **directional understanding aids**, not a format to reproduce. The house format is being **designed**, informed by the samples. | `CONFIRMED_REQUIREMENT` |
-
+| **R-json** (was PLAN.md wording) | Fixture-shaped input: pasted JSON or structured UI? | **Structured report UI.** The product accepts fixture-shaped data through patient + laboratory-test + per-parameter result controls, which produce the same `resolved_payload` the fixtures describe. No raw-JSON editor is added. `docs/PLAN.md` step 2 updated to match; `docs/fixtures/*.json` stay authoritative for domain tests only. | `CONFIRMED_REQUIREMENT` (design/README preference; SCOPE.md unchanged) |
 ### Scope note carried into the docs
 Scope is **clinical pathology; one or two non-concurrent users; single house format; data-to-preview-to-print/PDF; amendments retained only as the already-defined simple version behavior.** Enterprise authorization, integrations, production persistence, compliance programs, distributed systems, and speculative scale work are deferred by [`SCOPE.md`](../../SCOPE.md). The five samples are illustrative only.

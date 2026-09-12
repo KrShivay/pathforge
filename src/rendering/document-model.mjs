@@ -197,10 +197,10 @@ function copyUnresolvedInput(input) {
 export function buildReportDocumentModel(reportInput, configInput) {
   assertValidReport(reportInput, 'document model report');
   const report = /** @type {import('../domain/contracts.mjs').ReportVersion} */ (reportInput);
-  if (report.lifecycle_state !== REPORT_STATES.FINALIZED) {
-    throw new DocumentModelValidationError(['report must be finalized before document modeling']);
-  }
-  if (report.issue_number === undefined || report.issue_date === undefined) {
+  // Drafts are modeled so the preview, print and PDF paths all share one
+  // document model. Issue identity is still mandatory once finalized.
+  const isFinalized = report.lifecycle_state === REPORT_STATES.FINALIZED;
+  if (isFinalized && (report.issue_number === undefined || report.issue_date === undefined)) {
     throw new DocumentModelValidationError(['finalized report must have issue identity']);
   }
 
@@ -243,7 +243,8 @@ export function buildReportDocumentModel(reportInput, configInput) {
   const model = {
     model_schema: DOCUMENT_MODEL_SCHEMA,
     report_version: { report_id: report.report_id, version: report.version },
-    issue: { number: report.issue_number, date: report.issue_date },
+    lifecycle_state: isFinalized ? REPORT_STATES.FINALIZED : REPORT_STATES.DRAFT,
+    issue: isFinalized ? { number: report.issue_number, date: report.issue_date } : null,
     lineage: {
       supersedes:
         report.supersedes === null

@@ -54,7 +54,7 @@ import { ServiceConfigurationError } from './errors.mjs';
 /**
  * @typedef {{
  *   event_id: string,
- *   event_type: 'report_draft_created' | 'report_version_finalized' | 'amendment_draft_created' | 'report_version_superseded',
+ *   event_type: 'report_draft_created' | 'report_draft_updated' | 'report_version_finalized' | 'amendment_draft_created' | 'report_version_superseded',
  *   report_version: import('../domain/contracts.mjs').ReportVersionIdentity,
  *   actor: string,
  *   occurred_at: string,
