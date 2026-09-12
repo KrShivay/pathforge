@@ -10,6 +10,8 @@ import {
   Save,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import Autocomplete from "@mui/material/Autocomplete";
+import TextField from "@mui/material/TextField";
 
 import PrintableReport from "../components/report/PrintableReport";
 import ReportPreviewModal from "../components/report/ReportPreviewModal";
@@ -18,9 +20,8 @@ import { formatReportDate } from "../components/report/reportMeta";
 import { buildReportModel } from "../components/report/reportModel";
 import { downloadReportPdf } from "../components/report/reportPdf";
 import { sanitizeText } from "../domain/textRules.mjs";
+import { normalizeSpecimens } from "../domain/report-bridge.mjs";
 import {
-  confirmAction,
-  confirmDestructive,
   notifyError,
   notifyErrorList,
   notifySuccess,
@@ -29,32 +30,38 @@ import {
 } from "../lib/dialog";
 import { usePatients } from "../store/PatientContext";
 import { useReports, type TestResult } from "../store/ReportContext";
+import { useBranding } from "../store/BrandingContext";
 
 interface ReportEditorProps {
   reportId: string;
   onBack: () => void;
   onOpenReport: (reportId: string) => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
-function ReportEditor({ reportId, onBack, onOpenReport }: ReportEditorProps) {
+function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportEditorProps) {
   const { getReport, updateReport, finalizeReport, createAmendment } =
     useReports();
 
   const [busy, setBusy] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // Screen preview of the exact document that prints. Same component, same
   // canonical model - never a second layout.
   const [showPreview, setShowPreview] = useState(false);
 
   const { patients } = usePatients();
+  const { profile } = useBranding();
 
   const foundReport = getReport(reportId);
 
   const [formData, setFormData] = useState({
-    specimenType: "",
+    specimens: [] as string[],
+    referringClinician: "",
     clinicalHistory: "",
     findings: "",
     diagnosis: "",
+    interpretation: "",
     testResults: [] as TestResult[],
   });
 
@@ -71,10 +78,12 @@ function ReportEditor({ reportId, onBack, onOpenReport }: ReportEditorProps) {
   // actually changes.
   const savedContentSignature = foundReport
     ? `${foundReport.id}::${JSON.stringify({
-        specimenType: foundReport.specimenType,
+        specimens: foundReport.specimens,
+        referringClinician: foundReport.referringClinician,
         clinicalHistory: foundReport.clinicalHistory,
         findings: foundReport.findings,
         diagnosis: foundReport.diagnosis,
+        interpretation: foundReport.interpretation,
         testResults: foundReport.testResults,
       })}`
     : null;
@@ -83,10 +92,12 @@ function ReportEditor({ reportId, onBack, onOpenReport }: ReportEditorProps) {
     if (!foundReport) return;
 
     setFormData({
-      specimenType: foundReport.specimenType ?? "",
+      specimens: foundReport.specimens ?? [],
+      referringClinician: foundReport.referringClinician ?? "",
       clinicalHistory: foundReport.clinicalHistory ?? "",
       findings: foundReport.findings ?? "",
       diagnosis: foundReport.diagnosis ?? "",
+      interpretation: foundReport.interpretation ?? "",
       testResults: foundReport.testResults ?? [],
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -124,17 +135,36 @@ function ReportEditor({ reportId, onBack, onOpenReport }: ReportEditorProps) {
             panelName: foundReport.testName,
             department: foundReport.department,
             reportDate: foundReport.createdAt,
+            laboratoryProfile: foundReport.brandingSnapshot ?? profile,
             content: {
-              specimenType: formData.specimenType,
+              specimens: formData.specimens,
+              referringClinician: formData.referringClinician,
               clinicalHistory: formData.clinicalHistory,
               findings: formData.findings,
               diagnosis: formData.diagnosis,
+              interpretation: formData.interpretation,
               testResults: formData.testResults,
             },
           })
         : null,
-    [foundReport, patient, formData],
+    [foundReport, patient, formData, profile],
   );
+
+  const isDirty = Boolean(
+    foundReport &&
+      foundReport.status !== "finalized" &&
+      JSON.stringify(formData) !==
+        JSON.stringify({
+          specimens: foundReport.specimens ?? [],
+          referringClinician: foundReport.referringClinician ?? "",
+          clinicalHistory: foundReport.clinicalHistory ?? "",
+          findings: foundReport.findings ?? "",
+          diagnosis: foundReport.diagnosis ?? "",
+          interpretation: foundReport.interpretation ?? "",
+          testResults: foundReport.testResults ?? [],
+        }),
+  );
+  useEffect(() => onDirtyChange?.(isDirty), [isDirty, onDirtyChange]);
 
   // ========================================
   // REPORT NOT FOUND
@@ -157,33 +187,6 @@ function ReportEditor({ reportId, onBack, onOpenReport }: ReportEditorProps) {
 
   const isFinalized = report.status === "finalized";
 
-  // Unsaved edits relative to what's actually persisted. Compared against the
-  // same fields `savedContentSignature` tracks, so this flips back to false
-  // the moment a save (or the initial load) catches formData up.
-  const isDirty =
-    !isFinalized &&
-    JSON.stringify(formData) !==
-      JSON.stringify({
-        specimenType: report.specimenType ?? "",
-        clinicalHistory: report.clinicalHistory ?? "",
-        findings: report.findings ?? "",
-        diagnosis: report.diagnosis ?? "",
-        testResults: report.testResults ?? [],
-      });
-
-  async function handleBack() {
-    if (isDirty) {
-      const proceed = await confirmDestructive({
-        title: "Discard unsaved changes?",
-        text: "This report has edits that have not been saved. Leaving now will discard them.",
-        confirmText: "Discard",
-        cancelText: "Keep editing",
-      });
-      if (!proceed) return;
-    }
-    onBack();
-  }
-
   // ========================================
   // HANDLE FORM CHANGE
   // ========================================
@@ -199,6 +202,7 @@ function ReportEditor({ reportId, onBack, onOpenReport }: ReportEditorProps) {
       ...previous,
       [name]: sanitizeText(value, "general"),
     }));
+    if (value.trim()) setValidationErrors((previous) => { const next = { ...previous }; delete next[name]; return next; });
   }
 
   function handleResultChange(
@@ -217,6 +221,7 @@ function ReportEditor({ reportId, onBack, onOpenReport }: ReportEditorProps) {
           : result,
       ),
     }));
+    if (clean.trim()) setValidationErrors((previous) => { const next = { ...previous }; delete next[`result.${testId}::${parameterId}`]; return next; });
   }
 
   // ========================================
@@ -241,10 +246,12 @@ function ReportEditor({ reportId, onBack, onOpenReport }: ReportEditorProps) {
     setBusy(true);
     try {
       await updateReport(report.id, {
-        specimenType: formData.specimenType,
+        specimens: formData.specimens,
+        referringClinician: formData.referringClinician,
         clinicalHistory: formData.clinicalHistory,
         findings: formData.findings,
         diagnosis: formData.diagnosis,
+        interpretation: formData.interpretation,
         testResults: formData.testResults,
       });
     } catch (error) {
@@ -267,32 +274,17 @@ function ReportEditor({ reportId, onBack, onOpenReport }: ReportEditorProps) {
   async function handleFinalize() {
     if (isFinalized || busy) return;
 
-    // Soft confirmation: microscopic findings and/or diagnosis missing (spec §17).
-    const missing: string[] = [];
-    if (!formData.findings.trim()) missing.push("microscopic findings");
-    if (!formData.diagnosis.trim()) missing.push("diagnosis");
-    if (missing.length > 0) {
-      const proceed = await confirmAction({
-        icon: "warning",
-        title: "Finalize without complete clinical detail?",
-        text: `No ${missing.join(" and/or ")} ${
-          missing.length === 1 ? "has" : "have"
-        } been entered. Do you want to proceed?`,
-        confirmText: "Proceed",
-        cancelText: "Go back",
-      });
-      if (!proceed) return;
-    }
-
     setBusy(true);
     let result;
     try {
       // Persist the current edits first, then validate + finalize.
       await updateReport(report.id, {
-        specimenType: formData.specimenType,
+        specimens: formData.specimens,
+        referringClinician: formData.referringClinician,
         clinicalHistory: formData.clinicalHistory,
         findings: formData.findings,
         diagnosis: formData.diagnosis,
+        interpretation: formData.interpretation,
         testResults: formData.testResults,
       });
       result = await finalizeReport(report.id);
@@ -304,6 +296,13 @@ function ReportEditor({ reportId, onBack, onOpenReport }: ReportEditorProps) {
     }
 
     if (!result.valid) {
+      const nextErrors = Object.fromEntries(result.errors.map((issue) => [issue.field, issue.message]));
+      setValidationErrors(nextErrors);
+      requestAnimationFrame(() => {
+        const first = result.errors[0]?.field;
+        const id = first === "specimens" ? "ed-specimens" : first === "findings" ? "ed-findings" : first === "diagnosis" ? "ed-diagnosis" : undefined;
+        if (id) document.getElementById(id)?.focus();
+      });
       void notifyErrorList(
         "Cannot finalize this report",
         result.errors.map((issue) => issue.message),
@@ -316,15 +315,14 @@ function ReportEditor({ reportId, onBack, onOpenReport }: ReportEditorProps) {
     // finalized version from the finalize result, not getReport(): the hook's
     // reports array has not re-rendered yet inside this handler.
     const finalized = result.report;
-    const choice = await showFinalizedDialog({
+    await showFinalizedDialog({
       reportNo: finalized?.issueNumber ?? model.reportNo,
       version: finalized?.version ?? report.version,
       finalizedOn: formatReportDate(
         finalized?.finalizedAt ?? new Date().toISOString(),
       ),
     });
-    if (choice === "download") await handleDownloadPdf();
-    else if (choice === "print") handlePrint();
+    setValidationErrors({});
   }
 
   // ========================================
@@ -413,7 +411,7 @@ function ReportEditor({ reportId, onBack, onOpenReport }: ReportEditorProps) {
           <button
             type="button"
             className="back-button"
-            onClick={() => void handleBack()}
+            onClick={onBack}
           >
             ← Back to Worklist
           </button>
@@ -543,16 +541,15 @@ function ReportEditor({ reportId, onBack, onOpenReport }: ReportEditorProps) {
 
             <div className="editor-card-body">
               <div className="form-group specimen-form-group">
-                <label htmlFor="ed-specimen-type">Specimen Type</label>
-                <input
-                  id="ed-specimen-type"
-                  type="text"
-                  name="specimenType"
-                  value={formData.specimenType}
-                  onChange={handleChange}
+                <label htmlFor="ed-specimens">Specimens</label>
+                <Autocomplete
+                  multiple
+                  freeSolo
+                  options={["Whole Blood EDTA", "Serum", "Plasma", "Urine", "Stool", "CSF", "Sputum", "Swab", "Tissue"]}
+                  value={formData.specimens}
                   disabled={isFinalized || busy}
-                  placeholder="Enter specimen type (e.g. Whole Blood, Serum, Urine)…"
-                  autoFocus={!isFinalized}
+                  onChange={(_event, values) => { const specimens = normalizeSpecimens(values); setFormData((previous) => ({ ...previous, specimens })); if (specimens.length) setValidationErrors((previous) => { const next = { ...previous }; delete next.specimens; return next; }); }}
+                  renderInput={(params) => <TextField {...params} id="ed-specimens" placeholder={formData.specimens.length ? undefined : "Select or type specimens…"} autoFocus={!isFinalized} error={Boolean(validationErrors.specimens)} helperText={validationErrors.specimens} />}
                 />
               </div>
             </div>
@@ -600,6 +597,10 @@ function ReportEditor({ reportId, onBack, onOpenReport }: ReportEditorProps) {
 
             <div className="editor-card-body narrative-card-body">
               <div className="narrative-field">
+                <div className="narrative-label-row"><label htmlFor="ed-referrer">Referring Clinician</label><span className="field-pill optional">Optional</span></div>
+                <input id="ed-referrer" name="referringClinician" value={formData.referringClinician} onChange={handleChange} disabled={isFinalized || busy} placeholder="Clinician name…" />
+              </div>
+              <div className="narrative-field">
                 <div className="narrative-label-row">
                   <label htmlFor="ed-clinical-history">Clinical History</label>
                   <span className="field-pill optional">Optional</span>
@@ -619,7 +620,7 @@ function ReportEditor({ reportId, onBack, onOpenReport }: ReportEditorProps) {
                 <div className="narrative-label-row">
                   <label htmlFor="ed-findings">Microscopic Findings</label>
                   <span className="field-pill required">
-                    Required to finalize
+                    Needed for finalization
                   </span>
                 </div>
                 <textarea
@@ -630,14 +631,17 @@ function ReportEditor({ reportId, onBack, onOpenReport }: ReportEditorProps) {
                   rows={5}
                   disabled={isFinalized || busy}
                   placeholder="Describe gross and microscopic pathological findings and morphology…"
+                  aria-invalid={Boolean(validationErrors.findings)}
+                  aria-describedby={validationErrors.findings ? "ed-findings-error" : undefined}
                 />
+                {validationErrors.findings && <p id="ed-findings-error" className="field-error">{validationErrors.findings}</p>}
               </div>
 
               <div className="narrative-field">
                 <div className="narrative-label-row">
                   <label htmlFor="ed-diagnosis">Diagnosis</label>
                   <span className="field-pill required">
-                    Required to finalize
+                    Needed for finalization
                   </span>
                 </div>
                 <textarea
@@ -648,7 +652,14 @@ function ReportEditor({ reportId, onBack, onOpenReport }: ReportEditorProps) {
                   rows={4}
                   disabled={isFinalized || busy}
                   placeholder="Enter final clinical and pathological diagnosis / impression…"
+                  aria-invalid={Boolean(validationErrors.diagnosis)}
+                  aria-describedby={validationErrors.diagnosis ? "ed-diagnosis-error" : undefined}
                 />
+                {validationErrors.diagnosis && <p id="ed-diagnosis-error" className="field-error">{validationErrors.diagnosis}</p>}
+              </div>
+              <div className="narrative-field">
+                <div className="narrative-label-row"><label htmlFor="ed-interpretation">Interpretation / Remarks</label><span className="field-pill optional">Optional</span></div>
+                <textarea id="ed-interpretation" name="interpretation" value={formData.interpretation} onChange={handleChange} rows={4} disabled={isFinalized || busy} placeholder="Report-level interpretation or remarks…" />
               </div>
             </div>
           </div>

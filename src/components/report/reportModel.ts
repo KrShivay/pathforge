@@ -7,6 +7,7 @@ import {
 import { accession, formatReportDate } from "./reportMeta";
 import { computeFlag, flagLabel, type ResultFlag } from "./flags";
 import { formatReferenceRange } from "./referenceRange";
+import { DEFAULT_LABORATORY_PROFILE, type LaboratoryProfile } from "../../store/branding";
 
 /**
  * House-format *presenter*. It owns the wording of the printed page — brand
@@ -19,10 +20,12 @@ import { formatReferenceRange } from "./referenceRange";
  */
 
 export interface ReportContent {
-  specimenType: string;
+  specimens: string[];
+  referringClinician: string;
   clinicalHistory: string;
   findings: string;
   diagnosis: string;
+  interpretation: string;
   testResults: TestResult[];
 }
 
@@ -47,6 +50,7 @@ export interface ReportModelInput {
   panelName?: string;
   department?: string;
   reportDate?: string;
+  laboratoryProfile?: LaboratoryProfile;
   content: ReportContent;
 }
 
@@ -80,13 +84,14 @@ export interface ReportSignoff {
 }
 
 export interface ReportModel {
-  brand: { name: string; tagline: string; strapline: string };
+  brand: { name: string; tagline: string; strapline: string; logoDataUrl: string; contact: string };
   documentTitle: string;
   reportNo: string;
   version: number;
   statusLabel: string;
   isFinalized: boolean;
   draftNotice: string | null;
+  amendmentNotice: string | null;
   band: { label: string; value: string }[];
   resultsHeading: string;
   resultGroups: ReportResultGroup[];
@@ -124,6 +129,7 @@ const NARRATIVE_ROLES = [
   "clinical-history",
   "microscopic-findings",
   "diagnosis",
+  "interpretation",
 ] as const;
 
 interface DocumentSectionLike {
@@ -166,6 +172,7 @@ function valueForRole(
 }
 
 export function buildReportModel(input: ReportModelInput): ReportModel {
+  const profile = input.laboratoryProfile ?? DEFAULT_LABORATORY_PROFILE;
   const patientSlug =
     input.patientName.trim().replace(/\s+/g, "_").replace(/[^\w-]/g, "") ||
     "Report";
@@ -239,13 +246,23 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
   }));
 
   return {
-    brand: BRAND,
-    documentTitle: "Pathology Report",
+    brand: {
+      name: profile.laboratoryName || BRAND.name,
+      tagline: profile.reportSubtitle || BRAND.tagline,
+      strapline: [profile.accreditationName, profile.accreditationNumber, profile.registrationNumber].filter(Boolean).join(" · ") || BRAND.strapline,
+      logoDataUrl: profile.logoDataUrl,
+      contact: [profile.addressLine1, profile.addressLine2, profile.city, profile.state, profile.postcode, profile.country, profile.phone, profile.email, profile.website].filter(Boolean).join(" · "),
+    },
+    documentTitle: profile.reportSubtitle || "Pathology Report",
     reportNo,
     version: document.report_version.version,
     statusLabel: input.isFinalized ? "Final" : "Draft",
     isFinalized: input.isFinalized,
     draftNotice: input.isFinalized ? null : DRAFT_NOTICE,
+    amendmentNotice:
+      input.isFinalized && input.supersedesVersion
+        ? `Amended Report - supersedes report version ${input.supersedesVersion}`
+        : null,
     band: [
       { label: "Patient Name", value: input.patientName },
       { label: "Patient ID", value: input.patientCode },
@@ -258,13 +275,20 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
       },
       { label: "Sex", value: input.patientSex?.trim() || DASH },
       { label: "Phone", value: input.patientPhone?.trim() || DASH },
+      {
+        label: "Referring Clinician",
+        value: valueForRole(sections, "referring-clinician") || DASH,
+      },
       { label: "Test(s)", value: input.panelName || DASH },
       {
-        label: "Specimen",
+        label: "Specimens",
         value: valueForRole(sections, "specimen-details") || "Not specified",
       },
       { label: "Department", value: input.department || DASH },
-      { label: "Registered", value: formatReportDate(input.reportDate) },
+      {
+        label: "Report date",
+        value: formatReportDate(input.issueDate ?? input.reportDate),
+      },
       { label: "Report No.", value: reportNo },
     ],
     resultsHeading: "Laboratory Results",
@@ -273,20 +297,18 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
     narratives,
     signoff: [
       {
-        role: "Performed & reported by",
-        note: "PathForge Clinical Pathology Workspace",
+        role: "Lab technologist",
+        note: [profile.technologistName, profile.technologistDesignation].filter(Boolean).join(", ") || "Lab technologist",
       },
       {
-        role: "Verified & authorised by",
-        note: input.isFinalized
-          ? `Electronically verified ${formatReportDate(input.finalizedAt)}`
-          : "Pending verification",
+        role: "Consultant pathologist",
+        note: [profile.pathologistName, profile.pathologistQualifications, profile.pathologistDesignation].filter(Boolean).join(", ") || "Consultant pathologist",
       },
     ],
     authorisationNote: input.isFinalized ? AUTH_NOTE_FINAL : AUTH_NOTE_DRAFT,
     endOfReport: "— End of Report —",
-    footer: { reference: `${BRAND.name} · ${reportNo}`, disclaimer: DISCLAIMER },
-    generatedAt: new Date().toLocaleString(),
+    footer: { reference: `${profile.shortName || BRAND.name} · ${reportNo}`, disclaimer: profile.footerNote || profile.phone || DISCLAIMER },
+    generatedAt: formatReportDate(input.issueDate ?? input.reportDate),
     fileBaseName: `PathForge_${patientSlug}_${reportNo.replace(/[^\w-]/g, "_")}`,
     sourceCatalogVersion: document.provenance.source_catalog_version,
   };

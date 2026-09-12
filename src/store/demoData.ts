@@ -21,10 +21,12 @@ export interface DemoTestResult {
 export interface DemoReport {
   id: string;
   patientId: string;
-  specimenType: string;
+  specimens: string[];
+  referringClinician: string;
   clinicalHistory: string;
   findings: string;
   diagnosis: string;
+  interpretation: string;
   testId: string;
   testName: string;
   department: string;
@@ -172,11 +174,13 @@ export const DEMO_REPORTS: DemoReport[] = [
   {
     id: "demo-report-001",
     patientId: "demo-patient-001",
-    specimenType: "Whole blood EDTA",
+    specimens: ["Whole blood EDTA", "Peripheral blood smear"],
+    referringClinician: "Dr Mira Sen",
     clinicalHistory: "Routine annual health screening.",
     findings:
       "Red cells are normocytic and normochromic. White cell and platelet counts are within reference limits.",
     diagnosis: "CBC within reference limits.",
+    interpretation: "Correlate with the clinical presentation.",
     testId: "cbc",
     testName: "Complete Blood Count (CBC)",
     department: "Hematology",
@@ -187,10 +191,12 @@ export const DEMO_REPORTS: DemoReport[] = [
   {
     id: "demo-report-002",
     patientId: "demo-patient-002",
-    specimenType: "Serum",
+    specimens: ["Serum"],
+    referringClinician: "Dr Neel Roy",
     clinicalHistory: "Follow-up testing for fatigue.",
     findings: "Liver enzymes are within the supplied reference intervals.",
     diagnosis: "No significant biochemical abnormality identified.",
+    interpretation: "Results apply to the submitted specimen.",
     testId: "lft",
     testName: "Liver Function Test (LFT)",
     department: "Biochemistry",
@@ -201,10 +207,12 @@ export const DEMO_REPORTS: DemoReport[] = [
   {
     id: "demo-report-003",
     patientId: "demo-patient-003",
-    specimenType: "Whole blood EDTA",
+    specimens: ["Whole blood EDTA"],
+    referringClinician: "",
     clinicalHistory: "Monitoring after medication change.",
     findings: "CBC values entered for clinician review.",
     diagnosis: "Pending review.",
+    interpretation: "",
     testId: "cbc",
     testName: "Complete Blood Count (CBC)",
     department: "Hematology",
@@ -218,10 +226,12 @@ export const DEMO_REPORTS: DemoReport[] = [
   {
     id: "demo-report-004",
     patientId: "demo-patient-004",
-    specimenType: "Urine",
+    specimens: ["Urine"],
+    referringClinician: "",
     clinicalHistory: "Dysuria for three days.",
     findings: "Microscopy pending.",
     diagnosis: "",
+    interpretation: "",
     testId: "urine-analysis",
     testName: "Urine Complete Analysis",
     department: "Clinical Pathology",

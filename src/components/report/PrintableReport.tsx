@@ -17,9 +17,11 @@ export default function PrintableReport({ model }: PrintableReportProps) {
     >
       <header className="pr-letterhead">
         <div className="pr-brand">
+          {model.brand.logoDataUrl && <img className="pr-logo" src={model.brand.logoDataUrl} alt="Laboratory logo" />}
           <h1>{model.brand.name}</h1>
           <p className="pr-tagline">{model.brand.tagline}</p>
           <p className="pr-accred">{model.brand.strapline}</p>
+          {model.brand.contact && <p className="pr-contact">{model.brand.contact}</p>}
         </div>
 
         <div className="pr-docmeta">
@@ -29,20 +31,16 @@ export default function PrintableReport({ model }: PrintableReportProps) {
               <dt>Report No.</dt>
               <dd>{model.reportNo}</dd>
             </div>
-            <div>
-              <dt>Version</dt>
-              <dd>{model.version}</dd>
-            </div>
-            <div>
-              <dt>Status</dt>
-              <dd>{model.statusLabel}</dd>
-            </div>
+            {!model.isFinalized && <div><dt>Status</dt><dd>Draft</dd></div>}
           </dl>
         </div>
       </header>
 
       {model.draftNotice && (
         <p className="pr-draftbanner">{model.draftNotice}</p>
+      )}
+      {model.amendmentNotice && (
+        <p className="pr-amendmentbanner">{model.amendmentNotice}</p>
       )}
 
       <section className="pr-band" aria-label="Patient and specimen details">
@@ -138,7 +136,7 @@ export default function PrintableReport({ model }: PrintableReportProps) {
       <footer className="pr-footer">
         <span>{model.footer.reference}</span>
         <span className="pr-disclaimer">{model.footer.disclaimer}</span>
-        <span>Generated {model.generatedAt}</span>
+        <span>Report date {model.generatedAt}</span>
       </footer>
     </div>
   );

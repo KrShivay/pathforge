@@ -1,14 +1,15 @@
 import {
-  ArrowRight,
   CheckCircle2,
   Clock,
   FileText,
   GitBranch,
   History,
 } from "lucide-react";
+import { useMemo, useState } from "react";
 import PageHeading from "../components/layout/PageHeading";
 import { usePatients } from "../store/PatientContext";
 import { useReports } from "../store/ReportContext";
+import { filterHistoryReports, formatDate } from "../lib/reportFilters.mjs";
 
 interface VersionHistoryProps {
   onSelectReport: (reportId: string) => void;
@@ -26,21 +27,12 @@ export default function VersionHistory({
     return patients.find((p) => p.id === patientId);
   }
 
-  function formatDate(date?: string) {
-    if (!date) return "—";
-    try {
-      return new Date(date).toLocaleString(undefined, {
-        dateStyle: "medium",
-        timeStyle: "short",
-      });
-    } catch {
-      return date;
-    }
-  }
-
-  const versionedReports = [...reports].sort((a, b) => {
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
+  const [search, setSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [lifecycle, setLifecycle] = useState("all");
+  const [sort, setSort] = useState("newest");
+  const versionedReports = useMemo(() => filterHistoryReports(reports, patients, { search, from: dateFrom, to: dateTo, lifecycle, sort }), [reports, patients, search, dateFrom, dateTo, lifecycle, sort]);
 
   return (
     <div className="version-history-page viewport-page">
@@ -60,6 +52,14 @@ export default function VersionHistory({
               {versionedReports.length === 1 ? "version" : "versions"}
             </p>
           </div>
+          <div className="report-filter-row">
+            <label>Search<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Patient or report…" /></label>
+            <label>Event from<input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} /></label>
+            <label>Event to<input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} /></label>
+            <label>Lifecycle<select value={lifecycle} onChange={(event) => setLifecycle(event.target.value)}><option value="all">All</option><option value="draft">Draft</option><option value="finalized">Finalized</option><option value="amended">Amendments</option></select></label>
+            <label>Sort<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="newest">Newest</option><option value="oldest">Oldest</option></select></label>
+            <button type="button" className="text-button" onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); setLifecycle("all"); setSort("newest"); }}>Clear filters</button>
+          </div>
         </div>
 
         {versionedReports.length > 0 ? (
@@ -68,7 +68,7 @@ export default function VersionHistory({
               const pt = getPatient(report.patientId);
               const isFinalized = report.status === "finalized";
               return (
-                <div className="version-item" key={report.id}>
+                <button type="button" className="version-item" key={report.id} onClick={() => onSelectReport(report.id)} aria-label={`Open ${pt?.name ?? "patient"} report version ${report.version}`}>
                   <div className="version-icon">
                     <History size={17} />
                   </div>
@@ -79,7 +79,7 @@ export default function VersionHistory({
                         <strong>{pt?.name ?? "Unknown Patient"}</strong>
                         <span className="version-specimen">
                           {report.testName ||
-                            report.specimenType ||
+                            report.specimens.join(", ") ||
                             "No specimen"}
                         </span>
                       </div>
@@ -106,7 +106,7 @@ export default function VersionHistory({
                     <div className="version-meta">
                       <span>
                         <FileText size={13} />
-                        Created {formatDate(report.createdAt)}
+                        Created {formatDate(report.createdAt, true)}
                       </span>
 
                       {report.supersedesReportId && (
@@ -118,16 +118,7 @@ export default function VersionHistory({
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    className="version-open-button"
-                    onClick={() => onSelectReport(report.id)}
-                    title="Open report in editor"
-                  >
-                    <span>Open</span>
-                    <ArrowRight size={15} />
-                  </button>
-                </div>
+                </button>
               );
             })}
           </div>

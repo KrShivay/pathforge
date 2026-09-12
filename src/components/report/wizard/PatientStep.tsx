@@ -194,10 +194,13 @@ export default function PatientStep({
                 const isSelected = patient.id === selectedPatientId;
                 return (
                   <li key={patient.id}>
-                    <div
+                    <button
+                      type="button"
                       className={`patient-pick${
                         isSelected ? " is-selected" : ""
                       }`}
+                      onClick={() => onSelect(patient.id)}
+                      aria-pressed={isSelected}
                     >
                       <div className="patient-pick-main">
                         <span className="patient-pick-name">
@@ -223,14 +226,7 @@ export default function PatientStep({
                           </span>
                         ) : null}
                       </div>
-                      <button
-                        type="button"
-                        className={`patient-pick-action${
-                          isSelected ? " is-selected" : ""
-                        }`}
-                        onClick={() => onSelect(patient.id)}
-                        aria-pressed={isSelected}
-                      >
+                      <span className={`patient-pick-action${isSelected ? " is-selected" : ""}`}>
                         {isSelected ? (
                           <>
                             <Check size={14} />
@@ -239,8 +235,8 @@ export default function PatientStep({
                         ) : (
                           "Select"
                         )}
-                      </button>
-                    </div>
+                      </span>
+                    </button>
                   </li>
                 );
               })}

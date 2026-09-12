@@ -1,4 +1,4 @@
-import Swal, { type SweetAlertIcon, type SweetAlertResult } from "sweetalert2";
+import Swal, { type SweetAlertIcon } from "sweetalert2";
 
 /**
  * The one PathForge dialog theme. Every Swal.fire() in the app goes through a
@@ -49,14 +49,6 @@ export function escapeHtml(value: unknown): string {
       })[character] ?? character,
   );
 }
-
-// --- shared inline icons (lucide geometry, sized for buttons) -----------------
-const ICONS = {
-  download:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
-  printer:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
-} as const;
 
 // --- simple notifications ---------------------------------------------------
 // One action button ("OK"). No auto-close.
@@ -134,8 +126,10 @@ export async function confirmDestructive(
     html: options.html,
     showConfirmButton: true,
     showDenyButton: false,
-    showCancelButton: false,
+    showCancelButton: true,
     confirmButtonText: options.confirmText ?? "Delete",
+    cancelButtonText: options.cancelText ?? "Cancel",
+    focusCancel: true,
     customClass: {
       ...BASE_CLASSES,
       confirmButton: "pf-swal-btn pf-swal-btn--danger",
@@ -175,8 +169,6 @@ export async function promptText(options: {
 }
 
 // --- the finalized-report dialog -----------------------------------------
-export type FinalizedChoice = "download" | "print" | "close";
-
 interface FinalizedDialogInput {
   reportNo: string;
   version: number | string;
@@ -191,7 +183,7 @@ interface FinalizedDialogInput {
  */
 export async function showFinalizedDialog(
   input: FinalizedDialogInput,
-): Promise<FinalizedChoice> {
+): Promise<void> {
   const card = `
     <p class="pf-swal-lead">This report is locked. Use an amendment to make changes.</p>
     <dl class="pf-swal-card">
@@ -199,27 +191,13 @@ export async function showFinalizedDialog(
       <div><dt>Finalized on</dt><dd>${escapeHtml(input.finalizedOn)}</dd></div>
     </dl>`;
 
-  const result: SweetAlertResult = await dialog.fire({
+  await dialog.fire({
     icon: "success",
     title: "Report finalized",
     html: card,
     showConfirmButton: true,
-    showDenyButton: true,
-    showCancelButton: true,
-    reverseButtons: false,
-    confirmButtonText: `${ICONS.download}<span>Download PDF</span>`,
-    denyButtonText: `${ICONS.printer}<span>Print Report</span>`,
-    cancelButtonText: "Close",
-    customClass: {
-      ...BASE_CLASSES,
-      actions: "pf-swal-actions pf-swal-actions--finalized",
-      confirmButton: "pf-swal-btn pf-swal-btn--primary pf-swal-btn--icon",
-      denyButton: "pf-swal-btn pf-swal-btn--secondary pf-swal-btn--icon",
-      cancelButton: "pf-swal-btn pf-swal-btn--ghost pf-swal-btn--close",
-    },
+    showDenyButton: false,
+    showCancelButton: false,
+    confirmButtonText: "Done",
   });
-
-  if (result.isConfirmed) return "download";
-  if (result.isDenied) return "print";
-  return "close";
 }

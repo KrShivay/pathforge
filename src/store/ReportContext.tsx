@@ -30,7 +30,7 @@ import {
   saveReportWorkspaceState,
 } from "../database/db";
 import type { ValidationError, ValidationResult } from "../domain/types";
-import { DEMO_REPORTS } from "./demoData";
+import { loadLaboratorySnapshot, snapshotLaboratoryProfile, type LaboratoryProfile } from "./branding";
 
 // ========================================
 // PUBLIC SHAPES (unchanged for pages)
@@ -65,10 +65,12 @@ export interface Report {
 
   patientId: string;
 
-  specimenType: string;
+  specimens: string[];
+  referringClinician: string;
   clinicalHistory: string;
   findings: string;
   diagnosis: string;
+  interpretation: string;
 
   // Summary of the laboratory tests included in this report. When several tests
   // are present these are comma-joined; per-result grouping lives on testResults.
@@ -102,6 +104,7 @@ export interface Report {
   supersedesVersion?: number;
 
   supersedesReportId?: string;
+  brandingSnapshot?: LaboratoryProfile;
 }
 
 export interface AuditEntry {
@@ -119,6 +122,7 @@ export interface FinalizeOutcome extends ValidationResult {
 
 interface ReportContextType {
   reports: Report[];
+  hydrated: boolean;
 
   /** Create a new report draft. Returns the stored draft. */
   addReport: (report: Report) => Promise<Report | undefined>;
@@ -204,10 +208,13 @@ function contentFromReport(
   base?: WorkspaceReportContent,
 ): WorkspaceReportContent {
   return {
-    specimenType: source.specimenType ?? base?.specimenType ?? "",
+    specimens: source.specimens ?? base?.specimens ?? [],
+    referringClinician:
+      source.referringClinician ?? base?.referringClinician ?? "",
     clinicalHistory: source.clinicalHistory ?? base?.clinicalHistory ?? "",
     findings: source.findings ?? base?.findings ?? "",
     diagnosis: source.diagnosis ?? base?.diagnosis ?? "",
+    interpretation: source.interpretation ?? base?.interpretation ?? "",
     testResults: (source.testResults ?? base?.testResults ?? []).map(
       (result) => ({
         parameterId: result.parameterId,
@@ -254,6 +261,7 @@ export function ReportProvider({ children }: { children: ReactNode }) {
   const metaRef = useRef<Map<string, ReportMeta>>(new Map());
   const recordsRef = useRef<Map<string, ReportRecord>>(new Map());
   const [records, setRecords] = useState<Map<string, ReportRecord>>(new Map());
+  const [hydrated, setHydrated] = useState(false);
 
   const refresh = useCallback(async () => {
     const next = new Map<string, ReportRecord>();
@@ -327,12 +335,14 @@ export function ReportProvider({ children }: { children: ReactNode }) {
           metadata.map((meta) => [meta.reportId, meta]),
         );
 
-        const existingReportIds = new Set(
-          metadata.map((meta) => meta.reportId),
-        );
-        const missingDemoReports = DEMO_REPORTS.filter(
-          (demo) => !existingReportIds.has(demo.id),
-        );
+        const demoEnabled =
+          import.meta.env.DEV &&
+          import.meta.env.VITE_DEMO_WORKSPACE === "true" &&
+          metadata.length === 0 &&
+          state == null;
+        const missingDemoReports = demoEnabled
+          ? (await import("./demoData")).DEMO_REPORTS
+          : [];
 
         if (missingDemoReports.length > 0) {
           for (const demo of missingDemoReports) {
@@ -386,6 +396,8 @@ export function ReportProvider({ children }: { children: ReactNode }) {
         if (active) await refresh();
       } catch (error) {
         console.error("Failed to load saved reports:", error);
+      } finally {
+        if (active) setHydrated(true);
       }
     }
 
@@ -508,6 +520,7 @@ export function ReportProvider({ children }: { children: ReactNode }) {
           issueDate: issueDateFromIso(new Date().toISOString()),
           actor: actorRef.current,
         });
+        snapshotLaboratoryProfile(reportId, version);
       } catch (error) {
         return {
           valid: false,
@@ -607,6 +620,7 @@ export function ReportProvider({ children }: { children: ReactNode }) {
     <ReportContext.Provider
       value={{
         reports,
+        hydrated,
         addReport,
         updateReport,
         getReport,
@@ -633,10 +647,12 @@ function buildReport(
   return {
     id: makeId(reportId, snapshot.version),
     patientId: meta?.patientId ?? "",
-    specimenType: snapshot.content.specimenType ?? "",
+    specimens: snapshot.content.specimens ?? [],
+    referringClinician: snapshot.content.referringClinician ?? "",
     clinicalHistory: snapshot.content.clinicalHistory ?? "",
     findings: snapshot.content.findings ?? "",
     diagnosis: snapshot.content.diagnosis ?? "",
+    interpretation: snapshot.content.interpretation ?? "",
     testId: meta?.testId,
     testName: meta?.testName,
     department: meta?.department,
@@ -664,6 +680,10 @@ function buildReport(
     supersedesReportId:
       snapshot.supersedesVersion != null
         ? makeId(reportId, snapshot.supersedesVersion)
+        : undefined,
+    brandingSnapshot:
+      snapshot.status === "finalized"
+        ? loadLaboratorySnapshot(reportId, snapshot.version)
         : undefined,
   };
 }

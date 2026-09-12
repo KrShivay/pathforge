@@ -11,7 +11,7 @@ import { resultKey } from "./ResultsStep";
 interface ReviewStepProps {
   patientId: string;
   selectedTestIds: string[];
-  specimenType: string;
+  specimens: string[];
   results: Record<string, string>;
   clinical: ClinicalDetails;
 }
@@ -19,7 +19,7 @@ interface ReviewStepProps {
 export default function ReviewStep({
   patientId,
   selectedTestIds,
-  specimenType,
+  specimens,
   results,
   clinical,
 }: ReviewStepProps) {
@@ -53,8 +53,8 @@ export default function ReviewStep({
           </em>
         </div>
         <div className="review-item">
-          <span>Specimen</span>
-          <strong>{specimenType || "—"}</strong>
+          <span>Specimens</span>
+          <strong>{specimens.join(", ") || "—"}</strong>
         </div>
         <div className="review-item">
           <span>Tests</span>
@@ -113,6 +113,10 @@ export default function ReviewStep({
 
       <div className="review-narrative">
         <div>
+          <span>Referring Clinician</span>
+          <p>{clinical.referringClinician || "Not provided"}</p>
+        </div>
+        <div>
           <span>Clinical History</span>
           <p>{clinical.clinicalHistory || "Not provided"}</p>
         </div>
@@ -123,6 +127,10 @@ export default function ReviewStep({
         <div>
           <span>Diagnosis</span>
           <p>{clinical.diagnosis || "Not provided"}</p>
+        </div>
+        <div>
+          <span>Interpretation / Remarks</span>
+          <p>{clinical.interpretation || "Not provided"}</p>
         </div>
       </div>
     </div>

@@ -1,9 +1,11 @@
 import { sanitizeText } from "../../../domain/textRules.mjs";
 
 interface ClinicalDetails {
+  referringClinician: string;
   clinicalHistory: string;
   findings: string;
   diagnosis: string;
+  interpretation: string;
 }
 
 interface ClinicalStepProps {
@@ -24,6 +26,13 @@ export default function ClinicalStep({ value, onChange }: ClinicalStepProps) {
       <div className="clinical-step-grid">
         <div className="wizard-field">
           <div className="wizard-field-header">
+            <label htmlFor="cd-referrer">Referring Clinician</label>
+            <span className="field-tag optional">Optional</span>
+          </div>
+          <input id="cd-referrer" value={value.referringClinician} onChange={(event) => onChange({ referringClinician: clean(event.target.value) })} placeholder="Clinician name…" autoFocus />
+        </div>
+        <div className="wizard-field">
+          <div className="wizard-field-header">
             <label htmlFor="cd-history">Clinical History</label>
             <span className="field-tag optional">Optional</span>
           </div>
@@ -35,14 +44,13 @@ export default function ClinicalStep({ value, onChange }: ClinicalStepProps) {
               onChange({ clinicalHistory: clean(event.target.value) })
             }
             placeholder="Relevant history provided with the request…"
-            autoFocus
           />
         </div>
 
         <div className="wizard-field">
           <div className="wizard-field-header">
             <label htmlFor="cd-findings">Findings / Microscopic Findings</label>
-            <span className="field-tag required">Required to finalize</span>
+            <span className="field-tag required">Needed for finalization</span>
           </div>
           <textarea
             id="cd-findings"
@@ -58,7 +66,7 @@ export default function ClinicalStep({ value, onChange }: ClinicalStepProps) {
         <div className="wizard-field">
           <div className="wizard-field-header">
             <label htmlFor="cd-diagnosis">Final Diagnosis</label>
-            <span className="field-tag required">Required to finalize</span>
+            <span className="field-tag required">Needed for finalization</span>
           </div>
           <textarea
             id="cd-diagnosis"
@@ -69,6 +77,13 @@ export default function ClinicalStep({ value, onChange }: ClinicalStepProps) {
             }
             placeholder="Final impression / diagnosis…"
           />
+        </div>
+        <div className="wizard-field">
+          <div className="wizard-field-header">
+            <label htmlFor="cd-interpretation">Interpretation / Remarks</label>
+            <span className="field-tag optional">Optional</span>
+          </div>
+          <textarea id="cd-interpretation" rows={3} value={value.interpretation} onChange={(event) => onChange({ interpretation: clean(event.target.value) })} placeholder="Report-level interpretation or remarks…" />
         </div>
       </div>
     </div>

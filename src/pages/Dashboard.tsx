@@ -204,7 +204,7 @@ export default function Dashboard({
                       </div>
                       <span className="recent-report-test">
                         {report.testName ||
-                          report.specimenType ||
+                          report.specimens.join(", ") ||
                           "Pathology Report"}
                       </span>
                     </div>

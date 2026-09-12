@@ -11,6 +11,7 @@ import {
   type TestResult,
 } from "../store/ReportContext";
 import { useTests } from "../store/TestContext";
+import { useBranding } from "../store/BrandingContext";
 
 import {
   buildReportModel,
@@ -54,6 +55,7 @@ export default function NewReport({
   const { addReport } = useReports();
   const { tests } = useTests();
   const { getPatient } = usePatients();
+  const { profile } = useBranding();
 
   const [step, setStep] = useState(0);
   const [furthest, setFurthest] = useState(0);
@@ -65,26 +67,28 @@ export default function NewReport({
 
   const [patientId, setPatientId] = useState("");
   const [selectedTestIds, setSelectedTestIds] = useState<string[]>([]);
-  const [specimenType, setSpecimenType] = useState("");
+  const [specimens, setSpecimens] = useState<string[]>([]);
   const [results, setResults] = useState<Record<string, string>>({});
   const [clinical, setClinical] = useState<ClinicalDetails>({
+    referringClinician: "",
     clinicalHistory: "",
     findings: "",
     diagnosis: "",
+    interpretation: "",
   });
 
   useEffect(() => {
     const hasProgress =
       patientId !== "" ||
       selectedTestIds.length > 0 ||
-      specimenType.trim() !== "" ||
+      specimens.length > 0 ||
       Object.values(results).some((value) => value.trim() !== "") ||
       clinical.clinicalHistory.trim() !== "" ||
       clinical.findings.trim() !== "" ||
       clinical.diagnosis.trim() !== "";
     onDirtyChange?.(hasProgress);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [patientId, selectedTestIds, specimenType, results, clinical]);
+  }, [patientId, selectedTestIds, specimens, results, clinical]);
 
   const selectedTests = useMemo(
     () =>
@@ -96,7 +100,7 @@ export default function NewReport({
 
   const stepValid = [
     getPatient(patientId) !== undefined,
-    selectedTests.length > 0 && specimenType.trim() !== "",
+    selectedTests.length > 0 && specimens.length > 0,
     true,
     true,
     true,
@@ -141,10 +145,12 @@ export default function NewReport({
     return {
       id: crypto.randomUUID(),
       patientId,
-      specimenType: specimenType.trim(),
+      specimens,
+      referringClinician: clinical.referringClinician,
       clinicalHistory: clinical.clinicalHistory,
       findings: clinical.findings,
       diagnosis: clinical.diagnosis,
+      interpretation: clinical.interpretation,
       testId: selectedTests.map((test) => test.id).join(","),
       testName: selectedTests.map((test) => test.name).join(", "),
       department: distinct(selectedTests.map((test) => test.department)).join(
@@ -171,11 +177,14 @@ export default function NewReport({
       panelName: draft.testName,
       department: draft.department,
       reportDate: draft.createdAt,
+      laboratoryProfile: profile,
       content: {
-        specimenType: draft.specimenType,
+        specimens: draft.specimens,
+        referringClinician: draft.referringClinician,
         clinicalHistory: draft.clinicalHistory,
         findings: draft.findings,
         diagnosis: draft.diagnosis,
+        interpretation: draft.interpretation,
         testResults: draft.testResults,
       },
     });
@@ -259,9 +268,9 @@ export default function NewReport({
         {step === 1 && (
           <TestSpecimenStep
             selectedTestIds={selectedTestIds}
-            specimenType={specimenType}
+            specimens={specimens}
             onChangeTests={setSelectedTestIds}
-            onChangeSpecimen={setSpecimenType}
+            onChangeSpecimens={setSpecimens}
           />
         )}
 
@@ -288,7 +297,7 @@ export default function NewReport({
           <ReviewStep
             patientId={patientId}
             selectedTestIds={selectedTestIds}
-            specimenType={specimenType}
+            specimens={specimens}
             results={results}
             clinical={clinical}
           />

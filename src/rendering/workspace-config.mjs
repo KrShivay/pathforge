@@ -66,12 +66,20 @@ export function buildWorkspaceDocumentConfig(reportInput) {
   }
 
   for (const [fieldId, , key] of NARRATIVE_FIELDS) {
-    if (key === 'specimenType') continue;
+    if (key === 'specimens') continue;
+    const roleByKey = {
+      referringClinician: ['referring-clinician', 'referring-clinician', 'Referring Clinician'],
+      clinicalHistory: ['clinical-history', 'clinical-history', 'Clinical History'],
+      findings: ['findings', 'microscopic-findings', 'Microscopic Findings'],
+      diagnosis: ['diagnosis', 'diagnosis', 'Diagnosis'],
+      interpretation: ['interpretation', 'interpretation', 'Interpretation / Remarks'],
+    };
+    const [sectionId, role, heading] = roleByKey[key];
     const section = narrativeSection(
       fieldId,
-      key === 'clinicalHistory' ? 'clinical-history' : key === 'findings' ? 'findings' : 'diagnosis',
-      key === 'clinicalHistory' ? 'clinical-history' : key === 'findings' ? 'microscopic-findings' : 'diagnosis',
-      key === 'clinicalHistory' ? 'Clinical History' : key === 'findings' ? 'Microscopic Findings' : 'Diagnosis',
+      sectionId,
+      role,
+      heading,
     );
     if (section) sections.push(section);
   }

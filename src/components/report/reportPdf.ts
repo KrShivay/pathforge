@@ -39,6 +39,9 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
   doc.setFont("helvetica", "normal").setFontSize(7.5).setTextColor(...MUTED);
   doc.text(model.brand.tagline.toUpperCase(), MARGIN, y + 7);
   doc.setFontSize(7).text(model.brand.strapline, MARGIN, y + 11);
+  if (model.brand.contact) {
+    doc.setFontSize(6.5).text(doc.splitTextToSize(model.brand.contact, 105), MARGIN, y + 15);
+  }
 
   doc.setFont("helvetica", "bold").setFontSize(11).setTextColor(...NAVY);
   doc.text(model.documentTitle.toUpperCase(), PAGE_W - MARGIN, y, {
@@ -46,17 +49,15 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
   });
   doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(...INK);
   doc.text(
-    [
-      `Report No.  ${model.reportNo}`,
-      `Version  ${model.version}`,
-      `Status  ${model.statusLabel}`,
-    ],
+    model.isFinalized
+      ? [`Report No.  ${model.reportNo}`]
+      : [`Report No.  ${model.reportNo}`, "DRAFT"],
     PAGE_W - MARGIN,
     y + 5,
     { align: "right" }
   );
 
-  y += 15;
+  y += model.brand.contact ? 19 : 15;
   doc.setDrawColor(...NAVY).setLineWidth(0.7).line(MARGIN, y, PAGE_W - MARGIN, y);
   y += 6;
 
@@ -71,6 +72,13 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
     doc.rect(MARGIN, y, CONTENT_W, boxH, "FD");
     doc.setTextColor(154, 52, 18);
     doc.text(lines, MARGIN + 3, y + 4.5);
+    y += boxH + 5;
+  }
+  if (model.amendmentNotice) {
+    const lines = doc.setFont("helvetica", "bold").setFontSize(8).splitTextToSize(model.amendmentNotice, CONTENT_W - 6);
+    const boxH = lines.length * 4 + 4;
+    doc.setFillColor(239, 246, 255).setDrawColor(...NAVY).rect(MARGIN, y, CONTENT_W, boxH, "FD");
+    doc.setTextColor(...NAVY).text(lines, MARGIN + 3, y + 4.5);
     y += boxH + 5;
   }
 
@@ -236,7 +244,7 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
   doc.text(model.endOfReport, PAGE_W / 2, y, { align: "center" });
 
   // ---- footer on every page ----
-  const generatedAt = model.generatedAt;
+  const reportDate = model.generatedAt;
   const pages = doc.getNumberOfPages();
   for (let page = 1; page <= pages; page += 1) {
     doc.setPage(page);
@@ -244,7 +252,7 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
     doc.line(MARGIN, FOOTER_Y, PAGE_W - MARGIN, FOOTER_Y);
     doc.setFont("helvetica", "normal").setFontSize(7).setTextColor(...MUTED);
     doc.text(model.footer.reference, MARGIN, FOOTER_Y + 4);
-    doc.text(`Generated ${generatedAt}`, PAGE_W - MARGIN, FOOTER_Y + 4, {
+    doc.text(`Report date ${reportDate}`, PAGE_W - MARGIN, FOOTER_Y + 4, {
       align: "right",
     });
     doc.text(`Page ${page} of ${pages}`, PAGE_W / 2, FOOTER_Y + 4, {

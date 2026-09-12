@@ -16,6 +16,7 @@ import { notifyError } from "../lib/dialog";
 
 interface TestContextType {
   tests: LaboratoryTest[];
+  hydrated: boolean;
 
   addTest: (test: LaboratoryTest) => void;
 
@@ -986,6 +987,7 @@ const ORIGINAL_TEST_IDS = ["cbc", "lft", "tft", "urine-analysis"];
 
 export function TestProvider({ children }: { children: ReactNode }) {
   const [tests, setTests] = useState<LaboratoryTest[]>(initialTests);
+  const [hydrated, setHydrated] = useState(false);
 
   // Mirrors `tests` so mutators derive the next catalog from the latest value
   // rather than the value captured when the handler was created. Without this,
@@ -1056,6 +1058,8 @@ export function TestProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.error("Failed to load saved laboratory tests:", error);
+      } finally {
+        if (active) setHydrated(true);
       }
     }
 
@@ -1165,6 +1169,7 @@ export function TestProvider({ children }: { children: ReactNode }) {
     <TestContext.Provider
       value={{
         tests,
+        hydrated,
         addTest,
         updateTest,
         deleteTest,

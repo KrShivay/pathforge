@@ -27,7 +27,10 @@
 
 /**
  * @typedef {{
+ *   specimens?: string[],
  *   specimenType?: string,
+ *   referringClinician?: string,
+ *   interpretation?: string,
  *   clinicalHistory?: string,
  *   findings?: string,
  *   diagnosis?: string,
@@ -43,18 +46,42 @@ export const WORKSPACE_CATALOG_VERSION = 'workspace';
 /** Prefix marking a payload key that came from a laboratory-test parameter. */
 export const RESULT_FIELD_PREFIX = 'result.';
 
-/** @typedef {'specimenType' | 'clinicalHistory' | 'findings' | 'diagnosis'} NarrativeKey */
+/** @typedef {'specimens' | 'referringClinician' | 'clinicalHistory' | 'findings' | 'diagnosis' | 'interpretation'} NarrativeKey */
 
 /**
  * Narrative sections, in report order. `[field_id, display, contentKey]`.
  * @type {ReadonlyArray<readonly [string, string, NarrativeKey]>}
  */
 export const NARRATIVE_FIELDS = [
-  ['narrative.specimen_type', 'Specimen Type', 'specimenType'],
+  ['narrative.specimen_type', 'Specimens', 'specimens'],
+  ['narrative.referring_clinician', 'Referring Clinician', 'referringClinician'],
   ['narrative.clinical_history', 'Clinical History', 'clinicalHistory'],
   ['narrative.findings', 'Microscopic Findings', 'findings'],
   ['narrative.diagnosis', 'Diagnosis', 'diagnosis'],
+  ['narrative.interpretation', 'Interpretation / Remarks', 'interpretation'],
 ];
+
+/** Trim and case-insensitively deduplicate report-level specimen labels. */
+export function normalizeSpecimens(values) {
+  const input = Array.isArray(values) ? values : typeof values === 'string' ? [values] : [];
+  const seen = new Set();
+  const normalized = [];
+  for (const value of input) {
+    const clean = sanitizeText(asText(value).trim(), 'general');
+    const key = clean.toLocaleLowerCase();
+    if (clean && !seen.has(key)) {
+      seen.add(key);
+      normalized.push(clean);
+    }
+  }
+  return normalized;
+}
+
+function specimensFromContent(content) {
+  return normalizeSpecimens(
+    Array.isArray(content.specimens) ? content.specimens : content.specimenType,
+  );
+}
 
 /** @param {unknown} value @returns {string} */
 function asText(value) {
@@ -103,13 +130,15 @@ export function buildResolvedPayload(content) {
   const payload = {};
 
   for (const [fieldId, display, key] of NARRATIVE_FIELDS) {
+    const specimens = key === 'specimens' ? specimensFromContent(content) : null;
     payload[fieldId] = {
       field_id: fieldId,
       display,
       kind: 'narrative',
       // Persistence-side allowlisting: even if a client skipped the input
       // filter, disallowed characters never reach the stored report.
-      value: sanitizeText(content[key], 'general'),
+      value: specimens ? specimens.join(', ') : sanitizeText(content[key], 'general'),
+      ...(specimens ? { specimens } : {}),
       source_catalog_version: WORKSPACE_CATALOG_VERSION,
     };
   }
@@ -154,9 +183,23 @@ export function buildResolvedPayload(content) {
 export function readWorkspaceContent(reportVersion) {
   const payload = reportVersion.resolved_payload ?? {};
 
-  const narrative = { specimenType: '', clinicalHistory: '', findings: '', diagnosis: '' };
+  const narrative = {
+    specimens: [],
+    referringClinician: '',
+    clinicalHistory: '',
+    findings: '',
+    diagnosis: '',
+    interpretation: '',
+  };
   for (const [fieldId, , key] of NARRATIVE_FIELDS) {
-    narrative[key] = asText(payload[fieldId]?.value);
+    if (key === 'specimens') {
+      const stored = payload[fieldId]?.specimens;
+      narrative.specimens = normalizeSpecimens(
+        Array.isArray(stored) ? stored : asText(payload[fieldId]?.value),
+      );
+    } else {
+      narrative[key] = asText(payload[fieldId]?.value);
+    }
   }
 
   /** @type {WorkspaceTestResult[]} */
@@ -181,7 +224,7 @@ export function readWorkspaceContent(reportVersion) {
   }
 
   return {
-    specimenType: narrative.specimenType,
+    specimens: narrative.specimens,
     clinicalHistory: narrative.clinicalHistory,
     findings: narrative.findings,
     diagnosis: narrative.diagnosis,
@@ -209,10 +252,16 @@ export function checkClinicalCompleteness(content) {
       issues.push({ field, message: `${label} contains characters that are not allowed.` });
     }
   };
-  checkChars('specimenType', 'Specimen type', 'general');
+  for (const specimen of specimensFromContent(content)) {
+    if (containsInvalidChars(specimen, 'general')) {
+      issues.push({ field: 'specimens', message: 'A specimen contains characters that are not allowed.' });
+    }
+  }
+  checkChars('referringClinician', 'Referring clinician', 'general');
   checkChars('clinicalHistory', 'Clinical history', 'general');
   checkChars('findings', 'Findings', 'general');
   checkChars('diagnosis', 'Diagnosis', 'general');
+  checkChars('interpretation', 'Interpretation / remarks', 'general');
   for (const result of content.testResults ?? []) {
     if (containsInvalidChars(asText(result.value), 'result')) {
       issues.push({
@@ -222,8 +271,8 @@ export function checkClinicalCompleteness(content) {
     }
   }
 
-  if (!asText(content.specimenType).trim()) {
-    issues.push({ field: 'specimenType', message: 'Specimen type is required.' });
+  if (specimensFromContent(content).length === 0) {
+    issues.push({ field: 'specimens', message: 'At least one specimen is required.' });
   }
   if (!asText(content.findings).trim()) {
     issues.push({ field: 'findings', message: 'Microscopic findings are required.' });

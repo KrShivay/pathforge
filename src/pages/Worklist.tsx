@@ -10,7 +10,8 @@ import { useMemo, useState } from "react";
 import PageHeading from "../components/layout/PageHeading";
 import { checkClinicalCompleteness } from "../domain/report-bridge.mjs";
 import { usePatients } from "../store/PatientContext";
-import { useReports } from "../store/ReportContext";
+import { useReports, type Report } from "../store/ReportContext";
+import { filterWorklistReports, formatDate as formatReportFilterDate } from "../lib/reportFilters.mjs";
 
 interface WorklistProps {
   onSelectReport?: (reportId: string) => void;
@@ -29,6 +30,9 @@ export default function Worklist({
   const { patients } = usePatients();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialFilter);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [sort, setSort] = useState("newest");
 
   const counts = useMemo(() => {
     const drafts = reports.filter((r) => r.status === "draft").length;
@@ -42,44 +46,11 @@ export default function Worklist({
   }, [reports]);
 
   const filteredReports = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return reports.filter((report) => {
-      if (statusFilter === "attention") {
-        if (
-          report.status !== "draft" ||
-          checkClinicalCompleteness(report).length === 0
-        )
-          return false;
-      } else if (statusFilter !== "all" && report.status !== statusFilter)
-        return false;
-      if (!query) return true;
-
-      const patient = patients.find((p) => p.id === report.patientId);
-      const patientName = patient?.name ?? "";
-      const patientCode = patient?.patientId ?? "";
-      const testName = report.testName ?? "";
-      const specimen = report.specimenType ?? "";
-
-      return `${patientName} ${patientCode} ${testName} ${specimen}`
-        .toLowerCase()
-        .includes(query);
-    });
-  }, [reports, patients, search, statusFilter]);
+    return filterWorklistReports(reports, patients, { search, status: statusFilter, from: dateFrom, to: dateTo, sort, needsAttention: (report: Report) => checkClinicalCompleteness(report).length > 0 });
+  }, [reports, patients, search, statusFilter, dateFrom, dateTo, sort]);
 
   function getPatient(patientId: string) {
     return patients.find((patient) => patient.id === patientId);
-  }
-
-  function formatDate(date: string) {
-    try {
-      return new Date(date).toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-    } catch {
-      return date;
-    }
   }
 
   return (
@@ -126,6 +97,13 @@ export default function Worklist({
               Attention
               <span className="tab-count">{counts.attention}</span>
             </button>
+          </div>
+          <div className="report-filter-row">
+            <label>Created from<input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} /></label>
+            <label>Created to<input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} /></label>
+            <label>Sort<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="patient">Patient</option><option value="test">Test</option><option value="status">Status</option></select></label>
+            <span className="result-count" role="status">{filteredReports.length} result{filteredReports.length === 1 ? "" : "s"}</span>
+            {(search || statusFilter !== "all" || dateFrom || dateTo || sort !== "newest") && <button type="button" className="text-button" onClick={() => { setSearch(""); setStatusFilter("all"); setDateFrom(""); setDateTo(""); setSort("newest"); }}>Clear filters</button>}
           </div>
 
           <div className="patients-search worklist-search">
@@ -187,7 +165,7 @@ export default function Worklist({
                       {report.testName || "Laboratory Test"}
                     </strong>
                     <span className="specimen-label">
-                      {report.specimenType || "Unspecified"}
+                      {report.specimens.join(", ") || "Unspecified"}
                     </span>
                   </div>
 
@@ -206,7 +184,7 @@ export default function Worklist({
                   </div>
 
                   <div className="col-date date-text">
-                    {formatDate(report.createdAt)}
+                    {formatReportFilterDate(report.createdAt)}
                   </div>
 
                   <div className="col-action">

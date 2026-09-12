@@ -13,7 +13,6 @@ import {
   patientHasDuplicateRecord,
 } from "../database/db";
 import { nextPatientId } from "../domain/patientId.mjs";
-import { DEMO_PATIENTS } from "./demoData";
 
 export interface Patient {
   id: string;
@@ -91,15 +90,13 @@ export function PatientProvider({ children }: { children: ReactNode }) {
         dedupedRows.push(row);
       }
 
-      const existingPatientIds = new Set(dedupedRows.map((row) => row.id));
-      const existingPatientCodes = new Set(
-        dedupedRows.map((row) => row.patient_id),
-      );
-      const missingDemoPatients = DEMO_PATIENTS.filter(
-        (patient) =>
-          !existingPatientIds.has(patient.id) &&
-          !existingPatientCodes.has(patient.patientId),
-      );
+      const demoEnabled =
+        import.meta.env.DEV &&
+        import.meta.env.VITE_DEMO_WORKSPACE === "true" &&
+        dedupedRows.length === 0;
+      const missingDemoPatients = demoEnabled
+        ? (await import("./demoData")).DEMO_PATIENTS
+        : [];
 
       if (missingDemoPatients.length > 0) {
         for (const patient of missingDemoPatients) {

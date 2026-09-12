@@ -4,13 +4,13 @@ import TextField from "@mui/material/TextField";
 
 import { useTests } from "../../../store/TestContext";
 import type { LaboratoryTest } from "../../../domain/types";
-import { sanitizeText } from "../../../domain/textRules.mjs";
+import { normalizeSpecimens } from "../../../domain/report-bridge.mjs";
 
 interface TestSpecimenStepProps {
   selectedTestIds: string[];
-  specimenType: string;
+  specimens: string[];
   onChangeTests: (testIds: string[]) => void;
-  onChangeSpecimen: (specimen: string) => void;
+  onChangeSpecimens: (specimens: string[]) => void;
 }
 
 const COMMON_SPECIMENS = [
@@ -27,9 +27,9 @@ const COMMON_SPECIMENS = [
 
 export default function TestSpecimenStep({
   selectedTestIds,
-  specimenType,
+  specimens,
   onChangeTests,
-  onChangeSpecimen,
+  onChangeSpecimens,
 }: TestSpecimenStepProps) {
   const { tests } = useTests();
 
@@ -101,16 +101,11 @@ export default function TestSpecimenStep({
       <div className="wizard-field">
         <label>Specimen</label>
         <Autocomplete
+          multiple
           freeSolo
-          autoSelect
           options={specimenOptions}
-          value={specimenType || null}
-          onChange={(_event, value) =>
-            onChangeSpecimen(sanitizeText(value ?? "", "general"))
-          }
-          onInputChange={(_event, value) =>
-            onChangeSpecimen(sanitizeText(value, "general"))
-          }
+          value={specimens}
+          onChange={(_event, value) => onChangeSpecimens(normalizeSpecimens(value))}
           renderInput={(params) => (
             <TextField
               {...params}
@@ -119,7 +114,7 @@ export default function TestSpecimenStep({
           )}
         />
         <p className="wizard-field-hint">
-          Choose a suggested specimen or type a custom one.
+          Choose suggested specimens or type a custom value and press Enter.
         </p>
       </div>
     </div>
