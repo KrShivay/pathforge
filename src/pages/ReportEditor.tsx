@@ -3,16 +3,19 @@ import {
   Download,
   Eye,
   FileText,
+  FlaskConical,
   GitBranchPlus,
   Loader2,
   Lock,
   Printer,
   Save,
+  Stethoscope,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 
+import CardHeading from "../components/common/CardHeading";
 import PrintableReport from "../components/report/PrintableReport";
 import ReportPreviewModal from "../components/report/ReportPreviewModal";
 import ResultsTable from "../components/report/ResultsTable";
@@ -530,13 +533,11 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
         <div className="editor-left-column">
           <div className="editor-card specimen-card">
             <div className="editor-card-header">
-              <div className="editor-section-title">
-                <FileText size={16} />
-                <div>
-                  <h3>Specimen Details</h3>
-                  <p>Sample identification &amp; origin</p>
-                </div>
-              </div>
+              <CardHeading
+                icon={FileText}
+                title="Specimen Details"
+                subtitle="Sample identification & origin"
+              />
             </div>
 
             <div className="editor-card-body">
@@ -557,19 +558,13 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
 
           <div className="editor-card results-card">
             <div className="editor-card-header">
-              <div className="editor-section-title">
-                <FileText size={16} />
-                <div>
-                  <h3>Laboratory Results</h3>
-                  <p>
-                    {formData.testResults.length}{" "}
-                    {formData.testResults.length === 1
-                      ? "parameter"
-                      : "parameters"}{" "}
-                    measured
-                  </p>
-                </div>
-              </div>
+              <CardHeading
+                icon={FlaskConical}
+                title="Laboratory Results"
+                subtitle={`${formData.testResults.length} ${
+                  formData.testResults.length === 1 ? "parameter" : "parameters"
+                } measured`}
+              />
             </div>
 
             <div className="editor-card-body results-card-body">
@@ -586,13 +581,11 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
         <div className="editor-right-column">
           <div className="editor-card narrative-card">
             <div className="editor-card-header">
-              <div className="editor-section-title">
-                <FileText size={16} />
-                <div>
-                  <h3>Clinical Narrative &amp; Diagnosis</h3>
-                  <p>History, observations, and final pathological diagnosis</p>
-                </div>
-              </div>
+              <CardHeading
+                icon={Stethoscope}
+                title="Clinical Narrative & Diagnosis"
+                subtitle="History, observations, and final pathological diagnosis"
+              />
             </div>
 
             <div className="editor-card-body narrative-card-body">

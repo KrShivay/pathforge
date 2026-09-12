@@ -10,6 +10,7 @@ import {
   Search,
 } from "lucide-react";
 import { useTests } from "../store/TestContext";
+import CardHeading from "../components/common/CardHeading";
 import { formatReferenceRange } from "../components/report/referenceRange";
 import PageHeading from "../components/layout/PageHeading";
 import AddTestForm from "../components/tests/AddTestForm";
@@ -438,15 +439,18 @@ export default function TestManagement() {
       {/* TEST CATALOG CARD */}
       <div className="pf-card test-catalog-card content-card-fill">
         <div className="patients-card-header test-catalog-header">
-          <div>
-            <h3>Laboratory Tests</h3>
-            <p>
+          <CardHeading
+            icon={FlaskConical}
+            title="Laboratory Tests"
+            subtitle={
+              <>
               {visibleTests.length} test{visibleTests.length === 1 ? "" : "s"}{" "}
               {query || selectedDepartment
                 ? "matching filters"
                 : "configured in catalog"}
-            </p>
-          </div>
+              </>
+            }
+          />
 
           {visibleTests.length > 0 ? (
             <button

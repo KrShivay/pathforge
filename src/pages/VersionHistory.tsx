@@ -6,6 +6,7 @@ import {
   History,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import CardHeading from "../components/common/CardHeading";
 import PageHeading from "../components/layout/PageHeading";
 import { usePatients } from "../store/PatientContext";
 import { useReports } from "../store/ReportContext";
@@ -46,13 +47,16 @@ export default function VersionHistory({
 
       <div className="pf-card version-history-card content-card-fill">
         <div className="version-history-card-header">
-          <div>
-            <h3>Report Lineage Records</h3>
-            <p>
+          <CardHeading
+            icon={History}
+            title="Report Lineage Records"
+            subtitle={
+              <>
               {versionedReports.length} recorded{" "}
               {versionedReports.length === 1 ? "version" : "versions"}
-            </p>
-          </div>
+              </>
+            }
+          />
           <div className="report-filter-row">
             <label>Search<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Patient or report…" /></label>
             <label>Event from<input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} aria-invalid={invalidRange} aria-describedby={invalidRange ? "history-date-error" : undefined} /></label>

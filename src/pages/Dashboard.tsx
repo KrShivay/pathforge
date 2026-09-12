@@ -7,6 +7,7 @@ import {
   FileText,
   Users,
 } from "lucide-react";
+import CardHeading from "../components/common/CardHeading";
 import type { Page } from "../components/layout/TopNav";
 import { checkClinicalCompleteness } from "../domain/report-bridge.mjs";
 import { usePatients } from "../store/PatientContext";
@@ -166,10 +167,11 @@ export default function Dashboard({
       <div className="dashboard-grid">
         <section className="dashboard-card recent-reports-card">
           <div className="dashboard-card-header">
-            <div>
-              <h3>Recent Reports</h3>
-              <p>Latest active pathology records</p>
-            </div>
+            <CardHeading
+              icon={FileText}
+              title="Recent Reports"
+              subtitle="Latest active pathology records"
+            />
             <button
               type="button"
               className="view-all-button"
@@ -246,10 +248,12 @@ export default function Dashboard({
 
         <section className="pf-card needs-attention-panel">
           <div className="dashboard-card-header">
-            <div>
-              <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AlertCircle size={18} color="var(--pf-amber-500)" />Needs Attention</h3>
-              <p>Drafts missing required clinical data</p>
-            </div>
+            <CardHeading
+              icon={AlertCircle}
+              title="Needs Attention"
+              subtitle="Drafts missing required clinical data"
+              tone="warning"
+            />
             {needsAttentionReports.length > 0 && (
               <button type="button" className="view-all-button" onClick={() => onNavigate("worklist", "attention")}>
                 View all

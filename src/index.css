@@ -8607,6 +8607,94 @@ input[aria-invalid="true"] {
     color: #7b8ca2;
   }
 
+  .card-heading {
+    display: flex;
+    min-width: 0;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .card-heading-icon {
+    display: inline-grid;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    place-items: center;
+    border: 1px solid #cfe0fb;
+    border-radius: 8px;
+    background: var(--pf-theme-surface-hover);
+    color: var(--pf-theme-brand);
+  }
+
+  .card-heading.tone-warning .card-heading-icon {
+    border-color: #fde3a7;
+    background: #fff8e8;
+    color: #a85d00;
+  }
+
+  .card-heading-copy {
+    min-width: 0;
+    padding-top: 1px;
+  }
+
+  .card-heading-copy h3,
+  .dashboard-card-header .card-heading-copy h3,
+  .version-history-card-header .card-heading-copy h3,
+  .test-catalog-header .card-heading-copy h3 {
+    margin: 0 !important;
+    color: var(--pf-theme-text) !important;
+    font-size: 13.5px !important;
+    font-weight: 750;
+    line-height: 1.25;
+  }
+
+  .card-heading-copy p,
+  .dashboard-card-header .card-heading-copy p,
+  .version-history-card-header .card-heading-copy p,
+  .test-catalog-header .card-heading-copy p {
+    margin: 3px 0 0 !important;
+    color: var(--pf-theme-text-muted) !important;
+    font-size: 11.5px !important;
+    line-height: 1.35;
+  }
+
+  .narrative-field input,
+  .narrative-field textarea {
+    width: 100%;
+    border: 1px solid var(--pf-theme-border-strong) !important;
+    border-radius: 8px !important;
+    outline: none;
+    background: var(--pf-theme-surface-raised) !important;
+    color: var(--pf-theme-text) !important;
+    font: inherit;
+    font-size: 12.5px;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  .narrative-field input {
+    min-height: var(--pf-control-height);
+    padding: 0 10px;
+  }
+
+  .narrative-field textarea {
+    padding: 8px 10px;
+  }
+
+  .narrative-field input:focus,
+  .narrative-field textarea:focus {
+    border-color: #8db5f2 !important;
+    box-shadow: 0 0 0 3px rgba(23, 105, 224, 0.1) !important;
+  }
+
+  .narrative-field input:disabled,
+  .narrative-field textarea:disabled {
+    background: var(--pf-theme-surface-muted) !important;
+    color: var(--pf-theme-text-muted) !important;
+    cursor: not-allowed;
+  }
+
   ::selection {
     background: #cfe2ff;
     color: var(--pf-theme-text);

@@ -1,5 +1,3 @@
-import { FlaskConical } from "lucide-react";
-
 import { sanitizeText } from "../../domain/textRules.mjs";
 import type { TestResult } from "../../store/ReportContext";
 import { computeFlag } from "./flags";
@@ -25,22 +23,10 @@ export default function ResultsTable({
 
   return (
     <div className="editor-section test-results-section">
-      <div className="editor-section-title">
-        <FlaskConical size={19} />
-
-        <div>
-          <h3>Laboratory Results</h3>
-          <p>
-            {groups.length === 1
-              ? groups[0].testName || "Selected laboratory test"
-              : `${groups.length} tests`}
-          </p>
-          <p className="results-range-note">
-            Ranges are typical adult guides; use the laboratory's own range when
-            it differs.
-          </p>
-        </div>
-      </div>
+      <p className="results-range-note">
+        Ranges are typical adult guides; use the laboratory's own range when it
+        differs.
+      </p>
 
       {groups.map((group) => (
         <div key={group.key} className="results-test-group">
