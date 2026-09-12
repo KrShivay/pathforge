@@ -8423,3 +8423,192 @@ input[aria-invalid="true"] {
     font-size: 0 !important;
   }
 }
+
+/* ============================================================
+   CANONICAL THEME CONTRACT
+   Semantic colors live here so every interactive surface resolves through the
+   same contrast-safe palette. This screen-only layer does not alter reports.
+   ============================================================ */
+:root {
+  --pf-theme-brand: #1769e0;
+  --pf-theme-brand-hover: #0f58c4;
+  --pf-theme-on-brand: #ffffff;
+  --pf-theme-canvas: #f3f7fc;
+  --pf-theme-surface: #ffffff;
+  --pf-theme-surface-raised: #fbfdff;
+  --pf-theme-surface-muted: #f5f8fc;
+  --pf-theme-surface-hover: #edf5ff;
+  --pf-theme-text: #142033;
+  --pf-theme-text-muted: #52647a;
+  --pf-theme-border: #dbe3ec;
+  --pf-theme-border-strong: #c7d2df;
+  --pf-theme-danger: #c73535;
+  --pf-theme-danger-hover: #a92929;
+
+  --pf-accent: var(--pf-theme-brand);
+  --pf-canvas: var(--pf-theme-canvas);
+  --pf-surface: var(--pf-theme-surface);
+  --pf-surface-subtle: var(--pf-theme-surface-muted);
+  --pf-ink: var(--pf-theme-text);
+  --pf-muted: var(--pf-theme-text-muted);
+  --pf-line: var(--pf-theme-border);
+  --pf-line-strong: var(--pf-theme-border-strong);
+  --pf-border-color: var(--pf-theme-border);
+  --pf-bg-main: var(--pf-theme-canvas);
+  --pf-text-main: var(--pf-theme-text);
+  --pf-text-muted: var(--pf-theme-text-muted);
+}
+
+@media screen {
+  body,
+  .app-shell,
+  .main-content > .page-content {
+    background: var(--pf-theme-canvas);
+    color: var(--pf-theme-text);
+  }
+
+  .top-nav,
+  .pf-card,
+  .dashboard-greeting,
+  .recent-reports-card,
+  .quick-actions-panel,
+  .patients-card,
+  .worklist-card,
+  .version-history-card,
+  .editor-card,
+  .editor-topbar,
+  .wizard-body,
+  .test-catalog-card,
+  .patient-modal,
+  .shortcut-help {
+    background: var(--pf-theme-surface) !important;
+    border-color: var(--pf-theme-border) !important;
+  }
+
+  .primary-button,
+  .top-nav-new-report,
+  .amendment-button,
+  .login-button,
+  .patient-pick-action.is-selected,
+  .filter-tab.is-active .tab-count,
+  .pf-swal-btn--primary,
+  .pf-swal-btn--danger {
+    color: var(--pf-theme-on-brand) !important;
+  }
+
+  .primary-button,
+  .top-nav-new-report,
+  .amendment-button,
+  .login-button,
+  .patient-pick-action.is-selected,
+  .pf-swal-btn--primary {
+    border-color: var(--pf-theme-brand) !important;
+    background: var(--pf-theme-brand) !important;
+  }
+
+  .primary-button:hover:not(:disabled),
+  .top-nav-new-report:hover,
+  .amendment-button:hover,
+  .login-button:hover,
+  .patient-pick-action.is-selected:hover,
+  .pf-swal-btn--primary:hover {
+    border-color: var(--pf-theme-brand-hover) !important;
+    background: var(--pf-theme-brand-hover) !important;
+  }
+
+  .pf-swal-btn--danger {
+    border-color: var(--pf-theme-danger) !important;
+    background: var(--pf-theme-danger) !important;
+  }
+
+  .pf-swal-btn--danger:hover {
+    border-color: var(--pf-theme-danger-hover) !important;
+    background: var(--pf-theme-danger-hover) !important;
+  }
+
+  .secondary-button,
+  .top-nav-menu-trigger,
+  .top-nav-lock,
+  .back-to-dashboard,
+  .patient-pick-action {
+    border-color: var(--pf-theme-border-strong) !important;
+    background: var(--pf-theme-surface) !important;
+    color: var(--pf-theme-text) !important;
+  }
+
+  .secondary-button:hover:not(:disabled),
+  .top-nav-menu-trigger:hover,
+  .top-nav-lock:hover,
+  .back-to-dashboard:hover,
+  .patient-pick-action:hover {
+    border-color: #a9c7f7 !important;
+    background: var(--pf-theme-surface-hover) !important;
+    color: var(--pf-theme-brand) !important;
+  }
+
+  .dashboard-card-header,
+  .quick-actions-panel-header,
+  .patients-table-header,
+  .worklist-table-header,
+  .version-history-card-header,
+  .test-catalog-header,
+  .editor-card-header,
+  .results-table thead,
+  .parameters-table-header,
+  .table-header {
+    background: var(--pf-theme-surface-muted) !important;
+    border-color: var(--pf-theme-border) !important;
+    color: var(--pf-theme-text-muted) !important;
+  }
+
+  .recent-report-item,
+  .worklist-row,
+  .patients-row,
+  .version-item,
+  .test-item-header,
+  .parameters-table-row,
+  .results-table tbody tr,
+  .table-row {
+    background: var(--pf-theme-surface) !important;
+    border-color: #e8eef5 !important;
+    color: var(--pf-theme-text) !important;
+  }
+
+  .recent-report-item:hover,
+  .worklist-row:hover,
+  .patients-row:hover,
+  .version-item:hover,
+  .test-item-header:hover,
+  .parameters-table-row:hover,
+  .results-table tbody tr:hover,
+  .table-row:hover {
+    background: var(--pf-theme-surface-hover) !important;
+  }
+
+  .parameters-table-row.is-editing,
+  .worklist-row:focus,
+  .patients-row:focus-within,
+  .results-table tbody tr:focus-within {
+    background: #e7f1ff !important;
+  }
+
+  input,
+  select,
+  textarea,
+  .patients-search,
+  .result-cell input {
+    border-color: var(--pf-theme-border-strong);
+    background: var(--pf-theme-surface-raised);
+    color: var(--pf-theme-text);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #7b8ca2;
+  }
+
+  ::selection {
+    background: #cfe2ff;
+    color: var(--pf-theme-text);
+  }
+}

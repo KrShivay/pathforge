@@ -7,10 +7,10 @@ import { createTheme } from "@mui/material/styles";
  */
 export const muiTheme = createTheme({
   palette: {
-    primary: { main: "#2563eb" },
-    text: { primary: "#1e293b", secondary: "#64748b" },
-    background: { paper: "#ffffff" },
-    divider: "#e2e8f0",
+    primary: { main: "#1769e0", dark: "#0f58c4", contrastText: "#ffffff" },
+    text: { primary: "#142033", secondary: "#52647a" },
+    background: { default: "#f3f7fc", paper: "#ffffff" },
+    divider: "#dbe3ec",
   },
   shape: { borderRadius: 8 },
   typography: {
@@ -21,9 +21,10 @@ export const muiTheme = createTheme({
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          backgroundColor: "#ffffff",
-          "& .MuiOutlinedInput-notchedOutline": { borderColor: "#dbe2ea" },
-          "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#94a3b8" },
+          backgroundColor: "#fbfdff",
+          "& .MuiOutlinedInput-notchedOutline": { borderColor: "#c7d2df" },
+          "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#8da4bd" },
+          "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#1769e0" },
         },
       },
     },
