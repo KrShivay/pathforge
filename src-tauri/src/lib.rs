@@ -28,7 +28,27 @@ pub fn run() {
                 let view_menu = SubmenuBuilder::new(app, "View")
                     .item(&refresh_item)
                     .build()?;
-                let menu = MenuBuilder::new(app).item(&view_menu).build()?;
+                let undo_item = MenuItemBuilder::new("Undo").id("undo").build(app)?;
+                let redo_item = MenuItemBuilder::new("Redo").id("redo").build(app)?;
+                let cut_item = MenuItemBuilder::new("Cut").id("cut").build(app)?;
+                let copy_item = MenuItemBuilder::new("Copy").id("copy").build(app)?;
+                let paste_item = MenuItemBuilder::new("Paste").id("paste").build(app)?;
+                let select_all_item = MenuItemBuilder::new("Select All")
+                    .id("select_all")
+                    .build(app)?;
+                let edit_menu = SubmenuBuilder::new(app, "Edit")
+                    .item(&undo_item)
+                    .item(&redo_item)
+                    .separator()
+                    .item(&cut_item)
+                    .item(&copy_item)
+                    .item(&paste_item)
+                    .item(&select_all_item)
+                    .build()?;
+                let menu = MenuBuilder::new(app)
+                    .item(&edit_menu)
+                    .item(&view_menu)
+                    .build()?;
                 app.set_menu(menu)?;
             }
 
@@ -41,6 +61,26 @@ pub fn run() {
             if let Some(window) = app.get_webview_window("main") {
                 if let Err(error) = window.eval("window.location.reload()") {
                     log::error!("Failed to refresh the main window: {error}");
+                }
+            }
+            return;
+        }
+
+        let edit_action = match event.id().as_ref() {
+            "undo" => Some("undo"),
+            "redo" => Some("redo"),
+            "cut" => Some("cut"),
+            "copy" => Some("copy"),
+            "paste" => Some("paste"),
+            "select_all" => Some("selectAll"),
+            _ => None,
+        };
+
+        if let Some(action) = edit_action {
+            if let Some(window) = app.get_webview_window("main") {
+                let script = format!("window.__pathforgeNativeMenuAction?.('{action}')");
+                if let Err(error) = window.eval(&script) {
+                    log::error!("Failed to run Edit menu action '{action}': {error}");
                 }
             }
         }
