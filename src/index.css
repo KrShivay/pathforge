@@ -5498,132 +5498,6 @@ button {
   color: var(--pf-slate-800);
 }
 
-.shortcut-help-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: rgba(15, 23, 42, 0.58);
-  backdrop-filter: blur(3px);
-}
-
-.shortcut-help {
-  width: min(460px, 100%);
-  background: #ffffff;
-  border: 1px solid var(--pf-slate-200);
-  border-radius: 16px;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
-  overflow: hidden;
-}
-
-.shortcut-help-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 20px 10px;
-  border-bottom: 1px solid #eef2f6;
-}
-
-.shortcut-help-kicker {
-  margin: 0 0 4px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1.8px;
-  text-transform: uppercase;
-  color: var(--pf-slate-500);
-}
-
-.shortcut-help-heading h2 {
-  margin: 0;
-  font-size: 20px;
-  color: var(--pf-slate-900);
-}
-
-.shortcut-help-close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  margin: 0;
-  padding: 0;
-  border: 1px solid var(--pf-slate-200);
-  border-radius: 8px;
-  background: #ffffff;
-  color: var(--pf-slate-600);
-  cursor: pointer;
-}
-
-.shortcut-help-close:hover {
-  background: var(--pf-slate-100);
-  border-color: var(--pf-slate-300);
-  color: var(--pf-slate-900);
-}
-
-.shortcut-list {
-  display: grid;
-  gap: 10px;
-  padding: 16px 20px 8px;
-}
-
-.shortcut-list > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  border: 1px solid #edf2f7;
-  border-radius: 10px;
-  background: var(--pf-slate-50);
-}
-
-.shortcut-list span {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--pf-slate-700);
-}
-
-.shortcut-list kbd {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 62px;
-  padding: 5px 8px;
-  border: 1px solid var(--pf-slate-300);
-  border-bottom-width: 2px;
-  border-radius: 7px;
-  background: #ffffff;
-  color: var(--pf-slate-900);
-  font-size: 12px;
-  font-weight: 700;
-  font-family: "SFMono-Regular", Consolas, monospace;
-}
-
-.shortcut-help-footer {
-  margin: 0;
-  padding: 0 20px 18px;
-  font-size: 12.5px;
-  color: var(--pf-slate-500);
-}
-
-.shortcut-help-footer kbd {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 30px;
-  padding: 3px 6px;
-  border: 1px solid var(--pf-slate-300);
-  border-bottom-width: 2px;
-  border-radius: 6px;
-  background: #ffffff;
-  color: var(--pf-slate-900);
-  font-size: 11px;
-  font-weight: 700;
-}
-
 .top-nav-menu-list {
   position: absolute;
   top: calc(100% + 6px);
@@ -6206,7 +6080,6 @@ button {
 }
 
 .top-nav-new-report,
-.top-nav-shortcuts,
 .top-nav-lock {
   display: inline-flex;
   align-items: center;
@@ -6234,7 +6107,6 @@ button {
 }
 
 .top-nav-new-report:hover,
-.top-nav-shortcuts:hover,
 .top-nav-lock:hover {
   transform: translateY(-1px);
 }
@@ -6244,7 +6116,6 @@ button {
 }
 
 .top-nav-menu-trigger,
-.top-nav-shortcuts,
 .top-nav-lock {
   height: 32px !important;
   padding: 0 10px !important;
@@ -6262,7 +6133,6 @@ button {
 }
 
 .top-nav-menu-trigger:hover,
-.top-nav-shortcuts:hover,
 .top-nav-lock:hover {
   background: var(--pf-slate-100) !important;
   border-color: var(--pf-slate-400) !important;
@@ -6279,11 +6149,6 @@ button {
   font-size: 12px;
   font-weight: 600;
   color: inherit;
-}
-
-.top-nav-shortcuts {
-  border-color: #dbeafe !important;
-  background: #f8fbff !important;
 }
 
 .page-breadcrumb-bar {
@@ -7636,8 +7501,7 @@ input[aria-invalid="true"] {
   }
 
   .top-nav-new-report,
-  .top-nav-menu-trigger,
-  .top-nav-shortcuts {
+  .top-nav-menu-trigger {
     min-height: var(--pf-control-height) !important;
     height: var(--pf-control-height) !important;
   }
@@ -7975,15 +7839,13 @@ input[aria-invalid="true"] {
   }
 
   /* Modal surfaces */
-  .modal-overlay,
-  .shortcut-help-backdrop {
+  .modal-overlay {
     padding: var(--pf-page-padding);
     background: rgba(15, 23, 42, 0.62);
     backdrop-filter: blur(4px);
   }
 
-  .patient-modal,
-  .shortcut-help {
+  .patient-modal {
     width: min(100%, 520px);
     max-height: calc(100vh - (2 * var(--pf-page-padding)));
     overflow-y: auto;
@@ -7992,8 +7854,7 @@ input[aria-invalid="true"] {
     box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
   }
 
-  .modal-header,
-  .shortcut-help-heading {
+  .modal-header {
     padding: 18px 20px;
   }
 
@@ -8005,15 +7866,6 @@ input[aria-invalid="true"] {
   .parameter-form-actions {
     gap: var(--pf-control-gap);
     margin-top: var(--pf-section-gap);
-  }
-
-  .shortcut-list {
-    gap: 8px;
-    padding: 16px 20px;
-  }
-
-  .shortcut-help-footer {
-    padding: 0 20px 20px;
   }
 
   /* Laboratory Profile had markup but no dedicated UI rules. */
@@ -8204,14 +8056,8 @@ input[aria-invalid="true"] {
     gap: 12px;
   }
 
-  .top-nav-brand-text > span,
-  .top-nav-shortcuts .top-nav-menu-label {
+  .top-nav-brand-text > span {
     display: none;
-  }
-
-  .top-nav-shortcuts {
-    width: var(--pf-control-height);
-    padding: 0 !important;
   }
 
   .worklist-toolbar {
@@ -8401,10 +8247,6 @@ input[aria-invalid="true"] {
     flex-direction: column;
   }
 
-  .shortcut-list > div {
-    align-items: flex-start;
-    flex-direction: column;
-  }
 }
 
 @media screen and (max-width: 420px) {
@@ -8470,8 +8312,7 @@ input[aria-invalid="true"] {
   .editor-topbar,
   .wizard-body,
   .test-catalog-card,
-  .patient-modal,
-  .shortcut-help {
+  .patient-modal {
     background: var(--pf-theme-surface) !important;
     border-color: var(--pf-theme-border) !important;
   }
@@ -8961,7 +8802,6 @@ input[aria-invalid="true"] {
   .top-nav-brand:focus-visible,
   .top-nav-menu-trigger:focus-visible,
   .top-nav-new-report:focus-visible,
-  .top-nav-shortcuts:focus-visible,
   .top-nav-lock:focus-visible,
   .back-to-dashboard:focus-visible {
     outline: 3px solid rgba(23, 105, 224, 0.22);
@@ -8997,7 +8837,6 @@ input[aria-invalid="true"] {
   .secondary-button,
   .top-nav-new-report,
   .top-nav-menu-trigger,
-  .top-nav-shortcuts,
   .back-to-dashboard {
     min-height: 38px;
     border-radius: 9px !important;
@@ -9007,16 +8846,14 @@ input[aria-invalid="true"] {
   .primary-button,
   .secondary-button,
   .top-nav-new-report,
-  .top-nav-menu-trigger,
-  .top-nav-shortcuts {
+  .top-nav-menu-trigger {
     white-space: nowrap;
   }
 
   .primary-button:active:not(:disabled),
   .secondary-button:active:not(:disabled),
   .top-nav-new-report:active,
-  .top-nav-menu-trigger:active,
-  .top-nav-shortcuts:active {
+  .top-nav-menu-trigger:active {
     transform: translateY(0);
   }
 

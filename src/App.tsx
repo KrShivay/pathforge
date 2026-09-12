@@ -1,4 +1,4 @@
-import { ArrowLeft, Lock, Unlock, X } from "lucide-react";
+import { ArrowLeft, Lock, Unlock } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import TopNav, { type Page } from "./components/layout/TopNav";
 import { confirmDestructive } from "./lib/dialog";
@@ -16,13 +16,9 @@ export default function App() {
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [reportOrigin, setReportOrigin] = useState<Page>("worklist");
   const [worklistFilter, setWorklistFilter] = useState<"all" | "draft" | "finalized" | "attention">("all");
-  const [isShortcutHelpOpen, setIsShortcutHelpOpen] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const newReportDirtyRef = useRef(false);
   const editorDirtyRef = useRef(false);
-  const shortcutDialogRef = useRef<HTMLElement>(null);
-  const shortcutCloseRef = useRef<HTMLButtonElement>(null);
-  const shortcutReturnFocusRef = useRef<HTMLElement | null>(null);
 
   async function confirmExit(): Promise<boolean> {
     const dirtyNew = activePage === "new-report" && !selectedReportId && newReportDirtyRef.current;
@@ -45,97 +41,23 @@ export default function App() {
     setSelectedReportId(reportId);
   }
 
-  function openShortcutHelp() {
-    shortcutReturnFocusRef.current =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-    setIsShortcutHelpOpen(true);
-  }
-
-  function closeShortcutHelp() {
-    setIsShortcutHelpOpen(false);
-    requestAnimationFrame(() => shortcutReturnFocusRef.current?.focus());
-  }
-
   useEffect(() => {
-    if (!isShortcutHelpOpen) return;
-    shortcutCloseRef.current?.focus();
-  }, [isShortcutHelpOpen]);
+    if (isLocked) return;
 
-  useEffect(() => {
-    function isTextEntryTarget(target: EventTarget | null) {
-      return (
-        target instanceof HTMLInputElement ||
-        target instanceof HTMLTextAreaElement ||
-        target instanceof HTMLSelectElement ||
-        (target instanceof HTMLElement && target.isContentEditable)
-      );
-    }
-
-    function handleShortcut(event: KeyboardEvent) {
-      if (event.key === "Escape" && isShortcutHelpOpen) {
-        event.preventDefault();
-        closeShortcutHelp();
-        return;
-      }
-      if (isShortcutHelpOpen) return;
-      if (isLocked) return;
-      if (isTextEntryTarget(event.target)) return;
-
+    function lockOnKeyDown(event: KeyboardEvent) {
+      const target = event.target;
       if (
-        event.key === "?" ||
-        (event.key === "/" && (event.metaKey || event.ctrlKey))
+        target instanceof HTMLElement &&
+        target.closest("button, a, input, textarea, select, [contenteditable='true']")
       ) {
-        event.preventDefault();
-        openShortcutHelp();
         return;
       }
-
-      if (!(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey) {
-        return;
-      }
-
-      const pageByKey: Record<string, Page> = {
-        "1": "dashboard",
-        "2": "worklist",
-        "3": "patients",
-        "4": "history",
-        "5": "test-management",
-        "6": "lab-profile",
-      };
-      const page = pageByKey[event.key];
-      if (page) {
-        event.preventDefault();
-        void handleNavigate(page);
-      } else if (event.key.toLowerCase() === "n") {
-        event.preventDefault();
-        void handleNavigate("new-report");
-      }
+      setIsLocked(true);
     }
 
-    window.addEventListener("keydown", handleShortcut);
-    return () => window.removeEventListener("keydown", handleShortcut);
-  }, [isLocked, isShortcutHelpOpen]);
-
-  function trapShortcutDialogFocus(event: React.KeyboardEvent<HTMLElement>) {
-    if (event.key !== "Tab") return;
-    const focusable = [
-      ...event.currentTarget.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      ),
-    ];
-    if (focusable.length === 0) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  }
+    window.addEventListener("keydown", lockOnKeyDown);
+    return () => window.removeEventListener("keydown", lockOnKeyDown);
+  }, [isLocked]);
 
   const page = selectedReportId ? (
     <ReportEditor reportId={selectedReportId} onBack={() => void handleNavigate(reportOrigin)} onOpenReport={setSelectedReportId} onDirtyChange={(dirty) => { editorDirtyRef.current = dirty; }} />
@@ -152,7 +74,6 @@ export default function App() {
     <TopNav
       activePage={activePage}
       onNavigate={handleNavigate}
-      onShowShortcuts={openShortcutHelp}
       onLock={() => setIsLocked(true)}
     />
     <main className="main-content">
@@ -161,63 +82,6 @@ export default function App() {
         {page}
       </div>
     </main>
-    {isShortcutHelpOpen && (
-      <div
-        className="shortcut-help-backdrop"
-        onMouseDown={(event) => {
-          if (event.target === event.currentTarget) closeShortcutHelp();
-        }}
-      >
-        <section
-          ref={shortcutDialogRef}
-          className="shortcut-help"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="shortcut-help-title"
-          onKeyDown={trapShortcutDialogFocus}
-        >
-          <div className="shortcut-help-heading">
-            <div>
-              <p className="shortcut-help-kicker">PathForge controls</p>
-              <h2 id="shortcut-help-title">Keyboard shortcuts</h2>
-            </div>
-            <button
-              ref={shortcutCloseRef}
-              type="button"
-              className="shortcut-help-close"
-              onClick={closeShortcutHelp}
-              aria-label="Close keyboard shortcuts"
-              title="Close (Escape)"
-            >
-              <X size={18} aria-hidden="true" />
-            </button>
-          </div>
-          <div className="shortcut-list">
-            {[
-              ["New report", "N"],
-              ["Dashboard", "1"],
-              ["Worklist", "2"],
-              ["Patients", "3"],
-              ["Version history", "4"],
-              ["Laboratory tests", "5"],
-              ["Laboratory profile", "6"],
-            ].map(([label, key]) => (
-              <div key={label}>
-                <span>{label}</span>
-                <kbd>{/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl"} {key}</kbd>
-              </div>
-            ))}
-            <div>
-              <span>Show shortcuts</span>
-              <kbd>{/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl"} /</kbd>
-            </div>
-          </div>
-          <p className="shortcut-help-footer">
-            Press <kbd>Esc</kbd> to close this window.
-          </p>
-        </section>
-      </div>
-    )}
     {isLocked && (
       <section
         className="quiet-mode"
