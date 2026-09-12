@@ -9,8 +9,8 @@ import Swal, { type SweetAlertIcon, type SweetAlertResult } from "sweetalert2";
  * index.css; `customClass` maps each Swal part onto those classes.
  *
  * Every helper sets `showConfirmButton` / `showDenyButton` / `showCancelButton`
- * explicitly. Only confirmations show a Cancel/No; success and info
- * notifications show a single OK.
+ * explicitly. Confirmation dialogs show only their primary action; prompts
+ * and multi-action dialogs retain the dismissal actions they need.
  */
 const BASE_CLASSES = {
   container: "pf-swal",
@@ -29,8 +29,7 @@ export const dialog = Swal.mixin({
   buttonsStyling: false,
   reverseButtons: true,
   focusConfirm: false,
-  showCloseButton: true,
-  closeButtonHtml: "&times;",
+  showCloseButton: false,
   backdrop: "rgba(15, 23, 42, 0.45)",
   showClass: { popup: "pf-swal-in", backdrop: "pf-swal-backdrop-in" },
   hideClass: { popup: "pf-swal-out", backdrop: "pf-swal-backdrop-out" },
@@ -60,7 +59,7 @@ const ICONS = {
 } as const;
 
 // --- simple notifications ---------------------------------------------------
-// One action button ("OK") and the X. Never a Cancel or "No". No auto-close.
+// One action button ("OK"). No auto-close.
 interface NotifyOptions {
   title: string;
   text?: string;
@@ -99,7 +98,7 @@ export function notifyErrorList(title: string, messages: string[]) {
 }
 
 // --- confirmations --------------------------------------------------------
-// Two buttons: a Cancel and the action. The X / Esc / backdrop also cancel.
+// One primary action. Escape and backdrop dismissal still return false.
 interface ConfirmOptions {
   title: string;
   text?: string;
@@ -118,14 +117,13 @@ export async function confirmAction(options: ConfirmOptions): Promise<boolean> {
     html: options.html,
     showConfirmButton: true,
     showDenyButton: false,
-    showCancelButton: true,
+    showCancelButton: false,
     confirmButtonText: options.confirmText ?? "Continue",
-    cancelButtonText: options.cancelText ?? "Cancel",
   });
   return result.isConfirmed;
 }
 
-/** Destructive confirm — red action button, plus a Cancel. */
+/** Destructive confirm — red action button. */
 export async function confirmDestructive(
   options: ConfirmOptions,
 ): Promise<boolean> {
@@ -136,9 +134,8 @@ export async function confirmDestructive(
     html: options.html,
     showConfirmButton: true,
     showDenyButton: false,
-    showCancelButton: true,
+    showCancelButton: false,
     confirmButtonText: options.confirmText ?? "Delete",
-    cancelButtonText: options.cancelText ?? "Cancel",
     customClass: {
       ...BASE_CLASSES,
       confirmButton: "pf-swal-btn pf-swal-btn--danger",

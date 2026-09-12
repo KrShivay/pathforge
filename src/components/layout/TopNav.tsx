@@ -1,8 +1,14 @@
 import {
   ChevronDown,
+  ClipboardList,
   FlaskConical,
+  History,
+  Keyboard,
   LayoutDashboard,
+  LockKeyhole,
+  Plus,
   Stethoscope,
+  Users,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -19,7 +25,10 @@ export type Page =
   | "test-management";
 
 interface TopNavProps {
+  activePage: Page;
   onNavigate: (page: Page) => void | Promise<void>;
+  onLock: () => void;
+  onShowShortcuts: () => void;
 }
 
 /**
@@ -27,7 +36,12 @@ interface TopNavProps {
  * started from the Dashboard. The only navigational element is a secondary
  * menu that exposes Test Management.
  */
-export default function TopNav({ onNavigate }: TopNavProps) {
+export default function TopNav({
+  activePage,
+  onNavigate,
+  onLock,
+  onShowShortcuts,
+}: TopNavProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -57,17 +71,42 @@ export default function TopNav({ onNavigate }: TopNavProps) {
         </span>
       </button>
 
+      <nav className="top-nav-links" aria-label="Primary navigation">
+        {[
+          {
+            page: "dashboard" as const,
+            label: "Dashboard",
+            icon: LayoutDashboard,
+          },
+          { page: "worklist" as const, label: "Worklist", icon: ClipboardList },
+          { page: "patients" as const, label: "Patients", icon: Users },
+          { page: "history" as const, label: "History", icon: History },
+        ].map(({ page, label, icon: Icon }) => (
+          <button
+            type="button"
+            className={`top-nav-link${activePage === page ? " is-active" : ""}`}
+            aria-current={activePage === page ? "page" : undefined}
+            key={page}
+            onClick={() => void onNavigate(page)}
+            title={label}
+          >
+            <Icon size={15} />
+            <span className="top-nav-link-label">{label}</span>
+          </button>
+        ))}
+      </nav>
+
       <div className="top-nav-spacer" />
 
       <div className="top-nav-user">
         <button
           type="button"
-          className="top-nav-menu-trigger"
-          onClick={() => void onNavigate("dashboard")}
-          title="Open Dashboard"
+          className="top-nav-new-report"
+          onClick={() => void onNavigate("new-report")}
+          title="Create a new report"
         >
-          <LayoutDashboard size={15} />
-          <span className="top-nav-menu-label">Dashboard</span>
+          <Plus size={15} />
+          <span className="top-nav-new-report-label">New report</span>
         </button>
         <div className="top-nav-menu" ref={menuRef}>
           <button
@@ -99,6 +138,27 @@ export default function TopNav({ onNavigate }: TopNavProps) {
             </div>
           )}
         </div>
+        <button
+          type="button"
+          className="top-nav-lock"
+          onClick={onLock}
+          title="Lock app"
+          aria-label="Lock app"
+        >
+          <LockKeyhole size={15} />
+          <span className="top-nav-menu-label">Lock app</span>
+        </button>
+        <button
+          type="button"
+          className="top-nav-shortcuts"
+          onClick={onShowShortcuts}
+          title="Keyboard shortcuts (Command+/)"
+          aria-label="Keyboard shortcuts"
+          aria-keyshortcuts="Meta+/"
+        >
+          <Keyboard size={15} />
+          <span className="top-nav-menu-label">Shortcuts</span>
+        </button>
       </div>
     </header>
   );

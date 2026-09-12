@@ -46,7 +46,11 @@ export default function ReviewStep({
         <div className="review-item">
           <span>Patient</span>
           <strong>{patient?.name ?? "—"}</strong>
-          <em>{patient ? `${patient.age}y · ${patient.gender}` : ""}</em>
+          <em>
+            {patient
+              ? `${patient.patientId} · ${patient.age}y · ${patient.gender}`
+              : ""}
+          </em>
         </div>
         <div className="review-item">
           <span>Specimen</span>

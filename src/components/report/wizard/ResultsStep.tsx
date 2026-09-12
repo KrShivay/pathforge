@@ -1,10 +1,11 @@
 import { useMemo } from "react";
 
-import { useTests } from "../../../store/TestContext";
-import type { LaboratoryTest } from "../../../domain/types";
-import { formatReferenceRange } from "../referenceRange";
-import { computeFlag } from "../flags";
 import { sanitizeText } from "../../../domain/textRules.mjs";
+import type { LaboratoryTest } from "../../../domain/types";
+import { useTests } from "../../../store/TestContext";
+import { computeFlag } from "../flags";
+import { getParameterHelp } from "../parameterHelp";
+import { formatReferenceRange } from "../referenceRange";
 
 interface ResultsStepProps {
   selectedTestIds: string[];
@@ -29,7 +30,7 @@ export default function ResultsStep({
       selectedTestIds
         .map((id) => tests.find((test) => test.id === id))
         .filter((test): test is LaboratoryTest => test !== undefined),
-    [selectedTestIds, tests]
+    [selectedTestIds, tests],
   );
 
   const firstResultKey = selectedTests[0]?.parameters[0]
@@ -42,6 +43,11 @@ export default function ResultsStep({
       <p className="wizard-panel-hint">
         Enter results for each parameter. Anything left blank can still be saved
         as a draft.
+      </p>
+      <p className="results-range-note">
+        Reference ranges are typical adult guides. The laboratory's own range
+        should be used when it differs, especially for children, pregnancy, or
+        results affected by timing or treatment.
       </p>
 
       {selectedTests.map((test) => (
@@ -72,11 +78,16 @@ export default function ResultsStep({
                   const flag = computeFlag(
                     value,
                     parameter.referenceRange?.min,
-                    parameter.referenceRange?.max
+                    parameter.referenceRange?.max,
                   );
                   return (
                     <tr key={parameter.id}>
-                      <td className="parameter-cell">{parameter.name}</td>
+                      <td className="parameter-cell">
+                        <strong>{parameter.name}</strong>
+                        <span className="parameter-help">
+                          {getParameterHelp(parameter.id)}
+                        </span>
+                      </td>
                       <td className="result-cell">
                         <input
                           type="text"
@@ -88,7 +99,7 @@ export default function ResultsStep({
                           onChange={(event) =>
                             onChange(
                               key,
-                              sanitizeText(event.target.value, "result")
+                              sanitizeText(event.target.value, "result"),
                             )
                           }
                           autoFocus={key === firstResultKey}

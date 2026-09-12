@@ -7,8 +7,13 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getDatabase } from "../database/db";
+import {
+  getDatabase,
+  normalizePatientLookupKey,
+  patientHasDuplicateRecord,
+} from "../database/db";
 import { nextPatientId } from "../domain/patientId.mjs";
+import { DEMO_PATIENTS } from "./demoData";
 
 export interface Patient {
   id: string;
@@ -37,7 +42,11 @@ interface PatientContextType {
 /** True when `error` is a SQLite UNIQUE constraint violation on insert. */
 function isUniqueConstraintError(error: unknown): boolean {
   const message =
-    error instanceof Error ? error.message : typeof error === "string" ? error : "";
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : "";
   return /UNIQUE constraint failed/i.test(message);
 }
 
@@ -70,11 +79,66 @@ export function PatientProvider({ children }: { children: ReactNode }) {
         SELECT id, patient_id, name, age, gender, phone, address
         FROM patients
         ORDER BY created_at DESC
-        `
+        `,
       );
 
+      const dedupedRows = [] as typeof rows;
+      const seenPatientKeys = new Set<string>();
+      for (const row of rows) {
+        const key = normalizePatientLookupKey(row.name, row.phone ?? "");
+        if (seenPatientKeys.has(key)) continue;
+        seenPatientKeys.add(key);
+        dedupedRows.push(row);
+      }
+
+      const existingPatientIds = new Set(dedupedRows.map((row) => row.id));
+      const existingPatientCodes = new Set(
+        dedupedRows.map((row) => row.patient_id),
+      );
+      const missingDemoPatients = DEMO_PATIENTS.filter(
+        (patient) =>
+          !existingPatientIds.has(patient.id) &&
+          !existingPatientCodes.has(patient.patientId),
+      );
+
+      if (missingDemoPatients.length > 0) {
+        for (const patient of missingDemoPatients) {
+          await db.execute(
+            `
+            INSERT INTO patients (
+              id, patient_id, name, age, gender, phone, address, created_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            `,
+            [
+              patient.id,
+              patient.patientId,
+              patient.name,
+              patient.age,
+              patient.gender,
+              patient.phone,
+              patient.address,
+              new Date("2026-09-12T09:00:00.000Z").toISOString(),
+            ],
+          );
+        }
+        setPatients([
+          ...missingDemoPatients,
+          ...dedupedRows.map((row) => ({
+            id: row.id,
+            patientId: row.patient_id,
+            name: row.name,
+            age: row.age,
+            gender: row.gender,
+            phone: row.phone ?? "",
+            address: row.address ?? undefined,
+          })),
+        ]);
+        return;
+      }
+
       setPatients(
-        rows.map((row) => ({
+        dedupedRows.map((row) => ({
           id: row.id,
           patientId: row.patient_id,
           name: row.name,
@@ -82,7 +146,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
           gender: row.gender,
           phone: row.phone ?? "",
           address: row.address ?? undefined,
-        }))
+        })),
       );
     } catch (error) {
       console.error("Failed to load patients:", error);
@@ -93,7 +157,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
 
   const previewPatientId = useCallback(
     () => nextPatientId(patients.map((patient) => patient.patientId)),
-    [patients]
+    [patients],
   );
 
   const addPatient = useCallback(
@@ -106,18 +170,35 @@ export function PatientProvider({ children }: { children: ReactNode }) {
       // constraint on patients.patient_id. Re-read the day's IDs from the
       // database and retry once with the next free sequence rather than
       // failing the whole registration.
+      const name = input.name.trim();
+      const phone = input.phone.trim();
+
+      if (
+        patientHasDuplicateRecord(
+          await db.select<{ name: string; phone: string }[]>(
+            "SELECT name, phone FROM patients",
+          ),
+          name,
+          phone,
+        )
+      ) {
+        throw new Error(
+          "A patient with this name and phone number already exists.",
+        );
+      }
+
       async function insertWithNextId(): Promise<Patient> {
         const rows = await db.select<{ patient_id: string }[]>(
-          "SELECT patient_id FROM patients"
+          "SELECT patient_id FROM patients",
         );
 
         const patient: Patient = {
           id: crypto.randomUUID(),
           patientId: nextPatientId(rows.map((row) => row.patient_id)),
-          name: input.name,
+          name,
           age: input.age,
           gender: input.gender,
-          phone: input.phone,
+          phone,
           address: input.address,
         };
 
@@ -137,7 +218,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
             patient.phone,
             patient.address ?? null,
             new Date().toISOString(),
-          ]
+          ],
         );
 
         return patient;
@@ -161,12 +242,12 @@ export function PatientProvider({ children }: { children: ReactNode }) {
         throw error;
       }
     },
-    []
+    [],
   );
 
   const getPatient = useCallback(
     (id: string) => patients.find((patient) => patient.id === id),
-    [patients]
+    [patients],
   );
 
   const value = useMemo(
@@ -177,7 +258,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
       getPatient,
       previewPatientId,
     }),
-    [patients, loading, addPatient, getPatient, previewPatientId]
+    [patients, loading, addPatient, getPatient, previewPatientId],
   );
 
   return (

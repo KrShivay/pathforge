@@ -7,6 +7,7 @@ import { usePatients, type NewPatientInput } from "../../store/PatientContext";
 interface PatientFormProps {
   onSaved: (patientId: string) => void;
   onCancel?: () => void;
+  cancelLabel?: string;
   submitLabel?: string;
   busy?: boolean;
   /** Reports whether the form has any entered value, so a host modal can
@@ -24,19 +25,22 @@ const SEX_OPTIONS = ["Female", "Male", "Other"] as const;
 export default function PatientForm({
   onSaved,
   onCancel,
+  cancelLabel = "Cancel",
   submitLabel = "Save Patient",
   busy = false,
   onDirtyChange,
 }: PatientFormProps) {
   const { addPatient, previewPatientId } = usePatients();
 
-  const [form, setForm] = useState({
+  const emptyForm = {
     name: "",
     age: "",
     gender: "",
     phone: "",
     address: "",
-  });
+  };
+
+  const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -90,6 +94,7 @@ export default function PatientForm({
     setError("");
     try {
       const patient = await addPatient(input);
+      setForm(emptyForm);
       void notifySuccess({
         title: "Patient created",
         text: `${patient.name} is ready for reporting.`,
@@ -202,7 +207,7 @@ export default function PatientForm({
             onClick={onCancel}
             disabled={disabled}
           >
-            Cancel
+            {cancelLabel}
           </button>
         ) : null}
         <button type="submit" className="primary-button" disabled={disabled}>

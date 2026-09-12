@@ -1,10 +1,11 @@
 import { FlaskConical } from "lucide-react";
 
+import { sanitizeText } from "../../domain/textRules.mjs";
 import type { TestResult } from "../../store/ReportContext";
-import { formatReferenceRange } from "./referenceRange";
 import { computeFlag } from "./flags";
 import { groupResultsByTest } from "./groupResults";
-import { sanitizeText } from "../../domain/textRules.mjs";
+import { getParameterHelp } from "./parameterHelp";
+import { formatReferenceRange } from "./referenceRange";
 
 interface ResultsTableProps {
   results: TestResult[];
@@ -34,6 +35,10 @@ export default function ResultsTable({
               ? groups[0].testName || "Selected laboratory test"
               : `${groups.length} tests`}
           </p>
+          <p className="results-range-note">
+            Ranges are typical adult guides; use the laboratory's own range when
+            it differs.
+          </p>
         </div>
       </div>
 
@@ -59,11 +64,16 @@ export default function ResultsTable({
                   const flag = computeFlag(
                     result.value,
                     result.referenceRange?.min,
-                    result.referenceRange?.max
+                    result.referenceRange?.max,
                   );
                   return (
                     <tr key={`${result.testId}::${result.parameterId}`}>
-                      <td className="parameter-cell">{result.parameterName}</td>
+                      <td className="parameter-cell">
+                        <strong>{result.parameterName}</strong>
+                        <span className="parameter-help">
+                          {getParameterHelp(result.parameterId)}
+                        </span>
+                      </td>
                       <td className="result-cell">
                         <input
                           aria-label={`${result.parameterName} result`}
@@ -73,7 +83,7 @@ export default function ResultsTable({
                             onResultChange(
                               result.testId,
                               result.parameterId,
-                              sanitizeText(event.target.value, "result")
+                              sanitizeText(event.target.value, "result"),
                             )
                           }
                           disabled={disabled}

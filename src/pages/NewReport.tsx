@@ -95,7 +95,7 @@ export default function NewReport({
   );
 
   const stepValid = [
-    patientId !== "",
+    getPatient(patientId) !== undefined,
     selectedTests.length > 0 && specimenType.trim() !== "",
     true,
     true,
@@ -111,6 +111,14 @@ export default function NewReport({
 
   function next() {
     if (step < STEPS.length - 1 && stepValid[step]) goTo(step + 1);
+  }
+
+  function jumpTo(nextStep: number) {
+    // Reached steps remain revisitable, but the stepper must not bypass a
+    // cleared patient or an incomplete test/specimen step.
+    if (nextStep > 0 && !stepValid[0]) return;
+    if (nextStep > 1 && !stepValid[1]) return;
+    setStep(nextStep);
   }
 
   function back() {
@@ -231,7 +239,7 @@ export default function NewReport({
         steps={STEPS}
         current={step}
         furthest={furthest}
-        onJump={setStep}
+        onJump={jumpTo}
       />
 
       <div className="wizard-body content-card-fill scrollable-container">
@@ -240,7 +248,9 @@ export default function NewReport({
             selectedPatientId={patientId}
             onSelect={(id) => {
               setPatientId(id);
-              setFurthest((current) => Math.max(current, 1));
+              if (id) {
+                setFurthest((current) => Math.max(current, 1));
+              }
             }}
             onAdvance={() => goTo(1)}
           />

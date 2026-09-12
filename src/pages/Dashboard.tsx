@@ -148,16 +148,19 @@ export default function Dashboard({
               onClick={stat.onClick}
               disabled={!clickable}
             >
-              <div className="stat-card-header">
-                <div className="stat-icon">
-                  <Icon size={18} />
-                </div>
+              <div className="stat-icon">
+                <Icon size={18} />
               </div>
               <div className="stat-card-body">
                 <h2>{stat.value}</h2>
                 <p className="stat-label">{stat.label}</p>
                 <span className="stat-desc">{stat.description}</span>
               </div>
+              <ArrowRight
+                className="stat-card-arrow"
+                size={16}
+                aria-hidden="true"
+              />
             </button>
           );
         })}

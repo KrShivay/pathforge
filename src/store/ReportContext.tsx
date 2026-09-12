@@ -10,10 +10,6 @@ import {
 } from "react";
 
 import {
-  createReportService,
-  createWorkspaceServiceAdapter,
-} from "../service/index.mjs";
-import {
   buildResolvedPayload,
   checkClinicalCompleteness,
   generateIssueNumber,
@@ -22,6 +18,10 @@ import {
   WORKSPACE_CATALOG_VERSION,
   type WorkspaceReportContent,
 } from "../domain/report-bridge.mjs";
+import {
+  createReportService,
+  createWorkspaceServiceAdapter,
+} from "../service/index.mjs";
 
 import {
   loadReportWorkspaceMeta,
@@ -30,6 +30,7 @@ import {
   saveReportWorkspaceState,
 } from "../database/db";
 import type { ValidationError, ValidationResult } from "../domain/types";
+import { DEMO_REPORTS } from "./demoData";
 
 // ========================================
 // PUBLIC SHAPES (unchanged for pages)
@@ -137,7 +138,7 @@ interface ReportContextType {
   /** Create a draft amendment of a finalized version. */
   createAmendment: (
     id: string,
-    amendmentReason: string
+    amendmentReason: string,
   ) => Promise<Report | undefined>;
 
   getReportVersions: (id: string) => Report[];
@@ -200,22 +201,24 @@ function parseId(id: string): { reportId: string; version: number } {
 
 function contentFromReport(
   source: Partial<Report>,
-  base?: WorkspaceReportContent
+  base?: WorkspaceReportContent,
 ): WorkspaceReportContent {
   return {
     specimenType: source.specimenType ?? base?.specimenType ?? "",
     clinicalHistory: source.clinicalHistory ?? base?.clinicalHistory ?? "",
     findings: source.findings ?? base?.findings ?? "",
     diagnosis: source.diagnosis ?? base?.diagnosis ?? "",
-    testResults: (source.testResults ?? base?.testResults ?? []).map((result) => ({
-      parameterId: result.parameterId,
-      parameterName: result.parameterName,
-      testId: result.testId,
-      testName: result.testName,
-      unit: result.unit,
-      value: result.value,
-      referenceRange: result.referenceRange,
-    })),
+    testResults: (source.testResults ?? base?.testResults ?? []).map(
+      (result) => ({
+        parameterId: result.parameterId,
+        parameterName: result.parameterName,
+        testId: result.testId,
+        testName: result.testName,
+        unit: result.unit,
+        value: result.value,
+        referenceRange: result.referenceRange,
+      }),
+    ),
   };
 }
 
@@ -235,7 +238,7 @@ export function ReportProvider({ children }: { children: ReactNode }) {
       createWorkspaceServiceAdapter({
         onCommit: saveReportWorkspaceState,
       }),
-    []
+    [],
   );
 
   const service = useMemo(
@@ -245,7 +248,7 @@ export function ReportProvider({ children }: { children: ReactNode }) {
         clock: { now: () => new Date().toISOString() },
         idGenerator: { nextId: () => crypto.randomUUID() },
       }),
-    [adapter]
+    [adapter],
   );
 
   const metaRef = useRef<Map<string, ReportMeta>>(new Map());
@@ -257,7 +260,9 @@ export function ReportProvider({ children }: { children: ReactNode }) {
 
     for (const meta of metaRef.current.values()) {
       try {
-        const history = await service.retrieveHistory({ reportId: meta.reportId });
+        const history = await service.retrieveHistory({
+          reportId: meta.reportId,
+        });
 
         const draftTimes = new Map<number, string>();
         for (const event of history.auditEvents) {
@@ -274,7 +279,8 @@ export function ReportProvider({ children }: { children: ReactNode }) {
           revision: history.revision,
           versions: history.versions.map((version) => ({
             version: version.version,
-            status: version.lifecycle_state === "finalized" ? "finalized" : "draft",
+            status:
+              version.lifecycle_state === "finalized" ? "finalized" : "draft",
             createdAt: draftTimes.get(version.version) ?? meta.createdAt,
             finalizedAt: version.finalized_at ?? version.amended_at,
             issueNumber: version.issue_number,
@@ -284,7 +290,9 @@ export function ReportProvider({ children }: { children: ReactNode }) {
             amendedBy: version.amended_by,
             amendmentType: version.amendment_type,
             amendmentReason: version.amendment_reason,
-            supersedesVersion: version.supersedes ? version.supersedes.version : null,
+            supersedesVersion: version.supersedes
+              ? version.supersedes.version
+              : null,
             content: readWorkspaceContent(version),
           })),
           audit: history.auditEvents.map((event, index) => ({
@@ -316,8 +324,64 @@ export function ReportProvider({ children }: { children: ReactNode }) {
 
         adapter.restore(state ?? {});
         metaRef.current = new Map(
-          metadata.map((meta) => [meta.reportId, meta])
+          metadata.map((meta) => [meta.reportId, meta]),
         );
+
+        const existingReportIds = new Set(
+          metadata.map((meta) => meta.reportId),
+        );
+        const missingDemoReports = DEMO_REPORTS.filter(
+          (demo) => !existingReportIds.has(demo.id),
+        );
+
+        if (missingDemoReports.length > 0) {
+          for (const demo of missingDemoReports) {
+            const created = await service.createDraft({
+              reportId: demo.id,
+              sourceCatalogVersion: WORKSPACE_CATALOG_VERSION,
+              resolvedPayload: buildResolvedPayload(demo),
+              actor: actorRef.current,
+            });
+
+            metaRef.current.set(demo.id, {
+              reportId: demo.id,
+              patientId: demo.patientId,
+              testId: demo.testId,
+              testName: demo.testName,
+              department: demo.department,
+              createdAt: created.auditEvent.occurred_at,
+            });
+            await saveReportWorkspaceMeta({
+              reportId: demo.id,
+              patientId: demo.patientId,
+              testId: demo.testId,
+              testName: demo.testName,
+              department: demo.department,
+              createdAt: created.auditEvent.occurred_at,
+            });
+
+            if (demo.finalize) {
+              await service.finalize({
+                identity: { report_id: demo.id, version: 1 },
+                expectedRevision: 1,
+                issueNumber: `PF-DEMO-${demo.id.slice(-3)}`,
+                issueDate: "2026-09-12",
+                actor: actorRef.current,
+              });
+            }
+
+            if (demo.amend) {
+              await service.amend({
+                baseline: { report_id: demo.id, version: 1 },
+                expectedRevision: 2,
+                actor: actorRef.current,
+                amendmentReason: "Demonstration of an amendment workflow.",
+                amendmentType: "correction",
+              });
+            }
+          }
+          await saveReportWorkspaceState(adapter.snapshot());
+        }
 
         if (active) await refresh();
       } catch (error) {
@@ -361,19 +425,24 @@ export function ReportProvider({ children }: { children: ReactNode }) {
       await refresh();
       return toReport(recordsRef.current, metaRef.current, makeId(reportId, 1));
     },
-    [service, refresh]
+    [service, refresh],
   );
 
   const updateReport = useCallback(
     async (id: string, updates: Partial<Report>): Promise<void> => {
       const { reportId, version } = parseId(id);
       const record = recordsRef.current.get(reportId);
-      const snapshot = record?.versions.find((entry) => entry.version === version);
+      const snapshot = record?.versions.find(
+        (entry) => entry.version === version,
+      );
       if (!record || !snapshot || snapshot.status !== "draft") return;
 
-      const nextPayload = buildResolvedPayload(contentFromReport(updates, snapshot.content));
+      const nextPayload = buildResolvedPayload(
+        contentFromReport(updates, snapshot.content),
+      );
       const currentPayload = buildResolvedPayload(snapshot.content);
-      if (JSON.stringify(nextPayload) === JSON.stringify(currentPayload)) return;
+      if (JSON.stringify(nextPayload) === JSON.stringify(currentPayload))
+        return;
 
       await service.updateDraft({
         identity: { report_id: reportId, version },
@@ -383,25 +452,37 @@ export function ReportProvider({ children }: { children: ReactNode }) {
       });
       await refresh();
     },
-    [service, refresh]
+    [service, refresh],
   );
 
   const finalizeReport = useCallback(
     async (id: string): Promise<FinalizeOutcome> => {
       const { reportId, version } = parseId(id);
       const record = recordsRef.current.get(reportId);
-      const snapshot = record?.versions.find((entry) => entry.version === version);
+      const snapshot = record?.versions.find(
+        (entry) => entry.version === version,
+      );
 
       if (!record || !snapshot) {
         return {
           valid: false,
-          errors: [{ field: "report", code: "REPORT_NOT_FOUND", message: "Report not found." }],
+          errors: [
+            {
+              field: "report",
+              code: "REPORT_NOT_FOUND",
+              message: "Report not found.",
+            },
+          ],
         };
       }
 
-      const errors: ValidationError[] = checkClinicalCompleteness(snapshot.content).map(
-        (issue) => ({ field: issue.field, code: "REQUIRED", message: issue.message })
-      );
+      const errors: ValidationError[] = checkClinicalCompleteness(
+        snapshot.content,
+      ).map((issue) => ({
+        field: issue.field,
+        code: "REQUIRED",
+        message: issue.message,
+      }));
 
       const domain = await service.validate({
         identity: { report_id: reportId, version },
@@ -410,7 +491,11 @@ export function ReportProvider({ children }: { children: ReactNode }) {
         errors.push({ field: "report", code: "DOMAIN", message: issue });
       }
       for (const issue of domain.referenceIssues) {
-        errors.push({ field: issue.path, code: issue.code, message: issue.message });
+        errors.push({
+          field: issue.path,
+          code: issue.code,
+          message: issue.message,
+        });
       }
 
       if (errors.length > 0) return { valid: false, errors };
@@ -443,19 +528,25 @@ export function ReportProvider({ children }: { children: ReactNode }) {
         report: toReport(
           recordsRef.current,
           metaRef.current,
-          makeId(reportId, version)
+          makeId(reportId, version),
         ),
       };
     },
-    [service, refresh]
+    [service, refresh],
   );
 
   const createAmendment = useCallback(
-    async (id: string, amendmentReason: string): Promise<Report | undefined> => {
+    async (
+      id: string,
+      amendmentReason: string,
+    ): Promise<Report | undefined> => {
       const { reportId, version } = parseId(id);
       const record = recordsRef.current.get(reportId);
-      const snapshot = record?.versions.find((entry) => entry.version === version);
-      if (!record || !snapshot || snapshot.status !== "finalized") return undefined;
+      const snapshot = record?.versions.find(
+        (entry) => entry.version === version,
+      );
+      if (!record || !snapshot || snapshot.status !== "finalized")
+        return undefined;
 
       const amended = await service.amend({
         baseline: { report_id: reportId, version },
@@ -468,10 +559,10 @@ export function ReportProvider({ children }: { children: ReactNode }) {
       return toReport(
         recordsRef.current,
         metaRef.current,
-        makeId(reportId, amended.reportVersion.version)
+        makeId(reportId, amended.reportVersion.version),
       );
     },
-    [service, refresh]
+    [service, refresh],
   );
 
   const reports = useMemo(() => {
@@ -484,13 +575,14 @@ export function ReportProvider({ children }: { children: ReactNode }) {
     }
     return list.sort(
       (left, right) =>
-        new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime()
+        new Date(left.createdAt).getTime() -
+        new Date(right.createdAt).getTime(),
     );
   }, [records]);
 
   const getReport = useCallback(
     (id: string) => reports.find((report) => report.id === id),
-    [reports]
+    [reports],
   );
 
   const getReportVersions = useCallback(
@@ -500,7 +592,7 @@ export function ReportProvider({ children }: { children: ReactNode }) {
         .filter((report) => parseId(report.id).reportId === reportId)
         .sort((left, right) => left.version - right.version);
     },
-    [reports]
+    [reports],
   );
 
   const getAuditTrail = useCallback(
@@ -508,7 +600,7 @@ export function ReportProvider({ children }: { children: ReactNode }) {
       const { reportId } = parseId(id);
       return records.get(reportId)?.audit ?? [];
     },
-    [records]
+    [records],
   );
 
   return (
@@ -536,7 +628,7 @@ export function ReportProvider({ children }: { children: ReactNode }) {
 function buildReport(
   reportId: string,
   snapshot: VersionSnapshot,
-  meta: ReportMeta | undefined
+  meta: ReportMeta | undefined,
 ): Report {
   return {
     id: makeId(reportId, snapshot.version),
@@ -579,10 +671,12 @@ function buildReport(
 function toReport(
   records: Map<string, ReportRecord>,
   metas: Map<string, ReportMeta>,
-  id: string
+  id: string,
 ): Report | undefined {
   const { reportId, version } = parseId(id);
-  const snapshot = records.get(reportId)?.versions.find((entry) => entry.version === version);
+  const snapshot = records
+    .get(reportId)
+    ?.versions.find((entry) => entry.version === version);
   if (!snapshot) return undefined;
   return buildReport(reportId, snapshot, metas.get(reportId));
 }

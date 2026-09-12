@@ -26,11 +26,52 @@ function emptyBrowserDatabaseState(): BrowserDatabaseState {
   };
 }
 
+export function normalizePatientLookupKey(name: string, phone: string): string {
+  const cleanName = String(name ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  const cleanPhone = String(phone ?? "").replace(/\D+/g, "");
+  return `${cleanName}|${cleanPhone}`;
+}
+
+export function patientHasDuplicateRecord(
+  existing: Array<{ name?: string; phone?: string }>,
+  name: string,
+  phone: string,
+): boolean {
+  const target = normalizePatientLookupKey(name, phone);
+  return existing.some((record) => {
+    const recordName = typeof record.name === "string" ? record.name : "";
+    const recordPhone = typeof record.phone === "string" ? record.phone : "";
+    return normalizePatientLookupKey(recordName, recordPhone) === target;
+  });
+}
+
 function readBrowserDatabaseState(): BrowserDatabaseState {
   try {
     const raw = window.localStorage.getItem(BROWSER_DATABASE_KEY);
     if (!raw) return emptyBrowserDatabaseState();
-    return { ...emptyBrowserDatabaseState(), ...JSON.parse(raw) };
+
+    const parsed = JSON.parse(raw) as Partial<BrowserDatabaseState>;
+    const state = emptyBrowserDatabaseState();
+
+    state.patients = Array.isArray(parsed.patients) ? parsed.patients : [];
+    state.reportWorkspaceMeta = Array.isArray(parsed.reportWorkspaceMeta)
+      ? parsed.reportWorkspaceMeta
+      : [];
+    state.workspaceTests = Array.isArray(parsed.workspaceTests)
+      ? parsed.workspaceTests
+      : [];
+    state.workspaceTestsInitialized = Boolean(parsed.workspaceTestsInitialized);
+    state.reportWorkspaceState =
+      typeof parsed.reportWorkspaceState === "string"
+        ? parsed.reportWorkspaceState
+        : null;
+
+    return state;
   } catch {
     return emptyBrowserDatabaseState();
   }
@@ -40,10 +81,16 @@ class BrowserDatabase implements DatabaseLike {
   private state = readBrowserDatabaseState();
 
   private persist(): void {
-    window.localStorage.setItem(
-      BROWSER_DATABASE_KEY,
-      JSON.stringify(this.state),
-    );
+    try {
+      window.localStorage.setItem(
+        BROWSER_DATABASE_KEY,
+        JSON.stringify(this.state),
+      );
+    } catch {
+      // Local persistence can fail under private mode, quota exhaustion, or a
+      // browser security restriction. Fail closed by keeping the in-memory state
+      // and letting the user continue without a silent crash.
+    }
   }
 
   async select<T>(query: string): Promise<T> {
@@ -76,6 +123,11 @@ class BrowserDatabase implements DatabaseLike {
     }
 
     if (normalized.includes("from workspace_test_catalog_state")) {
+      if (normalized.includes("state_json")) {
+        return this.state.workspaceTestsInitialized
+          ? ([{ state_json: JSON.stringify(this.state.workspaceTests) }] as T)
+          : ([] as T);
+      }
       return this.state.workspaceTestsInitialized
         ? ([{ id: 1 }] as T)
         : ([] as T);
@@ -117,11 +169,25 @@ class BrowserDatabase implements DatabaseLike {
     if (normalized.startsWith("insert into patients")) {
       const [id, patientId, name, age, gender, phone, address, createdAt] =
         values;
+
       if (
-        this.state.patients.some((patient) => patient.patient_id === patientId)
+        this.state.patients.some(
+          (patient) => patient.patient_id === patientId,
+        ) ||
+        patientHasDuplicateRecord(
+          this.state.patients.map((patient) => ({
+            name: typeof patient.name === "string" ? patient.name : "",
+            phone: typeof patient.phone === "string" ? patient.phone : "",
+          })),
+          typeof name === "string" ? name : String(name ?? ""),
+          typeof phone === "string" ? phone : String(phone ?? ""),
+        )
       ) {
-        throw new Error("UNIQUE constraint failed: patients.patient_id");
+        throw new Error(
+          "Duplicate patient record: a patient with the same name and phone already exists.",
+        );
       }
+
       this.state.patients.push({
         id,
         patient_id: patientId,
@@ -192,6 +258,16 @@ class BrowserDatabase implements DatabaseLike {
     } else if (
       normalized.startsWith("insert into workspace_test_catalog_state")
     ) {
+      const stateJson = typeof values[0] === "string" ? values[0] : null;
+      if (stateJson) {
+        try {
+          const parsed = JSON.parse(stateJson);
+          if (Array.isArray(parsed)) this.state.workspaceTests = parsed;
+        } catch {
+          // The real database would reject malformed JSON only at read time;
+          // keep the in-memory adapter permissive for its test-only use.
+        }
+      }
       this.state.workspaceTestsInitialized = true;
     }
 
@@ -202,7 +278,78 @@ class BrowserDatabase implements DatabaseLike {
 
 let database: DatabaseLike | null = null;
 let databasePromise: Promise<DatabaseLike> | null = null;
-let workspaceTestsWriteQueue = Promise.resolve();
+let databaseOperationQueue = Promise.resolve();
+
+const DATABASE_BUSY_RETRY_DELAYS_MS = [50, 100, 200, 400, 800];
+
+function isDatabaseBusyError(error: unknown): boolean {
+  let message: string;
+  if (error instanceof Error) {
+    message = error.message;
+  } else if (typeof error === "string") {
+    message = error;
+  } else {
+    try {
+      message = JSON.stringify(error);
+    } catch {
+      message = String(error);
+    }
+  }
+
+  return /database is locked|database table is locked|SQLITE_BUSY|code:\s*5/i.test(
+    message,
+  );
+}
+
+function wait(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+async function withDatabaseBusyRetry<T>(operation: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      const delay = DATABASE_BUSY_RETRY_DELAYS_MS[attempt];
+      if (!isDatabaseBusyError(error) || delay === undefined) throw error;
+      await wait(delay);
+    }
+  }
+}
+
+function enqueueDatabaseOperation<T>(operation: () => Promise<T>): Promise<T> {
+  const queued = databaseOperationQueue.then(operation, operation);
+  databaseOperationQueue = queued.then(
+    () => undefined,
+    () => undefined,
+  );
+  return queued;
+}
+
+/**
+ * The SQL plugin owns a connection pool, not one long-lived SQLite connection.
+ * Serializing calls here prevents independent UI providers from contending for
+ * the same local database, while retrying covers a short-lived external lock.
+ */
+class SerializedDatabase implements DatabaseLike {
+  private readonly inner: DatabaseLike;
+
+  constructor(inner: DatabaseLike) {
+    this.inner = inner;
+  }
+
+  select<T>(query: string, bindValues?: unknown[]): Promise<T> {
+    return enqueueDatabaseOperation(() =>
+      withDatabaseBusyRetry(() => this.inner.select<T>(query, bindValues)),
+    );
+  }
+
+  execute(query: string, bindValues?: unknown[]): Promise<unknown> {
+    return enqueueDatabaseOperation(() =>
+      withDatabaseBusyRetry(() => this.inner.execute(query, bindValues)),
+    );
+  }
+}
 
 function isTauriRuntime(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -219,8 +366,9 @@ export async function getDatabase(): Promise<DatabaseLike> {
         ? Database.load("sqlite:pathforge.db")
         : Promise.resolve(new BrowserDatabase())
     )
-      .then(async (db) => {
-        if (isTauriRuntime()) await initializeDatabase(db);
+      .then(async (rawDb) => {
+        if (isTauriRuntime()) await initializeDatabase(rawDb);
+        const db = new SerializedDatabase(rawDb);
         database = db;
         return db;
       })
@@ -410,6 +558,16 @@ async function initializeDatabase(db: DatabaseLike): Promise<void> {
       initialized_at TEXT NOT NULL
     )
   `);
+
+  // A single snapshot makes catalog replacement one SQLite statement. The
+  // normalized tables above remain readable for databases created by older
+  // versions and are used as a one-time fallback during migration.
+  await ensureColumn(
+    db,
+    "workspace_test_catalog_state",
+    "state_json",
+    "state_json TEXT",
+  );
 }
 
 export interface PersistedReportMeta {
@@ -502,41 +660,52 @@ export async function loadWorkspaceTests(): Promise<{
   tests: LaboratoryTest[];
 }> {
   const db = await getDatabase();
-  const [state, testRows, parameterRows] = await Promise.all([
-    db.select<{ id: number }[]>(
-      "SELECT id FROM workspace_test_catalog_state WHERE id = 1",
-    ),
-    db.select<
-      {
-        id: string;
-        name: string;
-        department: string;
-        specimen: string | null;
-        created_at: string;
-        updated_at: string | null;
-      }[]
-    >(
-      "SELECT id, name, department, specimen, created_at, updated_at FROM workspace_tests ORDER BY name",
-    ),
-    db.select<
-      {
-        id: string;
-        test_id: string;
-        name: string;
-        result_type: "number" | "text";
-        unit: string | null;
-        reference_min: number | null;
-        reference_max: number | null;
-        reference_text: string | null;
-        symbol: TestParameter["symbol"] | null;
-      }[]
-    >(
-      `SELECT id, test_id, name, result_type, unit, reference_min, reference_max,
-              reference_text, symbol
-       FROM workspace_test_parameters
-       ORDER BY rowid`,
-    ),
-  ]);
+  const snapshotRows = await db.select<{ state_json: string | null }[]>(
+    "SELECT state_json FROM workspace_test_catalog_state WHERE id = 1",
+  );
+  const snapshot = snapshotRows[0]?.state_json;
+  if (snapshot) {
+    try {
+      const tests = JSON.parse(snapshot) as unknown;
+      if (Array.isArray(tests)) return { initialized: true, tests };
+    } catch {
+      // Fall through to the normalized legacy tables below.
+    }
+  }
+
+  const state = await db.select<{ id: number }[]>(
+    "SELECT id FROM workspace_test_catalog_state WHERE id = 1",
+  );
+  const testRows = await db.select<
+    {
+      id: string;
+      name: string;
+      department: string;
+      specimen: string | null;
+      created_at: string;
+      updated_at: string | null;
+    }[]
+  >(
+    "SELECT id, name, department, specimen, created_at, updated_at FROM workspace_tests ORDER BY name",
+  );
+  const parameterRows = await db.select<
+    {
+      id: string;
+      test_id: string;
+      name: string;
+      result_type: "number" | "text";
+      unit: string | null;
+      reference_min: number | null;
+      reference_max: number | null;
+      reference_text: string | null;
+      symbol: TestParameter["symbol"] | null;
+    }[]
+  >(
+    `SELECT id, test_id, name, result_type, unit, reference_min, reference_max,
+            reference_text, symbol
+     FROM workspace_test_parameters
+     ORDER BY rowid`,
+  );
 
   const parametersByTest = new Map<string, TestParameter[]>();
   for (const row of parameterRows) {
@@ -575,80 +744,20 @@ export async function loadWorkspaceTests(): Promise<{
 }
 
 /**
- * Replace the whole workspace test catalog. The delete-then-insert runs inside a
- * transaction so a failure part way through can never leave the catalog empty or
- * partially written — callers either get the new catalog or keep the old one.
+ * Replace the whole workspace test catalog with one atomic snapshot write.
+ * Keeping this as one database statement is important because the SQL plugin
+ * exposes a connection pool and cannot hold a transaction across JS calls.
  */
 export async function saveWorkspaceTests(
   tests: LaboratoryTest[],
 ): Promise<void> {
-  const write = workspaceTestsWriteQueue
-    .catch(() => {})
-    .then(async () => {
-      const db = await getDatabase();
-
-      await db.execute("BEGIN");
-      try {
-        await writeWorkspaceTests(db, tests);
-        await db.execute("COMMIT");
-      } catch (error) {
-        await db.execute("ROLLBACK").catch(() => {
-          // Preserve the original failure; a failed rollback is not more useful.
-        });
-        throw error;
-      }
-    });
-
-  workspaceTestsWriteQueue = write.catch(() => {});
-  return write;
-}
-
-async function writeWorkspaceTests(
-  db: DatabaseLike,
-  tests: LaboratoryTest[],
-): Promise<void> {
-  await db.execute("DELETE FROM workspace_test_parameters");
-  await db.execute("DELETE FROM workspace_tests");
-
-  for (const test of tests) {
-    await db.execute(
-      `INSERT INTO workspace_tests (id, name, department, specimen, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [
-        test.id,
-        test.name,
-        test.department,
-        test.specimen ?? null,
-        test.createdAt,
-        test.updatedAt ?? null,
-      ],
-    );
-
-    for (const parameter of test.parameters) {
-      await db.execute(
-        `INSERT INTO workspace_test_parameters (
-           id, test_id, name, result_type, unit, reference_min, reference_max,
-           reference_text, symbol
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-        [
-          parameter.id,
-          test.id,
-          parameter.name,
-          parameter.type,
-          parameter.unit ?? null,
-          parameter.referenceRange?.min ?? null,
-          parameter.referenceRange?.max ?? null,
-          parameter.referenceRange?.text ?? null,
-          parameter.symbol ?? null,
-        ],
-      );
-    }
-  }
-
+  const db = await getDatabase();
   await db.execute(
-    `INSERT INTO workspace_test_catalog_state (id, initialized_at)
-     VALUES (1, $1)
-     ON CONFLICT(id) DO UPDATE SET initialized_at = excluded.initialized_at`,
-    [new Date().toISOString()],
+    `INSERT INTO workspace_test_catalog_state (id, state_json, initialized_at)
+     VALUES (1, $1, $2)
+     ON CONFLICT(id) DO UPDATE SET
+       state_json = excluded.state_json,
+       initialized_at = excluded.initialized_at`,
+    [JSON.stringify(tests), new Date().toISOString()],
   );
 }
