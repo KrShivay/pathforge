@@ -90,6 +90,7 @@ export default function ResultsStep({
                       </td>
                       <td className="result-cell">
                         <input
+                          aria-label={`${parameter.name} result`}
                           type="text"
                           inputMode={
                             parameter.type === "number" ? "decimal" : "text"

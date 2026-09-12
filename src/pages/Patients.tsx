@@ -72,6 +72,7 @@ export default function Patients() {
           <div className="patients-search">
             <Search size={16} />
             <input
+              aria-label="Search patients"
               type="text"
               placeholder="Search by name or phone…"
               value={search}
@@ -155,16 +156,20 @@ export default function Patients() {
           <div
             className="patient-modal"
             onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-patient-title"
           >
             <div className="modal-header">
               <div>
-                <h2>Add Patient</h2>
+                <h2 id="add-patient-title">Add Patient</h2>
                 <p>Register a new patient record</p>
               </div>
               <button
                 type="button"
                 className="close-button"
                 onClick={() => void requestCloseModal()}
+                aria-label="Close add patient dialog"
               >
                 <X size={18} />
               </button>

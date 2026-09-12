@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { X, Printer, Download } from "lucide-react";
 
 import PrintableReport from "./PrintableReport";
@@ -28,13 +28,43 @@ export default function ReportPreviewModal({
   onDownloadPdf,
   busy = false,
 }: ReportPreviewModalProps) {
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
+    returnFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    closeRef.current?.focus();
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
     }
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      returnFocusRef.current?.focus();
+    };
   }, [onClose]);
+
+  function trapFocus(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "Tab") return;
+    const focusable = [
+      ...event.currentTarget.querySelectorAll<HTMLButtonElement>(
+        "button:not([disabled])",
+      ),
+    ];
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
 
   return (
     <div
@@ -47,6 +77,7 @@ export default function ReportPreviewModal({
       <div
         className="preview-modal"
         onClick={(event) => event.stopPropagation()}
+        onKeyDown={trapFocus}
       >
         <div className="preview-modal-head">
           <span className="preview-modal-label">{label}</span>
@@ -75,6 +106,7 @@ export default function ReportPreviewModal({
               </button>
             ) : null}
             <button
+              ref={closeRef}
               type="button"
               className="preview-modal-close"
               onClick={onClose}

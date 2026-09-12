@@ -117,9 +117,9 @@ const BRAND = {
 const DRAFT_NOTICE =
   "Preliminary draft — not for clinical use. Findings are subject to review and may change before the report is finalized.";
 const AUTH_NOTE_FINAL =
-  "This report has been electronically verified and released. A handwritten signature is not required.";
+  "Recorded laboratory personnel are listed below for this finalized report.";
 const AUTH_NOTE_DRAFT =
-  "This preliminary report has not been verified and must not be used for clinical decisions.";
+  "This preliminary report is not final and must not be used for clinical decisions.";
 const DISCLAIMER =
   "Computer-generated report for the named patient and referring clinician only.";
 const NOT_PROVIDED = "Not provided";

@@ -12,7 +12,11 @@ import { checkClinicalCompleteness } from "../domain/report-bridge.mjs";
 import { usePatients } from "../store/PatientContext";
 import { useReports, type Report } from "../store/ReportContext";
 import { SkeletonList } from "../components/common/Skeleton";
-import { filterWorklistReports, formatDate as formatReportFilterDate } from "../lib/reportFilters.mjs";
+import {
+  filterWorklistReports,
+  formatDate as formatReportFilterDate,
+  parseDate,
+} from "../lib/reportFilters.mjs";
 
 interface WorklistProps {
   onSelectReport?: (reportId: string) => void;
@@ -34,6 +38,11 @@ export default function Worklist({
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [sort, setSort] = useState("newest");
+  const invalidRange = Boolean(
+    dateFrom &&
+      dateTo &&
+      (!parseDate(dateFrom) || !parseDate(dateTo) || dateFrom > dateTo),
+  );
 
   const counts = useMemo(() => {
     const drafts = reports.filter((r) => r.status === "draft").length;
@@ -100,16 +109,18 @@ export default function Worklist({
             </button>
           </div>
           <div className="report-filter-row">
-            <label>Created from<input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} /></label>
-            <label>Created to<input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} /></label>
+            <label>Created from<input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} aria-invalid={invalidRange} aria-describedby={invalidRange ? "worklist-date-error" : undefined} /></label>
+            <label>Created to<input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} aria-invalid={invalidRange} aria-describedby={invalidRange ? "worklist-date-error" : undefined} /></label>
             <label>Sort<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="patient">Patient</option><option value="test">Test</option><option value="status">Status</option></select></label>
             <span className="result-count" role="status">{filteredReports.length} result{filteredReports.length === 1 ? "" : "s"}</span>
             {(search || statusFilter !== "all" || dateFrom || dateTo || sort !== "newest") && <button type="button" className="text-button" onClick={() => { setSearch(""); setStatusFilter("all"); setDateFrom(""); setDateTo(""); setSort("newest"); }}>Clear filters</button>}
+            {invalidRange && <p id="worklist-date-error" className="form-error report-filter-error" role="alert">Choose a date range where the end date is on or after the start date.</p>}
           </div>
 
           <div className="patients-search worklist-search">
             <Search size={16} />
             <input
+              aria-label="Search reports"
               type="text"
               placeholder="Search by patient, test, or specimen…"
               value={search}
@@ -201,11 +212,11 @@ export default function Worklist({
               <FileText size={36} />
               <h3>No reports found</h3>
               <p>
-                {search || statusFilter !== "all"
+                {search || statusFilter !== "all" || dateFrom || dateTo || sort !== "newest"
                   ? "No pathology reports match your current filter criteria."
                   : "Create a new pathology report to get started."}
               </p>
-              {!search && statusFilter === "all" ? (
+              {!search && statusFilter === "all" && !dateFrom && !dateTo && sort === "newest" ? (
                 <button
                   type="button"
                   className="secondary-button"

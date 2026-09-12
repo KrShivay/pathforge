@@ -26,21 +26,38 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   let y = MARGIN;
 
+  const continuationHeader = () => {
+    const patient = model.band.find((entry) => entry.label === "Patient Name")?.value ?? "—";
+    doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(...NAVY);
+    doc.text(model.brand.name, MARGIN, y);
+    doc.setFont("helvetica", "normal").setFontSize(7).setTextColor(...MUTED);
+    doc.text(`Report ${model.reportNo} · Patient ${patient}`, PAGE_W - MARGIN, y, { align: "right" });
+    y += 4;
+    doc.setDrawColor(...HAIRLINE).setLineWidth(0.2).line(MARGIN, y, PAGE_W - MARGIN, y);
+    y += 5;
+  };
+
   const need = (h: number) => {
     if (y + h > FOOTER_Y - 4) {
       doc.addPage();
       y = MARGIN;
+      continuationHeader();
     }
   };
 
   // ---- letterhead ----
+  const logoWidth = model.brand.logoDataUrl ? 20 : 0;
+  if (model.brand.logoDataUrl) {
+    try { doc.addImage(model.brand.logoDataUrl, MARGIN, y, logoWidth, 14); } catch { /* Invalid image data is omitted. */ }
+  }
+  const letterheadX = MARGIN + logoWidth + (logoWidth ? 3 : 0);
   doc.setFont("helvetica", "bold").setFontSize(18).setTextColor(...NAVY);
-  doc.text(model.brand.name, MARGIN, y + 2);
+  doc.text(model.brand.name, letterheadX, y + 2);
   doc.setFont("helvetica", "normal").setFontSize(7.5).setTextColor(...MUTED);
-  doc.text(model.brand.tagline.toUpperCase(), MARGIN, y + 7);
-  doc.setFontSize(7).text(model.brand.strapline, MARGIN, y + 11);
+  doc.text(model.brand.tagline.toUpperCase(), letterheadX, y + 7);
+  doc.setFontSize(7).text(model.brand.strapline, letterheadX, y + 11);
   if (model.brand.contact) {
-    doc.setFontSize(6.5).text(doc.splitTextToSize(model.brand.contact, 105), MARGIN, y + 15);
+    doc.setFontSize(6.5).text(doc.splitTextToSize(model.brand.contact, 105), letterheadX, y + 15);
   }
 
   doc.setFont("helvetica", "bold").setFontSize(11).setTextColor(...NAVY);
@@ -147,7 +164,7 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
   // Fixed column x-positions (mm from left margin) shared by header and every
   // row so all result tables align identically. CONTENT_W is 178mm.
   const cols = [MARGIN, MARGIN + 70, MARGIN + 95, MARGIN + 120, MARGIN + 166];
-  const PARAM_W = 66;
+  const widths = [66, 21, 21, 42, 12];
 
   const drawResultsHeader = () => {
     need(8);
@@ -173,37 +190,35 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
 
       drawResultsHeader();
 
-      const REFERENCE_W = 42;
       for (const row of group.rows) {
         // Measure at the size actually drawn below (8.5 normal) so the
         // wrapped line count matches what's rendered.
         doc.setFont("helvetica", "normal").setFontSize(8.5);
-        const nameLines = doc.splitTextToSize(row.name, PARAM_W);
-        const referenceLines = doc.splitTextToSize(row.reference, REFERENCE_W);
+        const cells = [row.name, row.value, row.unit, row.reference, row.flag].map((value, index) => doc.splitTextToSize(value, widths[index] ?? 12));
         const rowH = Math.max(
           5.5,
-          nameLines.length * 4,
-          referenceLines.length * 4
+          ...cells.map((lines) => lines.length * 4),
         );
         if (y + rowH + 2 > FOOTER_Y - 4) {
           doc.addPage();
           y = MARGIN;
+          continuationHeader();
           drawResultsHeader();
         }
         doc
           .setFont("helvetica", "normal")
           .setFontSize(8.5)
           .setTextColor(...INK)
-          .text(nameLines, cols[0] ?? MARGIN, y + 3);
+          .text(cells[0], cols[0] ?? MARGIN, y + 3);
         doc.setFont("helvetica", "bold");
-        doc.text(row.value, cols[1] ?? MARGIN, y + 3);
+        doc.text(cells[1], cols[1] ?? MARGIN, y + 3);
         doc.setFont("helvetica", "normal");
-        doc.text(row.unit, cols[2] ?? MARGIN, y + 3);
-        doc.text(referenceLines, cols[3] ?? MARGIN, y + 3);
+        doc.text(cells[2], cols[2] ?? MARGIN, y + 3);
+        doc.text(cells[3], cols[3] ?? MARGIN, y + 3);
         if (row.flag) {
           doc.setFont("helvetica", "bold");
           doc.setTextColor(...(row.flag === "H" ? FLAG_HIGH : FLAG_LOW));
-          doc.text(row.flag, cols[4] ?? MARGIN, y + 3);
+          doc.text(cells[4], cols[4] ?? MARGIN, y + 3);
           doc.setFont("helvetica", "normal").setTextColor(...INK);
         }
         y += rowH;

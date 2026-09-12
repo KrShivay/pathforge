@@ -57,8 +57,9 @@ export default function TestSpecimenStep({
       </p>
 
       <div className="wizard-field">
-        <label>Laboratory tests</label>
+        <label htmlFor="nr-laboratory-tests">Laboratory tests</label>
         <Autocomplete
+          id="nr-laboratory-tests"
           multiple
           autoFocus
           disableCloseOnSelect
@@ -99,8 +100,9 @@ export default function TestSpecimenStep({
       </div>
 
       <div className="wizard-field">
-        <label>Specimen</label>
+        <label htmlFor="nr-specimens">Specimen</label>
         <Autocomplete
+          id="nr-specimens"
           multiple
           freeSolo
           options={specimenOptions}

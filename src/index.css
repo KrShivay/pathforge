@@ -3,29 +3,33 @@
   --pf-font-stack: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   
   /* Colors */
-  --pf-slate-50: var(--pf-slate-50);
-  --pf-slate-100: var(--pf-slate-100);
-  --pf-slate-200: var(--pf-slate-200);
-  --pf-slate-300: var(--pf-slate-300);
-  --pf-slate-400: var(--pf-slate-400);
-  --pf-slate-500: var(--pf-slate-500);
-  --pf-slate-600: var(--pf-slate-600);
-  --pf-slate-700: var(--pf-slate-700);
-  --pf-slate-800: var(--pf-slate-800);
-  --pf-slate-900: var(--pf-slate-900);
+  --pf-slate-50: #f8fafc;
+  --pf-slate-100: #f1f5f9;
+  --pf-slate-200: #e2e8f0;
+  --pf-slate-300: #cbd5e1;
+  --pf-slate-400: #94a3b8;
+  --pf-slate-500: #64748b;
+  --pf-slate-600: #475569;
+  --pf-slate-700: #334155;
+  --pf-slate-800: #1e293b;
+  --pf-slate-900: #0f172a;
   
-  --pf-navy-700: var(--pf-navy-700);
-  --pf-navy-800: var(--pf-navy-800);
+  --pf-navy-700: #1d2b45;
+  --pf-navy-800: #172033;
   --pf-navy-900: var(--pf-slate-900);
 
-  --pf-blue-500: var(--pf-blue-500);
-  --pf-blue-600: var(--pf-blue-600);
+  --pf-blue-500: #3b82f6;
+  --pf-blue-600: #2563eb;
+  --pf-blue-50: #eff6ff;
+  --pf-blue-700: #1d4ed8;
   
-  --pf-red-500: var(--pf-red-500);
-  --pf-red-600: var(--pf-red-600);
+  --pf-red-500: #ef4444;
+  --pf-red-600: #dc2626;
+  --pf-red-50: #fef2f2;
+  --pf-red-700: #b91c1c;
 
-  --pf-green-500: var(--pf-green-500);
-  --pf-amber-500: var(--pf-amber-500);
+  --pf-green-500: #10b981;
+  --pf-amber-500: #f59e0b;
   
   --pf-bg-main: var(--pf-slate-50);
   --pf-text-main: var(--pf-slate-800);
@@ -4608,6 +4612,12 @@ button {
 .top-nav {
   height: 72px !important;
   padding: 0 24px !important;
+  position: relative;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex-shrink: 0;
   background: var(--pf-surface) !important;
   border-bottom: 1px solid var(--pf-line) !important;
   box-shadow: 0 1px 0 rgba(20, 32, 51, 0.02) !important;
@@ -4656,12 +4666,7 @@ button {
   gap: 6px;
   flex: 1;
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.top-nav-links::-webkit-scrollbar {
-  display: none;
+  overflow: visible;
 }
 
 .top-nav-link {
@@ -5635,7 +5640,7 @@ button {
   border-radius: 10px;
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
   padding: 6px;
-  z-index: 50;
+  z-index: 101;
 }
 
 .top-nav-menu-list button {
@@ -7579,3 +7584,842 @@ input[aria-invalid="true"] {
   width: 70%;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================
+   CANONICAL APPLICATION UI
+   Final screen-only layout layer. Keep component spacing here so older
+   page-specific rules cannot reintroduce inconsistent padding and gaps.
+   ============================================================ */
+:root {
+  --pf-page-padding: clamp(14px, 2vw, 24px);
+  --pf-section-gap: 16px;
+  --pf-control-gap: 8px;
+  --pf-card-padding: 20px;
+  --pf-control-height: 38px;
+}
+
+@media screen {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 3px solid rgba(23, 105, 224, 0.22);
+    outline-offset: 2px;
+  }
+
+  .top-nav {
+    min-height: 64px !important;
+    height: 64px !important;
+    padding: 0 var(--pf-page-padding) !important;
+    gap: 24px;
+  }
+
+  .top-nav-links {
+    justify-content: flex-end;
+    gap: var(--pf-control-gap);
+  }
+
+  .top-nav-new-report,
+  .top-nav-menu-trigger,
+  .top-nav-shortcuts {
+    min-height: var(--pf-control-height) !important;
+    height: var(--pf-control-height) !important;
+  }
+
+  .top-nav-menu-trigger.is-active {
+    border-color: #bfdbfe !important;
+    background: var(--pf-accent-soft) !important;
+    color: var(--pf-accent) !important;
+  }
+
+  .main-content > .page-content {
+    padding: var(--pf-page-padding) !important;
+  }
+
+  .page-content,
+  .viewport-page,
+  .dashboard-page,
+  .wizard-page,
+  .report-editor-page {
+    gap: var(--pf-section-gap) !important;
+  }
+
+  .page-heading {
+    align-items: flex-start;
+    gap: var(--pf-section-gap);
+    margin: 0 !important;
+  }
+
+  .page-heading-text h1,
+  .page-heading-text p,
+  .wizard-header h1,
+  .wizard-header p {
+    margin: 0 !important;
+  }
+
+  .page-heading-text p,
+  .wizard-header p {
+    margin-top: 4px !important;
+  }
+
+  .page-breadcrumb-bar {
+    min-height: 32px;
+    gap: var(--pf-control-gap);
+    margin: 0 0 var(--pf-section-gap) !important;
+  }
+
+  .page-breadcrumb-bar .back-to-dashboard {
+    min-height: 32px;
+    padding: 0 10px !important;
+    border: 1px solid var(--pf-line) !important;
+    border-radius: 8px;
+  }
+
+  /* Cards own their internal padding through a header/body. A generic 24px
+     inset here was doubling whitespace around every table and list. */
+  .pf-card {
+    padding: 0;
+    overflow: hidden;
+    border-radius: var(--pf-radius) !important;
+    border-color: var(--pf-line) !important;
+    box-shadow: var(--pf-shadow) !important;
+  }
+
+  .dashboard-greeting {
+    padding: 18px 20px !important;
+  }
+
+  .dashboard-page .stats-grid,
+  .dashboard-page .dashboard-grid {
+    gap: 12px !important;
+  }
+
+  .dashboard-page .stat-card {
+    min-height: 96px;
+    padding: 14px 16px !important;
+  }
+
+  .dashboard-card-header,
+  .version-history-card-header,
+  .test-catalog-header,
+  .editor-card-header {
+    padding: 12px 16px !important;
+  }
+
+  .recent-report-item,
+  .worklist-row,
+  .patients-row,
+  .version-item {
+    min-height: 54px;
+    padding: 10px 16px !important;
+  }
+
+  .needs-attention-panel {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  /* Search and filter controls */
+  .worklist-header-bar,
+  .patients-header-bar,
+  .test-mgmt-header-bar,
+  .version-history-header-bar {
+    gap: 12px;
+  }
+
+  .worklist-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+    grid-template-areas:
+      "tabs search"
+      "filters filters";
+    align-items: end;
+    gap: 10px 12px;
+  }
+
+  .status-filter-group {
+    grid-area: tabs;
+    display: flex;
+    width: fit-content;
+    max-width: 100%;
+    padding: 3px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .worklist-search {
+    grid-area: search;
+    width: 100%;
+    max-width: none;
+  }
+
+  .report-filter-row {
+    grid-area: filters;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--pf-control-gap);
+    width: 100%;
+  }
+
+  .report-filter-row label {
+    display: grid;
+    gap: 4px;
+    min-width: 138px;
+    color: var(--pf-slate-600);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.015em;
+  }
+
+  .report-filter-row input,
+  .report-filter-row select,
+  .department-filter select {
+    min-width: 0;
+    height: var(--pf-control-height);
+    padding: 0 11px;
+    border: 1px solid var(--pf-line-strong);
+    border-radius: 8px;
+    outline: none;
+    background: #fff;
+    color: var(--pf-ink);
+    font-size: 12.5px;
+    color-scheme: light;
+  }
+
+  .report-filter-row input:hover,
+  .report-filter-row select:hover,
+  .department-filter select:hover {
+    border-color: var(--pf-slate-400);
+  }
+
+  .report-filter-row input:focus,
+  .report-filter-row select:focus,
+  .department-filter select:focus {
+    border-color: #8db5f2;
+    box-shadow: 0 0 0 3px rgba(23, 105, 224, 0.1);
+  }
+
+  .report-filter-row .text-button {
+    min-height: var(--pf-control-height);
+    padding: 0 10px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .report-filter-row .text-button:hover {
+    background: var(--pf-accent-soft);
+  }
+
+  .result-count {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--pf-control-height);
+    padding: 0 10px;
+    border-radius: 8px;
+    background: var(--pf-slate-100);
+    color: var(--pf-slate-600);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .patients-toolbar,
+  .test-page-toolbar {
+    gap: 12px;
+    margin: 0 !important;
+  }
+
+  .patients-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: min(100%, 440px);
+    min-height: var(--pf-control-height) !important;
+    padding: 0 10px;
+  }
+
+  .patients-search > svg {
+    flex: 0 0 auto;
+    color: var(--pf-slate-400);
+  }
+
+  .patients-search input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+  }
+
+  .search-clear-btn {
+    display: inline-grid;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--pf-slate-500);
+    cursor: pointer;
+  }
+
+  .search-clear-btn:hover {
+    background: var(--pf-slate-100);
+    color: var(--pf-ink);
+  }
+
+  .version-history-card-header {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .version-history-card-header .report-filter-row {
+    display: grid;
+    grid-template-columns: minmax(180px, 1.5fr) repeat(4, minmax(130px, 1fr)) auto;
+  }
+
+  .version-history-card-header .report-filter-row label {
+    min-width: 0;
+  }
+
+  .version-history-card-header .form-error {
+    width: 100%;
+    margin: 0;
+  }
+
+  .report-filter-error {
+    flex-basis: 100%;
+    margin: 0;
+  }
+
+  /* Wizard and editor */
+  .wizard-body {
+    padding: var(--pf-card-padding) !important;
+  }
+
+  .wizard-panel > h2,
+  .wizard-panel h3,
+  .wizard-field,
+  .results-block,
+  .review-results,
+  .review-narrative p {
+    margin-top: 0;
+  }
+
+  .wizard-panel-hint {
+    margin: 4px 0 var(--pf-section-gap);
+  }
+
+  .wizard-field:last-child,
+  .clinical-step-grid .wizard-field:last-child {
+    margin-bottom: 0;
+  }
+
+  .results-table-wrapper {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .results-table input {
+    min-height: 34px;
+  }
+
+  .editor-topbar {
+    top: calc(-1 * var(--pf-page-padding));
+    margin: calc(-1 * var(--pf-page-padding)) calc(-1 * var(--pf-page-padding)) 0 !important;
+    padding: 14px var(--pf-page-padding) !important;
+    gap: 12px;
+  }
+
+  .editor-topbar-left,
+  .editor-actions {
+    gap: var(--pf-control-gap);
+  }
+
+  .report-editor-workspace,
+  .editor-left-column,
+  .narrative-card-body {
+    gap: 12px !important;
+  }
+
+  .editor-card-body,
+  .narrative-card-body {
+    padding: 14px 16px !important;
+  }
+
+  .results-card-body {
+    padding: 0 !important;
+  }
+
+  /* Modal surfaces */
+  .modal-overlay,
+  .shortcut-help-backdrop {
+    padding: var(--pf-page-padding);
+    background: rgba(15, 23, 42, 0.62);
+    backdrop-filter: blur(4px);
+  }
+
+  .patient-modal,
+  .shortcut-help {
+    width: min(100%, 520px);
+    max-height: calc(100vh - (2 * var(--pf-page-padding)));
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 14px;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+  }
+
+  .modal-header,
+  .shortcut-help-heading {
+    padding: 18px 20px;
+  }
+
+  .patient-modal form {
+    padding: 20px;
+  }
+
+  .modal-actions,
+  .parameter-form-actions {
+    gap: var(--pf-control-gap);
+    margin-top: var(--pf-section-gap);
+  }
+
+  .shortcut-list {
+    gap: 8px;
+    padding: 16px 20px;
+  }
+
+  .shortcut-help-footer {
+    padding: 0 20px 20px;
+  }
+
+  /* Laboratory Profile had markup but no dedicated UI rules. */
+  .lab-profile-page {
+    overflow-y: auto;
+  }
+
+  .lab-profile-layout {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 320px);
+    align-items: start;
+    overflow: visible;
+  }
+
+  .lab-profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pf-section-gap);
+    min-width: 0;
+    padding: var(--pf-card-padding);
+  }
+
+  .lab-profile-form fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .lab-profile-form legend {
+    width: 100%;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--pf-line);
+    color: var(--pf-ink);
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .profile-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .profile-fields label {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+    color: var(--pf-slate-600);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .profile-fields input {
+    width: 100%;
+    min-width: 0;
+    height: 40px;
+    padding: 0 11px;
+    border: 1px solid var(--pf-line-strong);
+    border-radius: 8px;
+    outline: none;
+    background: #fbfdff;
+    color: var(--pf-ink);
+  }
+
+  .profile-fields input:focus {
+    border-color: #8db5f2;
+    box-shadow: 0 0 0 3px rgba(23, 105, 224, 0.1);
+  }
+
+  .logo-editor {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .logo-editor > div:last-child {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .logo-editor img,
+  .logo-placeholder {
+    display: grid;
+    width: 72px;
+    height: 72px;
+    flex: 0 0 72px;
+    place-items: center;
+    object-fit: contain;
+    border: 1px solid var(--pf-line);
+    border-radius: 12px;
+    background: var(--pf-accent-soft);
+    color: var(--pf-accent);
+    font-size: 22px;
+    font-weight: 800;
+  }
+
+  .logo-upload {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    cursor: pointer;
+  }
+
+  .logo-upload input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .helper-text {
+    flex-basis: 100%;
+    margin: 0;
+    color: var(--pf-muted);
+    font-size: 11.5px;
+  }
+
+  .profile-preview {
+    position: sticky;
+    top: 0;
+    display: flex;
+    min-height: 260px;
+    align-self: stretch;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 28px;
+    border-left: 1px solid var(--pf-line);
+    background: linear-gradient(160deg, #f8fbff, #edf4ff);
+    text-align: center;
+  }
+
+  .profile-preview img {
+    width: 76px;
+    height: 76px;
+    margin-bottom: 8px;
+    object-fit: contain;
+  }
+
+  .profile-preview strong {
+    color: var(--pf-ink);
+    font-size: 18px;
+  }
+
+  .profile-preview span,
+  .profile-preview small {
+    color: var(--pf-muted);
+  }
+
+  .profile-preview small {
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+  }
+}
+
+@media screen and (max-width: 1100px) {
+  .version-history-card-header .report-filter-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .lab-profile-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-preview {
+    position: static;
+    min-height: 210px;
+    border-top: 1px solid var(--pf-line);
+    border-left: 0;
+  }
+}
+
+@media screen and (max-width: 760px) {
+  :root {
+    --pf-section-gap: 12px;
+    --pf-card-padding: 16px;
+  }
+
+  .top-nav {
+    gap: 12px;
+  }
+
+  .top-nav-brand-text > span,
+  .top-nav-shortcuts .top-nav-menu-label {
+    display: none;
+  }
+
+  .top-nav-shortcuts {
+    width: var(--pf-control-height);
+    padding: 0 !important;
+  }
+
+  .worklist-toolbar {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "tabs"
+      "search"
+      "filters";
+  }
+
+  .worklist-search,
+  .patients-search {
+    width: 100%;
+    max-width: none;
+  }
+
+  .report-filter-row,
+  .version-history-card-header .report-filter-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .report-filter-row label,
+  .report-filter-row input,
+  .report-filter-row select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .worklist-table-header,
+  .patients-table-header {
+    display: none;
+  }
+
+  .worklist-row {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-areas:
+      "patient status"
+      "test date";
+    gap: 6px 14px !important;
+    padding: 14px 16px !important;
+  }
+
+  .worklist-row .col-patient {
+    grid-area: patient;
+  }
+
+  .worklist-row .col-test {
+    grid-area: test;
+  }
+
+  .worklist-row .col-status {
+    grid-area: status;
+  }
+
+  .worklist-row .col-date {
+    grid-area: date;
+    text-align: right;
+  }
+
+  .worklist-row .col-action {
+    display: none;
+  }
+
+  .patients-row {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 12px;
+    padding: 14px 16px !important;
+  }
+
+  .patients-row .col-p-phone {
+    display: none;
+  }
+
+  .version-item,
+  .version-title-row,
+  .version-patient-block,
+  .version-meta {
+    align-items: flex-start;
+  }
+
+  .version-title-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .version-patient-block,
+  .version-meta {
+    flex-wrap: wrap;
+  }
+
+  .result-count,
+  .report-filter-row .text-button {
+    justify-content: center;
+  }
+
+  .editor-topbar-left {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .editor-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .profile-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-modal-backdrop {
+    padding: 0;
+  }
+
+  .preview-modal {
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .preview-modal-head {
+    padding: 10px 12px;
+  }
+
+  .preview-modal-actions .secondary-button {
+    width: 38px;
+    padding: 0 !important;
+    overflow: hidden;
+    font-size: 0 !important;
+  }
+
+  .preview-modal-body {
+    padding: 12px;
+  }
+}
+
+@media screen and (max-width: 520px) {
+  .top-nav-brand-text,
+  .top-nav-menu-trigger > svg:last-child {
+    display: none;
+  }
+
+  .top-nav {
+    justify-content: space-between;
+  }
+
+  .top-nav-links {
+    flex: 0 1 auto;
+  }
+
+  .top-nav-new-report {
+    padding: 0 10px !important;
+  }
+
+  .report-filter-row,
+  .version-history-card-header .report-filter-row {
+    grid-template-columns: 1fr;
+  }
+
+  .worklist-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-areas:
+      "patient"
+      "test"
+      "status";
+  }
+
+  .worklist-row .col-date {
+    display: none;
+  }
+
+  .editor-actions,
+  .wizard-nav-final {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .wizard-nav-final {
+    display: grid;
+  }
+
+  .wizard-nav-final button {
+    width: 100%;
+  }
+
+  .logo-editor {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .shortcut-list > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media screen and (max-width: 420px) {
+  .top-nav-new-report {
+    width: var(--pf-control-height);
+    padding: 0 !important;
+    font-size: 0 !important;
+  }
+}

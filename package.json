@@ -18,7 +18,8 @@
     "fixtures:check": "node --test test/domain/fixtures.test.mjs",
     "tasks:check": "node scripts/task-dashboard.mjs --check",
     "test": "npm run test:unit",
-    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run typecheck:app && npm run test:unit && npm run fixtures:check && npm run tasks:check",
+    "css:check": "node scripts/check-css-integrity.mjs",
+    "verify": "npm run format:check && npm run lint && npm run css:check && npm run typecheck && npm run typecheck:app && npm run test:unit && npm run fixtures:check && npm run tasks:check",
     "build": "vite build"
   },
   "engines": {

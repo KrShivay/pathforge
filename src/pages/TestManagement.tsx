@@ -386,6 +386,7 @@ export default function TestManagement() {
           <div className="patients-search">
             <Search size={16} />
             <input
+              aria-label="Search laboratory tests"
               type="text"
               placeholder="Search tests by name, department, or specimen…"
               value={search}

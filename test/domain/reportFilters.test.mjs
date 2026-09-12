@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { filterWorklistReports, parseDate, formatDate } from '../../src/lib/reportFilters.mjs';
+import {
+  filterHistoryReports,
+  filterWorklistReports,
+  historyEventDate,
+  parseDate,
+  formatDate,
+} from '../../src/lib/reportFilters.mjs';
 
 test('parseDate safely handles empty and ISO date strings', () => {
   assert.equal(parseDate(null), null);
@@ -61,4 +67,28 @@ test('filterWorklistReports searches across patient and report details', () => {
   const searchSerum = filterWorklistReports(reports, patients, { search: 'serum' });
   assert.equal(searchSerum.length, 1);
   assert.equal(searchSerum[0].id, 'R2');
+});
+
+test('Version History uses amendment, then finalization, then creation as its event date', () => {
+  const reports = [
+    { id: 'created', status: 'draft', createdAt: '2026-09-01', specimens: [] },
+    { id: 'finalized', status: 'finalized', createdAt: '2026-09-01', finalizedAt: '2026-09-04', specimens: [] },
+    {
+      id: 'amended',
+      status: 'finalized',
+      createdAt: '2026-09-01',
+      finalizedAt: '2026-09-04',
+      amendedAt: '2026-09-08',
+      specimens: [],
+    },
+  ];
+  assert.equal(historyEventDate(reports[2]), '2026-09-08');
+  assert.deepEqual(
+    filterHistoryReports(reports, [], { from: '2026-09-04', to: '2026-09-04' }).map((report) => report.id),
+    ['finalized'],
+  );
+  assert.deepEqual(
+    filterHistoryReports(reports, [], { sort: 'newest' }).map((report) => report.id),
+    ['amended', 'finalized', 'created'],
+  );
 });

@@ -61,6 +61,12 @@ function inRange(value, from, to) {
   return (!start || date >= start) && (!end || date <= end);
 }
 
+/** The timestamp represented by a Version History row. */
+/** @param {WorklistReport & { amendedAt?: string, finalizedAt?: string }} report */
+export function historyEventDate(report) {
+  return report.amendedAt ?? report.finalizedAt ?? report.createdAt;
+}
+
 /**
  * @template T
  * @param {T[]} values
@@ -168,7 +174,8 @@ export function filterHistoryReports(reports, patients, filters = {}) {
       lifecycle === 'all' ||
       (lifecycle === 'amended' ? Boolean(report.supersedesReportId) : report.status === lifecycle),
   );
-  return filterWorklistReports(subset, patients, {
+  const withEventDate = subset.map((report) => ({ ...report, createdAt: historyEventDate(report) }));
+  return filterWorklistReports(withEventDate, patients, {
     search: filters.search,
     from: filters.from,
     to: filters.to,

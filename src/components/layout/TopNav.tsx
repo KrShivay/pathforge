@@ -1,11 +1,29 @@
-import { ChevronDown, ClipboardList, FlaskConical, History, Plus, Settings2, Stethoscope, Users } from "lucide-react";
+import {
+  ChevronDown,
+  ClipboardList,
+  FlaskConical,
+  History,
+  Keyboard,
+  Plus,
+  Settings2,
+  Stethoscope,
+  Users,
+} from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 export type Page = "dashboard" | "patients" | "worklist" | "new-report" | "history" | "test-management" | "lab-profile";
-interface TopNavProps { activePage: Page; onNavigate: (page: Page) => void | Promise<void>; }
+interface TopNavProps {
+  activePage: Page;
+  onNavigate: (page: Page) => void | Promise<void>;
+  onShowShortcuts: () => void;
+}
 type MenuName = "reports" | "manage";
 
-export default function TopNav({ activePage, onNavigate }: TopNavProps) {
+export default function TopNav({
+  activePage,
+  onNavigate,
+  onShowShortcuts,
+}: TopNavProps) {
   const [openMenu, setOpenMenu] = useState<MenuName | null>(null);
   const navRef = useRef<HTMLElement>(null);
   const reportsTrigger = useRef<HTMLButtonElement>(null);
@@ -73,6 +91,20 @@ export default function TopNav({ activePage, onNavigate }: TopNavProps) {
       <button type="button" className="top-nav-new-report" onClick={() => void onNavigate("new-report")}><Plus size={15} aria-hidden="true" />New Report</button>
       {renderMenu("reports", "Reports", reportsTrigger)}
       {renderMenu("manage", "Manage", manageTrigger)}
+      <button
+        type="button"
+        className="top-nav-shortcuts"
+        onClick={() => {
+          setOpenMenu(null);
+          onShowShortcuts();
+        }}
+        title="Keyboard shortcuts"
+        aria-label="Show keyboard shortcuts"
+        aria-keyshortcuts="Meta+/ Control+/"
+      >
+        <Keyboard size={15} aria-hidden="true" />
+        <span className="top-nav-menu-label">Shortcuts</span>
+      </button>
     </nav>
   </header>;
 }
