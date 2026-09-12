@@ -305,26 +305,41 @@ export function TestProvider({
   // two edits in the same render batch would drop the first one.
   const testsRef = useRef<LaboratoryTest[]>(initialTests);
 
+  // `saveWorkspaceTests` runs its own BEGIN/COMMIT transaction on the one
+  // shared SQLite connection. Firing two saves without waiting for the first
+  // fails the second's BEGIN ("transaction within a transaction") and rolls
+  // that commit back — silently discarding an edit that had already applied
+  // in the UI. Chaining every save onto this ref serializes them so only one
+  // is ever in flight.
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+
   function commitTests(next: LaboratoryTest[]) {
     const previous = testsRef.current;
     testsRef.current = next;
     setTests(next);
 
-    void saveWorkspaceTests(next).catch((error) => {
-      // The write is transactional, so the stored catalog is still `previous`.
-      // Roll the UI back so it cannot disagree with what is on disk.
-      testsRef.current = previous;
-      setTests(previous);
+    saveQueueRef.current = saveQueueRef.current
+      .catch(() => {
+        // A prior failure was already reported; do not let it break the chain.
+      })
+      .then(() => saveWorkspaceTests(next))
+      .catch((error) => {
+        // Only roll back if nothing newer has been committed since — otherwise
+        // this would stomp a later, already-queued edit.
+        if (testsRef.current === next) {
+          testsRef.current = previous;
+          setTests(previous);
+        }
 
-      console.error("Failed to save laboratory tests:", error);
-      void notifyError({
-        title: "Could not save the test catalog",
-        text:
-          error instanceof Error
-            ? error.message
-            : "Your change was reverted. Please try again.",
+        console.error("Failed to save laboratory tests:", error);
+        void notifyError({
+          title: "Could not save the test catalog",
+          text:
+            error instanceof Error
+              ? error.message
+              : "Your change was reverted. Please try again.",
+        });
       });
-    });
   }
 
   useEffect(() => {

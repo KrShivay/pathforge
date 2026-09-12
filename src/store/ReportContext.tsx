@@ -23,7 +23,6 @@ import {
   type WorkspaceReportContent,
 } from "../domain/report-bridge.mjs";
 
-import { useAuth } from "./AuthContext";
 import {
   loadReportWorkspaceMeta,
   loadReportWorkspaceState,
@@ -224,10 +223,12 @@ function contentFromReport(
 // PROVIDER
 // ========================================
 
+// No accounts in this prototype (SCOPE.md: no identity providers) — every
+// change is attributed to the shared local workspace for the audit trail.
+const WORKSPACE_ACTOR = "workspace";
+
 export function ReportProvider({ children }: { children: ReactNode }) {
-  const { actor } = useAuth();
-  const actorRef = useRef(actor);
-  actorRef.current = actor;
+  const actorRef = useRef(WORKSPACE_ACTOR);
 
   const adapter = useMemo(
     () =>

@@ -10,19 +10,10 @@ import NewReport from "./pages/NewReport";
 import VersionHistory from "./pages/VersionHistory";
 import TestManagement from "./pages/TestManagement";
 import ReportEditor from "./pages/ReportEditor";
-import LoginPage from "./pages/LoginPage";
-
-import { useAuth } from "./store/AuthContext";
 
 function App() {
-  const { isLoggedIn, isAdmin } = useAuth();
-
   const [activePage, setActivePage] = useState<Page>("dashboard");
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
-
-  if (!isLoggedIn) {
-    return <LoginPage />;
-  }
 
   function handleNavigate(page: Page) {
     setSelectedReportId(null);
@@ -60,13 +51,7 @@ function App() {
       case "history":
         return <VersionHistory onSelectReport={handleSelectReport} />;
       case "test-management":
-        // Admin-only page — an employee reaching this route falls back to the
-        // dashboard rather than seeing Test Management.
-        return isAdmin ? (
-          <TestManagement />
-        ) : (
-          <Dashboard onNavigate={handleNavigate} />
-        );
+        return <TestManagement />;
       default:
         return <Dashboard onNavigate={handleNavigate} />;
     }

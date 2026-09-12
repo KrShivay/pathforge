@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { usePatients } from "../store/PatientContext";
 import { useReports } from "../store/ReportContext";
-import { useAuth } from "../store/AuthContext";
 import { checkClinicalCompleteness } from "../domain/report-bridge.mjs";
 import type { Page } from "../components/layout/TopNav";
 
@@ -25,25 +24,9 @@ function greetingFor(date: Date): string {
   return "Good evening";
 }
 
-/** Best-effort display name for the signed-in user. */
-function displayName(
-  metadata: Record<string, unknown> | undefined,
-  email: string | undefined
-): string {
-  const named = [metadata?.full_name, metadata?.name, metadata?.["display_name"]]
-    .filter((value): value is string => typeof value === "string" && value.trim() !== "")
-    .at(0);
-  if (named) return named.trim();
-  if (email) return email.split("@")[0] ?? email;
-  return "there";
-}
-
 export default function Dashboard({ onNavigate }: DashboardProps) {
   const { patients } = usePatients();
   const { reports } = useReports();
-  const { user } = useAuth();
-
-  const name = displayName(user?.user_metadata, user?.email);
 
   const draftReports = reports.filter((report) => report.status === "draft");
   const finalizedReports = reports.filter(
@@ -92,7 +75,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
     <div className="dashboard-page">
       <div className="dashboard-greeting">
         <h1>
-          {greetingFor(new Date())}, {name} <span aria-hidden="true">👋</span>
+          {greetingFor(new Date())} <span aria-hidden="true">👋</span>
         </h1>
         <p>Here's what's happening in your pathology workspace today.</p>
       </div>

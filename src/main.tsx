@@ -7,7 +7,6 @@ import "./index.css";
 import App from "./App";
 import { muiTheme } from "./lib/muiTheme";
 
-import { AuthProvider } from "./store/AuthContext";
 import { PatientProvider } from "./store/PatientContext";
 import { TestProvider } from "./store/TestContext";
 import { ReportProvider } from "./store/ReportContext";
@@ -15,15 +14,13 @@ import { ReportProvider } from "./store/ReportContext";
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider theme={muiTheme}>
-      <AuthProvider>
-        <PatientProvider>
-          <TestProvider>
-            <ReportProvider>
-              <App />
-            </ReportProvider>
-          </TestProvider>
-        </PatientProvider>
-      </AuthProvider>
+      <PatientProvider>
+        <TestProvider>
+          <ReportProvider>
+            <App />
+          </ReportProvider>
+        </TestProvider>
+      </PatientProvider>
     </ThemeProvider>
   </StrictMode>
 );

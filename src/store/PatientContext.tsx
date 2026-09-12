@@ -34,6 +34,13 @@ interface PatientContextType {
   previewPatientId: () => string;
 }
 
+/** True when `error` is a SQLite UNIQUE constraint violation on insert. */
+function isUniqueConstraintError(error: unknown): boolean {
+  const message =
+    error instanceof Error ? error.message : typeof error === "string" ? error : "";
+  return /UNIQUE constraint failed/i.test(message);
+}
+
 const PatientContext = createContext<PatientContextType | undefined>(undefined);
 
 export function PatientProvider({ children }: { children: ReactNode }) {
@@ -91,18 +98,29 @@ export function PatientProvider({ children }: { children: ReactNode }) {
 
   const addPatient = useCallback(
     async (input: NewPatientInput): Promise<Patient> => {
-      const patient: Patient = {
-        id: crypto.randomUUID(),
-        patientId: nextPatientId(patients.map((existing) => existing.patientId)),
-        name: input.name,
-        age: input.age,
-        gender: input.gender,
-        phone: input.phone,
-        address: input.address,
-      };
+      const db = await getDatabase();
 
-      try {
-        const db = await getDatabase();
+      // The in-memory `patients` list can be stale relative to the database
+      // (e.g. a second window, or a record inserted since this list last
+      // loaded), so the computed patientId can collide with the UNIQUE
+      // constraint on patients.patient_id. Re-read the day's IDs from the
+      // database and retry once with the next free sequence rather than
+      // failing the whole registration.
+      async function insertWithNextId(): Promise<Patient> {
+        const rows = await db.select<{ patient_id: string }[]>(
+          "SELECT patient_id FROM patients"
+        );
+
+        const patient: Patient = {
+          id: crypto.randomUUID(),
+          patientId: nextPatientId(rows.map((row) => row.patient_id)),
+          name: input.name,
+          age: input.age,
+          gender: input.gender,
+          phone: input.phone,
+          address: input.address,
+        };
+
         await db.execute(
           `
           INSERT INTO patients (
@@ -122,6 +140,20 @@ export function PatientProvider({ children }: { children: ReactNode }) {
           ]
         );
 
+        return patient;
+      }
+
+      try {
+        let patient: Patient;
+        try {
+          patient = await insertWithNextId();
+        } catch (error) {
+          if (!isUniqueConstraintError(error)) throw error;
+          // Someone else took that sequence between our read and our insert;
+          // recompute against the latest data and try exactly once more.
+          patient = await insertWithNextId();
+        }
+
         setPatients((previous) => [patient, ...previous]);
         return patient;
       } catch (error) {
@@ -129,7 +161,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
         throw error;
       }
     },
-    [patients]
+    []
   );
 
   const getPatient = useCallback(

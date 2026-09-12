@@ -38,7 +38,7 @@ async function initializeDatabase(db: Database): Promise<void> {
   await db.execute(`
     CREATE TABLE IF NOT EXISTS patients (
       id TEXT PRIMARY KEY,
-      patient_id TEXT NOT NULL,
+      patient_id TEXT NOT NULL UNIQUE,
       name TEXT NOT NULL,
       age INTEGER,
       gender TEXT,
@@ -51,6 +51,12 @@ async function initializeDatabase(db: Database): Promise<void> {
   // Additive migration for databases created before phone/address existed.
   await ensureColumn(db, "patients", "phone", "phone TEXT");
   await ensureColumn(db, "patients", "address", "address TEXT");
+
+  // Note: the UNIQUE constraint on patient_id above only applies to databases
+  // created from this schema onward — SQLite can't ALTER TABLE to add a UNIQUE
+  // constraint to an existing table, and this prototype has no migration
+  // engine to rebuild it. A database file created before this change keeps
+  // allowing duplicate patient_id values.
 
   // ================================
   // REPORTS

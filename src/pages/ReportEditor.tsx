@@ -69,6 +69,23 @@ function ReportEditor({
   // LOAD REPORT DATA
   // ========================================
 
+  // `foundReport` is a brand-new object on every context refresh (ReportContext
+  // rebuilds its `reports` array whenever *any* report changes), even when this
+  // report's own saved content is unchanged. Depending on the object itself
+  // would re-hydrate the form — and stomp whatever the user is typing — on every
+  // unrelated refresh. Depending on a signature of the actual saved fields means
+  // this effect only fires when the content this report was loaded/saved with
+  // actually changes.
+  const savedContentSignature = foundReport
+    ? `${foundReport.id}::${JSON.stringify({
+        specimenType: foundReport.specimenType,
+        clinicalHistory: foundReport.clinicalHistory,
+        findings: foundReport.findings,
+        diagnosis: foundReport.diagnosis,
+        testResults: foundReport.testResults,
+      })}`
+    : null;
+
   useEffect(() => {
     if (!foundReport) return;
 
@@ -80,7 +97,8 @@ function ReportEditor({
       diagnosis: foundReport.diagnosis ?? "",
       testResults: foundReport.testResults ?? [],
     });
-  }, [foundReport]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedContentSignature]);
 
   const patient = patients.find(
     (candidate) => candidate.id === foundReport?.patientId
@@ -545,7 +563,7 @@ function ReportEditor({
                 formData.specimenType
               }
               onChange={handleChange}
-              disabled={isFinalized}
+              disabled={isFinalized || busy}
               placeholder="Enter specimen type"
             />
 
@@ -555,7 +573,7 @@ function ReportEditor({
 
         <ResultsTable
           results={formData.testResults}
-          disabled={isFinalized}
+          disabled={isFinalized || busy}
           onResultChange={handleResultChange}
         />
 
@@ -586,7 +604,7 @@ function ReportEditor({
             }
             onChange={handleChange}
             rows={4}
-            disabled={isFinalized}
+            disabled={isFinalized || busy}
             placeholder="Enter clinical history"
           />
 
@@ -618,7 +636,7 @@ function ReportEditor({
             value={formData.findings}
             onChange={handleChange}
             rows={7}
-            disabled={isFinalized}
+            disabled={isFinalized || busy}
             placeholder="Enter microscopic findings"
           />
 
@@ -650,7 +668,7 @@ function ReportEditor({
             value={formData.diagnosis}
             onChange={handleChange}
             rows={5}
-            disabled={isFinalized}
+            disabled={isFinalized || busy}
             placeholder="Enter final diagnosis"
           />
 
