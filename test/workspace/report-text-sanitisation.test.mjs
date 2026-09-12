@@ -13,7 +13,7 @@ import {
  */
 
 const dirtyContent = {
-  specimenType: 'Whole Blood (EDTA) <script>',
+  specimens: ['Whole Blood (EDTA) <script>'],
   clinicalHistory: 'History: fever & chills {note}',
   findings: 'Normocytic anaemia. No atypical cells </img>',
   diagnosis: 'Mild anaemia — correlate | clinically',
@@ -67,7 +67,7 @@ test('reading a stored version back yields already-clean text', () => {
 
 test('checkClinicalCompleteness flags disallowed characters at finalize time', () => {
   const issues = checkClinicalCompleteness({
-    specimenType: 'Serum',
+    specimens: ['Serum'],
     clinicalHistory: '',
     findings: 'ok <script>',
     diagnosis: 'ok',

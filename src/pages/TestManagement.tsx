@@ -435,7 +435,7 @@ export default function TestManagement() {
       )}
 
       {/* TEST CATALOG CARD */}
-      <div className="patients-card test-catalog-card content-card-fill">
+      <div className="pf-card test-catalog-card content-card-fill">
         <div className="patients-card-header test-catalog-header">
           <div>
             <h3>Laboratory Tests</h3>

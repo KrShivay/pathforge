@@ -31,7 +31,11 @@ export default function PrintableReport({ model }: PrintableReportProps) {
               <dt>Report No.</dt>
               <dd>{model.reportNo}</dd>
             </div>
-            {!model.isFinalized && <div><dt>Status</dt><dd>Draft</dd></div>}
+            {model.isFinalized ? (
+              <div><dt>Issue Date</dt><dd>{model.generatedAt}</dd></div>
+            ) : (
+              <div><dt>Status</dt><dd>Draft</dd></div>
+            )}
           </dl>
         </div>
       </header>

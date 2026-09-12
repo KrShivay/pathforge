@@ -30,7 +30,7 @@ const ACTOR = 'employee:sam@example.test';
 
 function content() {
   return {
-    specimenType: 'Whole Blood EDTA',
+    specimens: ['Whole Blood EDTA'],
     clinicalHistory: 'Routine health check.',
     findings: 'Red cell indices within reference limits.',
     diagnosis: 'Complete blood count within normal limits.',

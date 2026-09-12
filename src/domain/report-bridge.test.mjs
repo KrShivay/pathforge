@@ -16,7 +16,7 @@ import { validateReport } from './index.mjs';
 /** @returns {import('./report-bridge.mjs').WorkspaceReportContent} */
 function sampleContent() {
   return {
-    specimenType: 'Whole Blood EDTA',
+    specimens: ['Whole Blood EDTA'],
     clinicalHistory: 'Routine screening.',
     findings: 'Unremarkable red cell morphology.',
     diagnosis: 'Within normal limits.',
@@ -45,6 +45,8 @@ test('buildResolvedPayload produces a domain-valid payload with narrative + resu
     'narrative.clinical_history',
     'narrative.diagnosis',
     'narrative.findings',
+    'narrative.interpretation',
+    'narrative.referring_clinician',
     'narrative.specimen_type',
     'result.hemoglobin',
     'result.protein',
@@ -72,7 +74,7 @@ test('readWorkspaceContent is the inverse of buildResolvedPayload', () => {
   const content = sampleContent();
   const round = readWorkspaceContent({ resolved_payload: buildResolvedPayload(content) });
 
-  assert.equal(round.specimenType, content.specimenType);
+  assert.deepEqual(round.specimens, content.specimens);
   assert.equal(round.findings, content.findings);
   assert.equal(round.diagnosis, content.diagnosis);
   assert.equal(round.testResults.length, 2);
@@ -83,7 +85,7 @@ test('readWorkspaceContent is the inverse of buildResolvedPayload', () => {
 test('a report can carry results from more than one laboratory test', () => {
   /** @type {import('./report-bridge.mjs').WorkspaceReportContent} */
   const content = {
-    specimenType: 'Serum',
+    specimens: ['Serum'],
     findings: 'See individual panels.',
     diagnosis: 'Normal biochemistry and haematology.',
     testResults: [
@@ -138,12 +140,12 @@ test('a blank draft still builds a structurally valid payload', () => {
 
 test('checkClinicalCompleteness flags missing required content and blank results', () => {
   const issues = checkClinicalCompleteness({
-    specimenType: '',
+    specimens: [],
     findings: 'x',
     diagnosis: '',
     testResults: [{ parameterId: 'hb', parameterName: 'Hemoglobin', value: '' }],
   });
-  assert.deepEqual(issues.map((issue) => issue.field).sort(), ['diagnosis', 'result.hb', 'specimenType']);
+  assert.deepEqual(issues.map((issue) => issue.field).sort(), ['diagnosis', 'result.hb', 'specimens']);
 });
 
 test('checkClinicalCompleteness flags two results that collapse onto the same payload key', () => {
@@ -155,7 +157,7 @@ test('checkClinicalCompleteness flags two results that collapse onto the same pa
     { parameterId: 'glucose', parameterName: 'Glucose', testId: 'lft', testName: 'LFT', value: '150' },
   ];
   const issues = checkClinicalCompleteness({
-    specimenType: 'Serum',
+    specimens: ['Serum'],
     findings: 'x',
     diagnosis: 'x',
     testResults: duplicate,
@@ -172,7 +174,7 @@ test('checkClinicalCompleteness flags two results that collapse onto the same pa
   ];
   assert.deepEqual(
     checkClinicalCompleteness({
-      specimenType: 'Serum',
+      specimens: ['Serum'],
       findings: 'x',
       diagnosis: 'x',
       testResults: distinctTests,
@@ -194,7 +196,14 @@ test('groupForPreview yields a stable narrative/results shape for drafts and fin
   assert.equal(preview.issueNumber, 'INV-2026-000001');
   assert.deepEqual(
     preview.narrative.map((row) => row.label),
-    ['Specimen Type', 'Clinical History', 'Microscopic Findings', 'Diagnosis'],
+    [
+      'Specimens',
+      'Referring Clinician',
+      'Clinical History',
+      'Microscopic Findings',
+      'Diagnosis',
+      'Interpretation / Remarks',
+    ],
   );
   assert.deepEqual(preview.results[0], {
     name: 'Hemoglobin',

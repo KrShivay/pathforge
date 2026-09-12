@@ -1,21 +1,58 @@
-/** Parse an ISO local date or timestamp safely. Date-only strings use local-day boundaries. */
+/**
+ * Shared, pure filtering / date / sort helpers for Worklist and Version History.
+ *
+ * Every public function is side-effect-free and works on plain arrays.
+ */
+
+/**
+ * Parse an ISO local date or timestamp safely.
+ * Date-only strings use local-day boundaries.
+ * @param {string | null | undefined} value
+ * @param {boolean} [endOfDay]
+ * @returns {Date | null}
+ */
 export function parseDate(value, endOfDay = false) {
   if (!value) return null;
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    const [year, month, day] = value.split("-").map(Number);
-    const date = new Date(year, month - 1, day, endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0, endOfDay ? 999 : 0);
+    const parts = value.split('-').map(Number);
+    const year = /** @type {number} */ (parts[0]);
+    const month = /** @type {number} */ (parts[1]);
+    const day = /** @type {number} */ (parts[2]);
+    const date = new Date(
+      year,
+      month - 1,
+      day,
+      endOfDay ? 23 : 0,
+      endOfDay ? 59 : 0,
+      endOfDay ? 59 : 0,
+      endOfDay ? 999 : 0,
+    );
     return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? date : null;
   }
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? date : null;
 }
 
+/**
+ * @param {string | null | undefined} value
+ * @param {boolean} [includeTime]
+ * @returns {string}
+ */
 export function formatDate(value, includeTime = false) {
   const date = parseDate(value);
-  if (!date) return "—";
-  return date.toLocaleString(undefined, includeTime ? { dateStyle: "medium", timeStyle: "short" } : { dateStyle: "medium" });
+  if (!date) return '—';
+  return date.toLocaleString(
+    undefined,
+    includeTime ? { dateStyle: 'medium', timeStyle: 'short' } : { dateStyle: 'medium' },
+  );
 }
 
+/**
+ * @param {string | null | undefined} value
+ * @param {string | null | undefined} from
+ * @param {string | null | undefined} to
+ * @returns {boolean}
+ */
 function inRange(value, from, to) {
   const date = parseDate(value);
   const start = parseDate(from);
@@ -24,34 +61,118 @@ function inRange(value, from, to) {
   return (!start || date >= start) && (!end || date <= end);
 }
 
+/**
+ * @template T
+ * @param {T[]} values
+ * @param {(a: T, b: T) => number} compare
+ * @returns {T[]}
+ */
 function stableSort(values, compare) {
-  return values.map((value, index) => ({ value, index })).sort((a, b) => compare(a.value, b.value) || a.index - b.index).map(({ value }) => value);
+  return values
+    .map((value, index) => ({ value, index }))
+    .sort((a, b) => compare(a.value, b.value) || a.index - b.index)
+    .map(({ value }) => value);
 }
 
+/**
+ * @typedef {object} WorklistReport
+ * @property {string} id
+ * @property {string} patientId
+ * @property {string} status
+ * @property {string} createdAt
+ * @property {string} [testName]
+ * @property {string[]} specimens
+ * @property {number} [version]
+ * @property {string} [supersedesReportId]
+ * @property {string} referringClinician
+ * @property {string} clinicalHistory
+ * @property {string} findings
+ * @property {string} diagnosis
+ * @property {string} interpretation
+ * @property {unknown[]} testResults
+ */
+
+/**
+ * @typedef {object} WorklistPatient
+ * @property {string} id
+ * @property {string} [name]
+ * @property {string} [patientId]
+ */
+
+/**
+ * @typedef {object} WorklistFilters
+ * @property {string | undefined} [search]
+ * @property {string | undefined} [status]
+ * @property {string | undefined} [from]
+ * @property {string | undefined} [to]
+ * @property {string | undefined} [sort]
+ * @property {((report: any) => boolean) | undefined} [needsAttention]
+ */
+
+/**
+ * @param {WorklistReport[]} reports
+ * @param {WorklistPatient[]} patients
+ * @param {WorklistFilters} [filters]
+ * @returns {WorklistReport[]}
+ */
 export function filterWorklistReports(reports, patients, filters = {}) {
   const patientById = new Map(patients.map((patient) => [patient.id, patient]));
-  const query = String(filters.search ?? "").trim().toLocaleLowerCase();
+  const query = String(filters.search ?? '')
+    .trim()
+    .toLocaleLowerCase();
   const filtered = reports.filter((report) => {
-    if (filters.status === "attention") {
-      if (report.status !== "draft" || !filters.needsAttention?.(report)) return false;
-    } else if (filters.status && filters.status !== "all" && report.status !== filters.status) return false;
+    if (filters.status === 'attention') {
+      if (report.status !== 'draft' || !filters.needsAttention?.(report)) return false;
+    } else if (filters.status && filters.status !== 'all' && report.status !== filters.status) return false;
     if ((filters.from || filters.to) && !inRange(report.createdAt, filters.from, filters.to)) return false;
     if (!query) return true;
-    const patient = patientById.get(report.patientId) ?? {};
-    return [patient.name, patient.patientId, report.id, report.testName, ...(report.specimens ?? []), report.specimenType].filter(Boolean).join(" ").toLocaleLowerCase().includes(query);
+    const patient = patientById.get(report.patientId);
+    return [patient?.name, patient?.patientId, report.id, report.testName, ...(report.specimens ?? [])]
+      .filter(Boolean)
+      .join(' ')
+      .toLocaleLowerCase()
+      .includes(query);
   });
-  const sort = filters.sort ?? "newest";
+  const sort = filters.sort ?? 'newest';
   return stableSort(filtered, (a, b) => {
-    if (sort === "oldest") return (parseDate(a.createdAt)?.getTime() ?? 0) - (parseDate(b.createdAt)?.getTime() ?? 0);
-    if (sort === "patient") return String(patientById.get(a.patientId)?.name ?? "").localeCompare(String(patientById.get(b.patientId)?.name ?? ""));
-    if (sort === "test") return String(a.testName ?? "").localeCompare(String(b.testName ?? ""));
-    if (sort === "status") return String(a.status).localeCompare(String(b.status));
+    if (sort === 'oldest') return (parseDate(a.createdAt)?.getTime() ?? 0) - (parseDate(b.createdAt)?.getTime() ?? 0);
+    if (sort === 'patient')
+      return String(patientById.get(a.patientId)?.name ?? '').localeCompare(
+        String(patientById.get(b.patientId)?.name ?? ''),
+      );
+    if (sort === 'test') return String(a.testName ?? '').localeCompare(String(b.testName ?? ''));
+    if (sort === 'status') return String(a.status).localeCompare(String(b.status));
     return (parseDate(b.createdAt)?.getTime() ?? 0) - (parseDate(a.createdAt)?.getTime() ?? 0);
   });
 }
 
+/**
+ * @typedef {object} HistoryFilters
+ * @property {string} [search]
+ * @property {string} [from]
+ * @property {string} [to]
+ * @property {string} [lifecycle]
+ * @property {string} [sort]
+ */
+
+/**
+ * @param {WorklistReport[]} reports
+ * @param {WorklistPatient[]} patients
+ * @param {HistoryFilters} [filters]
+ * @returns {WorklistReport[]}
+ */
 export function filterHistoryReports(reports, patients, filters = {}) {
-  const lifecycle = filters.lifecycle ?? "all";
-  const subset = reports.filter((report) => lifecycle === "all" || (lifecycle === "amended" ? Boolean(report.supersedesReportId) : report.status === lifecycle));
-  return filterWorklistReports(subset, patients, { search: filters.search, from: filters.from, to: filters.to, sort: filters.sort ?? "newest", status: "all" });
+  const lifecycle = filters.lifecycle ?? 'all';
+  const subset = reports.filter(
+    (report) =>
+      lifecycle === 'all' ||
+      (lifecycle === 'amended' ? Boolean(report.supersedesReportId) : report.status === lifecycle),
+  );
+  return filterWorklistReports(subset, patients, {
+    search: filters.search,
+    from: filters.from,
+    to: filters.to,
+    sort: filters.sort ?? 'newest',
+    status: 'all',
+  });
 }

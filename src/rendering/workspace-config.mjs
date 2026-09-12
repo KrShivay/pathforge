@@ -74,13 +74,10 @@ export function buildWorkspaceDocumentConfig(reportInput) {
       diagnosis: ['diagnosis', 'diagnosis', 'Diagnosis'],
       interpretation: ['interpretation', 'interpretation', 'Interpretation / Remarks'],
     };
-    const [sectionId, role, heading] = roleByKey[key];
-    const section = narrativeSection(
-      fieldId,
-      sectionId,
-      role,
-      heading,
-    );
+    const entry2 = roleByKey[key];
+    if (!entry2) continue;
+    const [sectionId = '', role = '', heading = ''] = entry2;
+    const section = narrativeSection(fieldId, sectionId, role, heading);
     if (section) sections.push(section);
   }
 

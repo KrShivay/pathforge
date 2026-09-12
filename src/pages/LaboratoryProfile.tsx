@@ -1,5 +1,6 @@
 import { RotateCcw, Save, Trash2, Upload } from "lucide-react";
 import { useState, type ChangeEvent } from "react";
+import PageHeading from "../components/layout/PageHeading";
 import { confirmDestructive, notifyError, notifySuccess } from "../lib/dialog";
 import { useBranding } from "../store/BrandingContext";
 import type { LaboratoryProfile } from "../store/branding";
@@ -35,8 +36,12 @@ export default function LaboratoryProfilePage() {
   }
 
   return <section className="viewport-page lab-profile-page" aria-busy={processingLogo}>
-    <div className="page-heading"><div><h1>Laboratory Profile</h1><p>Identity used by the fixed PathForge navbar and report design.</p></div><button type="button" className="primary-button" onClick={() => { updateProfile(draft); void notifySuccess({ title: "Laboratory profile saved" }); }}><Save size={16} />Save profile</button></div>
-    <div className="content-card lab-profile-layout">
+    <PageHeading
+      title="Laboratory Profile"
+      subtitle="Identity used by the fixed PathForge navbar and report design."
+      actions={<button type="button" className="primary-button" onClick={() => { updateProfile(draft); void notifySuccess({ title: "Laboratory profile saved" }); }}><Save size={16} />Save profile</button>}
+    />
+    <div className="pf-card lab-profile-layout">
       <div className="card-body lab-profile-form">
         <fieldset><legend>Brand mark</legend><div className="logo-editor">{draft.logoDataUrl ? <img src={draft.logoDataUrl} alt="Laboratory logo preview" /> : <div className="logo-placeholder" aria-hidden="true">{draft.shortName.slice(0, 2).toUpperCase()}</div>}<div><label className="secondary-button logo-upload"><Upload size={16} />{processingLogo ? "Processing…" : "Choose logo"}<input type="file" accept="image/png,image/jpeg,image/webp" onChange={onLogo} disabled={processingLogo} /></label>{draft.logoDataUrl && <button type="button" className="secondary-button" onClick={() => setDraft((value) => ({ ...value, logoDataUrl: "" }))}><Trash2 size={16} />Remove</button>}<p className="helper-text">PNG, JPEG or WebP; 32–1200 px; maximum 1 MB.</p></div></div></fieldset>
         <fieldset><legend>Laboratory and report details</legend><div className="profile-fields">{FIELDS.map(([key, label, placeholder]) => <label key={key}>{label}<input value={draft[key]} placeholder={placeholder} onChange={(event) => setDraft((value) => ({ ...value, [key]: event.target.value }))} /></label>)}</div></fieldset>

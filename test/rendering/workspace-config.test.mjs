@@ -46,9 +46,11 @@ test('the workspace config maps every payload field exactly once, in house-forma
       'specimen-details',
       'clinical-results',
       'clinical-results',
+      'referring-clinician',
       'clinical-history',
       'microscopic-findings',
       'diagnosis',
+      'interpretation',
     ],
   );
 

@@ -11,6 +11,7 @@ import PageHeading from "../components/layout/PageHeading";
 import { checkClinicalCompleteness } from "../domain/report-bridge.mjs";
 import { usePatients } from "../store/PatientContext";
 import { useReports, type Report } from "../store/ReportContext";
+import { SkeletonList } from "../components/common/Skeleton";
 import { filterWorklistReports, formatDate as formatReportFilterDate } from "../lib/reportFilters.mjs";
 
 interface WorklistProps {
@@ -26,7 +27,7 @@ export default function Worklist({
   onCreateReport,
   initialFilter = "all",
 }: WorklistProps) {
-  const { reports } = useReports();
+  const { reports, hydrated } = useReports();
   const { patients } = usePatients();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialFilter);
@@ -128,7 +129,7 @@ export default function Worklist({
         </div>
       </div>
 
-      <div className="worklist-card content-card-fill">
+      <div className="pf-card worklist-card content-card-fill">
         <div className="worklist-table-header">
           <span className="col-patient">Patient</span>
           <span className="col-test">Test / Specimen</span>
@@ -138,7 +139,9 @@ export default function Worklist({
         </div>
 
         <div className="worklist-table-body scrollable-container">
-          {filteredReports.length > 0 ? (
+          {!hydrated ? (
+            <SkeletonList count={5} />
+          ) : filteredReports.length > 0 ? (
             filteredReports.map((report) => {
               const pt = getPatient(report.patientId);
               const isFinalized = report.status === "finalized";

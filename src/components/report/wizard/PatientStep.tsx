@@ -11,6 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { confirmDestructive } from "../../../lib/dialog";
 import { usePatients } from "../../../store/PatientContext";
 import PatientForm from "../../patients/PatientForm";
+import { SkeletonList } from "../../../components/common/Skeleton";
 import { filterPatients } from "./patientSearch.mjs";
 
 interface PatientStepProps {
@@ -159,9 +160,7 @@ export default function PatientStep({
           </p>
 
           {loading ? (
-            <div className="patient-search-state" role="status">
-              Loading patient records…
-            </div>
+            <SkeletonList count={3} />
           ) : patients.length === 0 ? (
             <div className="patient-search-empty">
               <h3>No patient records yet</h3>
@@ -199,7 +198,10 @@ export default function PatientStep({
                       className={`patient-pick${
                         isSelected ? " is-selected" : ""
                       }`}
-                      onClick={() => onSelect(patient.id)}
+                      onClick={() => {
+                        onSelect(patient.id);
+                        onAdvance();
+                      }}
                       aria-pressed={isSelected}
                     >
                       <div className="patient-pick-main">
@@ -226,16 +228,6 @@ export default function PatientStep({
                           </span>
                         ) : null}
                       </div>
-                      <span className={`patient-pick-action${isSelected ? " is-selected" : ""}`}>
-                        {isSelected ? (
-                          <>
-                            <Check size={14} />
-                            Selected
-                          </>
-                        ) : (
-                          "Select"
-                        )}
-                      </span>
                     </button>
                   </li>
                 );

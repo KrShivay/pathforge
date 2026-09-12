@@ -43,7 +43,7 @@ export default function VersionHistory({
         />
       </div>
 
-      <div className="version-history-card content-card-fill">
+      <div className="pf-card version-history-card content-card-fill">
         <div className="version-history-card-header">
           <div>
             <h3>Report Lineage Records</h3>

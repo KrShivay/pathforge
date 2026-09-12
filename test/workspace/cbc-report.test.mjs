@@ -40,7 +40,7 @@ const CBC_PARAMETERS = [
 
 function cbcContent(values = {}) {
   return {
-    specimenType: 'Whole Blood EDTA',
+    specimens: ['Whole Blood EDTA'],
     clinicalHistory: 'Routine health check.',
     findings: 'Red cell indices within reference limits. No atypical cells seen.',
     diagnosis: 'Complete blood count within normal limits.',

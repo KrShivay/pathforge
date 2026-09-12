@@ -251,7 +251,7 @@ export default function NewReport({
         onJump={jumpTo}
       />
 
-      <div className="wizard-body content-card-fill scrollable-container">
+      <div className="wizard-body pf-card content-card-fill scrollable-container">
         {step === 0 && (
           <PatientStep
             selectedPatientId={patientId}

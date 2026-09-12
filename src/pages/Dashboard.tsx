@@ -3,11 +3,8 @@ import {
   ArrowRight,
   Calendar,
   CheckCircle2,
-  ClipboardList,
   Clock,
   FileText,
-  History,
-  Plus,
   Users,
 } from "lucide-react";
 import type { Page } from "../components/layout/TopNav";
@@ -247,69 +244,47 @@ export default function Dashboard({
           )}
         </section>
 
-        <section className="quick-actions-panel">
-          <div className="quick-actions-panel-header">
-            <h3>Quick Actions</h3>
-            <p>Common clinical operations</p>
+        <section className="pf-card needs-attention-panel">
+          <div className="dashboard-card-header">
+            <div>
+              <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AlertCircle size={18} color="var(--pf-amber-500)" />Needs Attention</h3>
+              <p>Drafts missing required clinical data</p>
+            </div>
+            {needsAttentionReports.length > 0 && (
+              <button type="button" className="view-all-button" onClick={() => onNavigate("worklist", "attention")}>
+                View all
+                <ArrowRight size={15} />
+              </button>
+            )}
           </div>
-
-          <div className="quick-actions-grid">
-            <button
-              type="button"
-              className="quick-action"
-              onClick={() => onNavigate("new-report")}
-            >
-              <span className="quick-action-icon action-new">
-                <Plus size={17} />
-              </span>
-              <span className="quick-action-text">
-                <strong>Create Report</strong>
-                <span>New pathology case</span>
-              </span>
-            </button>
-
-            <button
-              type="button"
-              className="quick-action"
-              onClick={() => onNavigate("worklist")}
-            >
-              <span className="quick-action-icon action-worklist">
-                <ClipboardList size={17} />
-              </span>
-              <span className="quick-action-text">
-                <strong>Open Worklist</strong>
-                <span>Active drafts & cases</span>
-              </span>
-            </button>
-
-            <button
-              type="button"
-              className="quick-action"
-              onClick={() => onNavigate("patients")}
-            >
-              <span className="quick-action-icon action-patients">
-                <Users size={17} />
-              </span>
-              <span className="quick-action-text">
-                <strong>Patients</strong>
-                <span>Registry & search</span>
-              </span>
-            </button>
-
-            <button
-              type="button"
-              className="quick-action"
-              onClick={() => onNavigate("history")}
-            >
-              <span className="quick-action-icon action-history">
-                <History size={17} />
-              </span>
-              <span className="quick-action-text">
-                <strong>Version History</strong>
-                <span>Audit & amendments</span>
-              </span>
-            </button>
-          </div>
+          
+          {needsAttentionReports.length > 0 ? (
+            <div className="recent-report-list">
+              {needsAttentionReports.slice(0, 4).map((report) => {
+                const pt = getPatient(report.patientId);
+                return (
+                  <button type="button" className="recent-report-item" key={report.id} onClick={() => onSelectReport(report.id)}>
+                    <div className="recent-report-icon" style={{ background: "rgba(245, 158, 11, 0.1)", color: "var(--pf-amber-500)" }}>
+                      <AlertCircle size={16} />
+                    </div>
+                    <div className="recent-report-info">
+                      <div className="recent-report-primary">
+                        <strong>{pt?.name ?? "Unknown Patient"}</strong>
+                      </div>
+                      <span className="recent-report-test">
+                        {report.testName || report.specimens.join(", ") || "Pathology Report"}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="dashboard-empty" style={{ minHeight: "150px" }}>
+              <CheckCircle2 size={32} color="var(--pf-green-500)" style={{ opacity: 0.5 }} />
+              <p style={{ marginTop: "12px" }}>All drafts are clinically complete.</p>
+            </div>
+          )}
         </section>
       </div>
     </div>

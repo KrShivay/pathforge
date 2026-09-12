@@ -28,7 +28,6 @@
 /**
  * @typedef {{
  *   specimens?: string[],
- *   specimenType?: string,
  *   referringClinician?: string,
  *   interpretation?: string,
  *   clinicalHistory?: string,
@@ -61,7 +60,10 @@ export const NARRATIVE_FIELDS = [
   ['narrative.interpretation', 'Interpretation / Remarks', 'interpretation'],
 ];
 
-/** Trim and case-insensitively deduplicate report-level specimen labels. */
+/** Trim and case-insensitively deduplicate report-level specimen labels.
+ * @param {unknown} values
+ * @returns {string[]}
+ */
 export function normalizeSpecimens(values) {
   const input = Array.isArray(values) ? values : typeof values === 'string' ? [values] : [];
   const seen = new Set();
@@ -77,10 +79,9 @@ export function normalizeSpecimens(values) {
   return normalized;
 }
 
+/** @param {WorkspaceReportContent} content @returns {string[]} */
 function specimensFromContent(content) {
-  return normalizeSpecimens(
-    Array.isArray(content.specimens) ? content.specimens : content.specimenType,
-  );
+  return normalizeSpecimens(content.specimens);
 }
 
 /** @param {unknown} value @returns {string} */
@@ -184,6 +185,7 @@ export function readWorkspaceContent(reportVersion) {
   const payload = reportVersion.resolved_payload ?? {};
 
   const narrative = {
+    /** @type {string[]} */
     specimens: [],
     referringClinician: '',
     clinicalHistory: '',
@@ -194,9 +196,7 @@ export function readWorkspaceContent(reportVersion) {
   for (const [fieldId, , key] of NARRATIVE_FIELDS) {
     if (key === 'specimens') {
       const stored = payload[fieldId]?.specimens;
-      narrative.specimens = normalizeSpecimens(
-        Array.isArray(stored) ? stored : asText(payload[fieldId]?.value),
-      );
+      narrative.specimens = normalizeSpecimens(Array.isArray(stored) ? stored : asText(payload[fieldId]?.value));
     } else {
       narrative[key] = asText(payload[fieldId]?.value);
     }
@@ -225,6 +225,9 @@ export function readWorkspaceContent(reportVersion) {
 
   return {
     specimens: narrative.specimens,
+
+    referringClinician: narrative.referringClinician,
+    interpretation: narrative.interpretation,
     clinicalHistory: narrative.clinicalHistory,
     findings: narrative.findings,
     diagnosis: narrative.diagnosis,

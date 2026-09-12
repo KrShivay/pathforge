@@ -1,6 +1,7 @@
 import { Plus, Search, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import PageHeading from "../components/layout/PageHeading";
+import { SkeletonList } from "../components/common/Skeleton";
 import PatientForm from "../components/patients/PatientForm";
 import { confirmDestructive } from "../lib/dialog";
 import { usePatients } from "../store/PatientContext";
@@ -100,7 +101,7 @@ export default function Patients() {
         </div>
       </div>
 
-      <div className="patients-card content-card-fill">
+      <div className="pf-card content-card-fill">
         <div className="patients-table-header">
           <span className="col-p-name">Patient</span>
           <span className="col-p-age">Age / Sex</span>
@@ -109,9 +110,7 @@ export default function Patients() {
 
         <div className="patients-table-body scrollable-container">
           {loading ? (
-            <div className="no-results">
-              <p>Loading patient records…</p>
-            </div>
+            <SkeletonList count={5} />
           ) : filteredPatients.length > 0 ? (
             filteredPatients.map((patient) => (
               <div className="table-row patients-row" key={patient.id}>

@@ -65,7 +65,7 @@ async function finalizeWithGate(service, identity, revision, content) {
 /** @returns {import('../../src/domain/report-bridge.mjs').WorkspaceReportContent} */
 function completeContent() {
   return {
-    specimenType: 'Whole Blood EDTA',
+    specimens: ['Whole Blood EDTA'],
     clinicalHistory: 'Routine screening.',
     findings: 'Normal red cell morphology, no atypical cells.',
     diagnosis: 'Within normal limits.',
@@ -94,7 +94,7 @@ test('a draft cannot be finalized while required clinical content is missing', a
 
   // Findings + diagnosis still blank, one result field left empty.
   const incomplete = {
-    specimenType: 'Whole Blood EDTA',
+    specimens: ['Whole Blood EDTA'],
     clinicalHistory: '',
     findings: '',
     diagnosis: '',
@@ -137,7 +137,14 @@ test('entered lab results survive finalization and appear in the preview/PDF gro
   assert.equal(preview.lifecycleState, 'finalized');
   assert.deepEqual(
     preview.narrative.map((row) => row.label),
-    ['Specimen Type', 'Clinical History', 'Microscopic Findings', 'Diagnosis'],
+    [
+      'Specimens',
+      'Referring Clinician',
+      'Clinical History',
+      'Microscopic Findings',
+      'Diagnosis',
+      'Interpretation / Remarks',
+    ],
   );
   assert.equal(preview.narrative.find((row) => row.label === 'Diagnosis')?.value, 'Within normal limits.');
   assert.deepEqual(preview.results, [{ name: 'Hemoglobin', value: '13.4', unit: 'g/dL', reference: '12 – 15' }]);
@@ -261,7 +268,7 @@ test('a report with several tests finalizes and keeps results grouped per test',
 
   /** @type {import('../../src/domain/report-bridge.mjs').WorkspaceReportContent} */
   const content = {
-    specimenType: 'Serum',
+    specimens: ['Serum'],
     clinicalHistory: 'Annual review.',
     findings: 'Biochemistry and haematology reviewed together.',
     diagnosis: 'No abnormality detected.',

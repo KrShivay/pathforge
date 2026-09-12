@@ -36,7 +36,7 @@ test('the reference range the report model reads carries low/high from the paylo
     version: 1,
     isFinalized: false,
     content: {
-      specimenType: 'Whole Blood EDTA',
+      specimens: ['Whole Blood EDTA'],
       clinicalHistory: '',
       findings: '',
       diagnosis: '',
