@@ -20,7 +20,8 @@
     "test": "npm run test:unit",
     "css:check": "node scripts/check-css-integrity.mjs",
     "verify": "npm run format:check && npm run lint && npm run css:check && npm run typecheck && npm run typecheck:app && npm run test:unit && npm run fixtures:check && npm run tasks:check",
-    "build": "vite build"
+    "build": "vite build",
+    "build:web": "vite build --mode github-pages"
   },
   "engines": {
     "node": "24.20.0",
@@ -31,6 +32,7 @@
     "@biomejs/biome": "2.5.12",
     "@tauri-apps/cli": "^2.11.4",
     "@types/node": "24.13.3",
+    "@types/qrcode": "^1.5.5",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
@@ -48,8 +50,10 @@
     "@tauri-apps/plugin-fs": "^2.5.2",
     "@tauri-apps/plugin-sql": "^2.4.1",
     "date-fns": "^4.4.0",
+    "fflate": "^0.8.3",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.42.0",
+    "qrcode": "^1.5.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "sweetalert2": "^11.26.25"

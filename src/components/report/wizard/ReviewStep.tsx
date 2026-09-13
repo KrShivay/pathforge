@@ -5,13 +5,16 @@ import { usePatients } from "../../../store/PatientContext";
 import { useTests } from "../../../store/TestContext";
 import { computeFlag } from "../flags";
 import { formatReferenceRange } from "../referenceRange";
+import { formatReportDay } from "../reportMeta";
 import type { ClinicalDetails } from "./ClinicalStep";
 import { resultKey } from "./ResultsStep";
+import XlsxExportButton from "../../common/XlsxExportButton";
 
 interface ReviewStepProps {
   patientId: string;
   selectedTestIds: string[];
   specimens: string[];
+  specimenCollectionDate: string;
   results: Record<string, string>;
   clinical: ClinicalDetails;
 }
@@ -20,6 +23,7 @@ export default function ReviewStep({
   patientId,
   selectedTestIds,
   specimens,
+  specimenCollectionDate,
   results,
   clinical,
 }: ReviewStepProps) {
@@ -34,6 +38,24 @@ export default function ReviewStep({
         .filter((test): test is LaboratoryTest => test !== undefined),
     [selectedTestIds, tests],
   );
+  const exportRows = selectedTests.flatMap((test) =>
+    test.parameters.map((parameter) => {
+      const value = results[resultKey(test.id, parameter.id)] ?? "";
+      return {
+        Test: test.name,
+        Parameter: parameter.name,
+        Result: value,
+        Unit: parameter.unit,
+        "Reference Range": formatReferenceRange(parameter.referenceRange),
+        Flag:
+          computeFlag(
+            value,
+            parameter.referenceRange?.min,
+            parameter.referenceRange?.max,
+          ) ?? "",
+      };
+    }),
+  );
 
   return (
     <div className="wizard-panel">
@@ -41,6 +63,14 @@ export default function ReviewStep({
       <p className="wizard-panel-hint">
         Check everything below, then save as a draft or continue to finalize.
       </p>
+      <div className="results-step-toolbar review-export-toolbar">
+        <span>Export the displayed laboratory results for review.</span>
+        <XlsxExportButton
+          rows={exportRows}
+          fileName="PathForge_Report_Results.xlsx"
+          label="Export XLSX"
+        />
+      </div>
 
       <div className="review-grid">
         <div className="review-item">
@@ -55,6 +85,10 @@ export default function ReviewStep({
         <div className="review-item">
           <span>Specimens</span>
           <strong>{specimens.join(", ") || "—"}</strong>
+        </div>
+        <div className="review-item">
+          <span>Specimen collection date</span>
+          <strong>{formatReportDay(specimenCollectionDate)}</strong>
         </div>
         <div className="review-item">
           <span>Tests</span>

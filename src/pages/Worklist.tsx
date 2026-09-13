@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import DateRangeFilter from "../components/common/DateRangeFilter";
+import XlsxExportButton from "../components/common/XlsxExportButton";
 import { SkeletonList } from "../components/common/Skeleton";
 import SortableHeader from "../components/common/SortableHeader";
 import PageHeading from "../components/layout/PageHeading";
@@ -70,6 +71,25 @@ export default function Worklist({
     });
   }, [reports, patients, search, statusFilter, dateFrom, dateTo, sort]);
 
+  const exportRows = useMemo(
+    () =>
+      filteredReports.map((report) => {
+        const patient = patients.find((candidate) => candidate.id === report.patientId);
+        return {
+          Patient: patient?.name ?? "Unknown Patient",
+          "Patient ID": patient?.patientId ?? "",
+          Test: report.testName ?? "",
+          Specimen: report.specimens.join(", "),
+          "Collection Date": report.specimenCollectionDate || report.createdAt.slice(0, 10),
+          Status: report.status,
+          Created: report.createdAt,
+          Version: report.version,
+          "Report ID": report.id,
+        };
+      }),
+    [filteredReports, patients],
+  );
+
   function getPatient(patientId: string) {
     return patients.find((patient) => patient.id === patientId);
   }
@@ -80,6 +100,13 @@ export default function Worklist({
         <PageHeading
           title="Report Worklist"
           subtitle="Open drafts and finalized reports to continue pathology workflows."
+          actions={
+            <XlsxExportButton
+              rows={exportRows}
+              fileName="PathForge_Worklist.xlsx"
+              label="Export XLSX"
+            />
+          }
         />
 
         <div className="worklist-toolbar">
@@ -252,6 +279,9 @@ export default function Worklist({
                     </strong>
                     <span className="specimen-label">
                       {report.specimens.join(", ") || "Unspecified"}
+                    </span>
+                    <span className="specimen-label report-collection-date">
+                      Collected {formatReportFilterDate(report.specimenCollectionDate || report.createdAt)}
                     </span>
                   </div>
 

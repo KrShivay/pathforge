@@ -4,7 +4,7 @@ import {
   buildReportDocumentModel,
   buildWorkspaceDocumentConfig,
 } from "../../rendering/index.mjs";
-import { accession, formatReportDate } from "./reportMeta";
+import { accession, formatReportDate, formatReportDay } from "./reportMeta";
 import { computeFlag, flagLabel, type ResultFlag } from "./flags";
 import { formatReferenceRange } from "./referenceRange";
 import { DEFAULT_LABORATORY_PROFILE, getUsableLogoDataUrl, type LaboratoryProfile } from "../../store/branding";
@@ -21,6 +21,7 @@ import { DEFAULT_LABORATORY_PROFILE, getUsableLogoDataUrl, type LaboratoryProfil
 
 export interface ReportContent {
   specimens: string[];
+  specimenCollectionDate?: string;
   referringClinician: string;
   clinicalHistory: string;
   findings: string;
@@ -50,6 +51,7 @@ export interface ReportModelInput {
   panelName?: string;
   department?: string;
   reportDate?: string;
+  specimenCollectionDate?: string;
   laboratoryProfile?: LaboratoryProfile;
   content: ReportContent;
 }
@@ -84,7 +86,14 @@ export interface ReportSignoff {
 }
 
 export interface ReportModel {
-  brand: { name: string; tagline: string; strapline: string; logoDataUrl: string; contact: string };
+  brand: {
+    name: string;
+    tagline: string;
+    strapline: string;
+    logoDataUrl: string;
+    address: string;
+    contact: string;
+  };
   documentTitle: string;
   reportNo: string;
   version: number;
@@ -102,6 +111,8 @@ export interface ReportModel {
   endOfReport: string;
   footer: { reference: string; disclaimer: string };
   generatedAt: string;
+  specimenCollectionDate: string;
+  qrPayload: string;
   fileBaseName: string;
   /** Catalog version the clinical snapshot was resolved under. */
   sourceCatalogVersion: string;
@@ -173,6 +184,8 @@ function valueForRole(
 
 export function buildReportModel(input: ReportModelInput): ReportModel {
   const profile = input.laboratoryProfile ?? DEFAULT_LABORATORY_PROFILE;
+  const specimenCollectionDate =
+    input.specimenCollectionDate?.trim() || input.reportDate || input.issueDate || "";
   const patientSlug =
     input.patientName.trim().replace(/\s+/g, "_").replace(/[^\w-]/g, "") ||
     "Report";
@@ -251,7 +264,8 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
       tagline: profile.reportSubtitle || BRAND.tagline,
       strapline: [profile.accreditationName, profile.accreditationNumber, profile.registrationNumber].filter(Boolean).join(" · ") || BRAND.strapline,
       logoDataUrl: getUsableLogoDataUrl(profile.logoDataUrl),
-      contact: [profile.addressLine1, profile.addressLine2, profile.city, profile.state, profile.postcode, profile.country, profile.phone, profile.email, profile.website].filter(Boolean).join(" · "),
+      address: [profile.addressLine1, profile.addressLine2, profile.city, profile.state, profile.postcode, profile.country].filter(Boolean).join(", "),
+      contact: [profile.phone, profile.alternatePhone, profile.email, profile.website].filter(Boolean).join(" · "),
     },
     documentTitle: profile.reportSubtitle || "Pathology Report",
     reportNo,
@@ -289,6 +303,10 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
         label: "Report date",
         value: formatReportDate(input.issueDate ?? input.reportDate),
       },
+      {
+        label: "Specimen Collection Date",
+        value: formatReportDay(specimenCollectionDate),
+      },
       { label: "Report No.", value: reportNo },
     ],
     resultsHeading: "Laboratory Results",
@@ -309,6 +327,15 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
     endOfReport: "— End of Report —",
     footer: { reference: `${profile.shortName || BRAND.name} · ${reportNo}`, disclaimer: profile.footerNote || profile.phone || DISCLAIMER },
     generatedAt: formatReportDate(input.issueDate ?? input.reportDate),
+    specimenCollectionDate: formatReportDay(specimenCollectionDate),
+    qrPayload: JSON.stringify({
+      type: "pathforge-report",
+      reportNo,
+      patientId: input.patientCode,
+      version: document.report_version.version,
+      issueDate: input.issueDate ?? input.reportDate?.slice(0, 10) ?? "",
+      specimenCollectionDate: specimenCollectionDate.slice(0, 10),
+    }),
     fileBaseName: `PathForge_${patientSlug}_${reportNo.replace(/[^\w-]/g, "_")}`,
     sourceCatalogVersion: document.provenance.source_catalog_version,
   };

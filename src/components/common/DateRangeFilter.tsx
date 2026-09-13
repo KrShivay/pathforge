@@ -1,6 +1,15 @@
 import { CalendarDays, X } from "lucide-react";
-import { format, isValid, parseISO } from "date-fns";
-import { useState } from "react";
+import {
+  endOfMonth,
+  endOfYear,
+  format,
+  isValid,
+  parseISO,
+  startOfMonth,
+  startOfYear,
+  subMonths,
+} from "date-fns";
+import { useEffect, useState } from "react";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -16,6 +25,14 @@ interface DateRangeFilterProps {
   invalid?: boolean;
 }
 
+type QuickRange =
+  | "all"
+  | "this-month"
+  | "last-month"
+  | "last-3-months"
+  | "this-year"
+  | "custom";
+
 function toPickerDate(value: string) {
   if (!value) return null;
   const parsed = parseISO(value);
@@ -24,6 +41,25 @@ function toPickerDate(value: string) {
 
 function toFilterValue(value: Date | null) {
   return value && isValid(value) ? format(value, "yyyy-MM-dd") : "";
+}
+
+function rangeForQuickChoice(choice: QuickRange): { from: string; to: string } {
+  const today = new Date();
+  const value = (date: Date) => format(date, "yyyy-MM-dd");
+  if (choice === "this-month") {
+    return { from: value(startOfMonth(today)), to: value(today) };
+  }
+  if (choice === "last-month") {
+    const month = subMonths(today, 1);
+    return { from: value(startOfMonth(month)), to: value(endOfMonth(month)) };
+  }
+  if (choice === "last-3-months") {
+    return { from: value(startOfMonth(subMonths(today, 2))), to: value(today) };
+  }
+  if (choice === "this-year") {
+    return { from: value(startOfYear(today)), to: value(endOfYear(today)) };
+  }
+  return { from: "", to: "" };
 }
 
 export default function DateRangeFilter({
@@ -42,8 +78,22 @@ export default function DateRangeFilter({
   const labelId = `${id}-label`;
   const hasValue = Boolean(from || to);
   const [openPicker, setOpenPicker] = useState<"from" | "to" | null>(null);
+  const [quickRange, setQuickRange] = useState<QuickRange>(hasValue ? "custom" : "all");
   const fromDate = toPickerDate(from);
   const toDate = toPickerDate(to);
+
+  useEffect(() => {
+    if (!from && !to && quickRange !== "all") setQuickRange("all");
+    if ((from || to) && quickRange === "all") setQuickRange("custom");
+  }, [from, to, quickRange]);
+
+  function applyQuickRange(choice: QuickRange) {
+    setQuickRange(choice);
+    if (choice === "custom") return;
+    const next = rangeForQuickChoice(choice);
+    onFromChange(next.from);
+    onToChange(next.to);
+  }
 
   function open(field: "from" | "to") {
     setOpenPicker(field);
@@ -61,6 +111,21 @@ export default function DateRangeFilter({
           <CalendarDays size={14} aria-hidden="true" />
           <span>Date range</span>
         </span>
+        <label className="date-range-quick">
+          <span>Quick select</span>
+          <select
+            aria-label="Quick date range"
+            value={quickRange}
+            onChange={(event) => applyQuickRange(event.target.value as QuickRange)}
+          >
+            <option value="all">All dates</option>
+            <option value="this-month">This month</option>
+            <option value="last-month">Last month</option>
+            <option value="last-3-months">Last 3 months</option>
+            <option value="this-year">This year</option>
+            <option value="custom">Custom range</option>
+          </select>
+        </label>
         <div className="date-range-fields">
           <label htmlFor={fromId}>
             <span>{fromLabel}</span>
@@ -70,6 +135,7 @@ export default function DateRangeFilter({
               onChange={(value) => {
                 const nextFrom = toFilterValue(value);
                 if (nextFrom && to && nextFrom > to) onToChange("");
+                setQuickRange("custom");
                 onFromChange(nextFrom);
               }}
               format="dd MMM yyyy"
@@ -99,7 +165,10 @@ export default function DateRangeFilter({
             <span>{toLabel}</span>
             <DatePicker
               value={toDate}
-              onChange={(value) => onToChange(toFilterValue(value))}
+              onChange={(value) => {
+                setQuickRange("custom");
+                onToChange(toFilterValue(value));
+              }}
               minDate={fromDate ?? undefined}
               format="dd MMM yyyy"
               open={openPicker === "to"}
@@ -135,6 +204,7 @@ export default function DateRangeFilter({
               type="button"
               className="date-range-clear"
               onClick={() => {
+                setQuickRange("all");
                 onFromChange("");
                 onToChange("");
               }}

@@ -26,7 +26,9 @@ npm run tauri dev
 The React + Tauri desktop app under `src/` is the product. `npm run tauri dev`
 runs the native shell with the local SQLite database; `npm run dev` serves the
 same UI in a browser for quick iteration, and `npm run build` produces the
-production web bundle. Load report data, generate the preview, then use
+desktop-compatible production bundle. `npm run build:web` produces the
+GitHub Pages bundle for `https://krshivay.github.io/pathforge/`. Load report data,
+generate the preview, then use
 **Print / Save PDF**. The internal task dashboard remains available through
 `npm run dashboard`.
 

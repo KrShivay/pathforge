@@ -21,7 +21,7 @@ import PrintableReport from "../components/report/PrintableReport";
 import ReportPreviewModal from "../components/report/ReportPreviewModal";
 import ResultsTable from "../components/report/ResultsTable";
 import { resultTypeError } from "../components/report/resultValidation.mjs";
-import { formatReportDate } from "../components/report/reportMeta";
+import { formatReportDate, isoDateFromLocalDate } from "../components/report/reportMeta";
 import { buildReportModel } from "../components/report/reportModel";
 import { downloadReportPdf } from "../components/report/reportPdf";
 import { sanitizeText } from "../domain/textRules.mjs";
@@ -66,6 +66,7 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
 
   const [formData, setFormData] = useState({
     specimens: [] as string[],
+    specimenCollectionDate: "",
     referringClinician: "",
     clinicalHistory: "",
     findings: "",
@@ -88,6 +89,8 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
   const savedContentSignature = foundReport
     ? `${foundReport.id}::${JSON.stringify({
         specimens: foundReport.specimens,
+        specimenCollectionDate:
+          foundReport.specimenCollectionDate || foundReport.createdAt.slice(0, 10),
         referringClinician: foundReport.referringClinician,
         clinicalHistory: foundReport.clinicalHistory,
         findings: foundReport.findings,
@@ -102,6 +105,8 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
 
     setFormData({
       specimens: foundReport.specimens ?? [],
+      specimenCollectionDate:
+        foundReport.specimenCollectionDate || foundReport.createdAt.slice(0, 10),
       referringClinician: foundReport.referringClinician ?? "",
       clinicalHistory: foundReport.clinicalHistory ?? "",
       findings: foundReport.findings ?? "",
@@ -144,9 +149,11 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
             panelName: foundReport.testName,
             department: foundReport.department,
             reportDate: foundReport.createdAt,
+            specimenCollectionDate: formData.specimenCollectionDate,
             laboratoryProfile: foundReport.brandingSnapshot ?? profile,
             content: {
               specimens: formData.specimens,
+              specimenCollectionDate: formData.specimenCollectionDate,
               referringClinician: formData.referringClinician,
               clinicalHistory: formData.clinicalHistory,
               findings: formData.findings,
@@ -165,6 +172,8 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
       JSON.stringify(formData) !==
         JSON.stringify({
           specimens: foundReport.specimens ?? [],
+          specimenCollectionDate:
+            foundReport.specimenCollectionDate || foundReport.createdAt.slice(0, 10),
           referringClinician: foundReport.referringClinician ?? "",
           clinicalHistory: foundReport.clinicalHistory ?? "",
           findings: foundReport.findings ?? "",
@@ -280,6 +289,8 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
     try {
       await updateReport(report.id, {
         specimens: formData.specimens,
+        specimenCollectionDate:
+          formData.specimenCollectionDate || isoDateFromLocalDate(new Date(report.createdAt)),
         referringClinician: formData.referringClinician,
         clinicalHistory: formData.clinicalHistory,
         findings: formData.findings,
@@ -336,6 +347,8 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
       // Persist the current edits first, then validate + finalize.
       await updateReport(report.id, {
         specimens: formData.specimens,
+        specimenCollectionDate:
+          formData.specimenCollectionDate || isoDateFromLocalDate(new Date(report.createdAt)),
         referringClinician: formData.referringClinician,
         clinicalHistory: formData.clinicalHistory,
         findings: formData.findings,
@@ -664,6 +677,24 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
                   onChange={(_event, values) => { const specimens = normalizeSpecimens(values); setFormData((previous) => ({ ...previous, specimens })); if (specimens.length) setValidationErrors((previous) => { const next = { ...previous }; delete next.specimens; return next; }); }}
                   renderInput={(params) => <TextField {...params} id="ed-specimens" placeholder={formData.specimens.length ? undefined : "Select or type specimens…"} autoFocus={!isFinalized} error={Boolean(validationErrors.specimens)} helperText={validationErrors.specimens} />}
                 />
+              </div>
+              <div className="form-group specimen-date-form-group">
+                <label htmlFor="ed-specimen-collection-date">Specimen collection date</label>
+                <input
+                  id="ed-specimen-collection-date"
+                  name="specimenCollectionDate"
+                  type="date"
+                  value={formData.specimenCollectionDate}
+                  onChange={(event) =>
+                    setFormData((previous) => ({
+                      ...previous,
+                      specimenCollectionDate: event.target.value,
+                    }))
+                  }
+                  disabled={isFinalized || busy}
+                  aria-invalid={Boolean(validationErrors.specimenCollectionDate)}
+                />
+                <span className="form-hint">Defaults to the report creation date.</span>
               </div>
             </div>
           </div>

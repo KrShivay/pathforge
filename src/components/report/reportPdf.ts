@@ -3,6 +3,7 @@ import { isTauri } from "@tauri-apps/api/core";
 
 import type { ReportModel } from "./reportModel";
 import { getUsableLogoDataUrl } from "../../store/branding.ts";
+import { buildQrCodePngDataUrl } from "./qrCode.ts";
 
 const NAVY: [number, number, number] = [31, 58, 95];
 const INK: [number, number, number] = [26, 26, 26];
@@ -48,6 +49,8 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
 
   // ---- letterhead ----
   const logoDataUrl = getUsableLogoDataUrl(model.brand.logoDataUrl);
+  const qrDataUrl = await buildQrCodePngDataUrl(model.qrPayload ?? model.reportNo);
+  const qrSize = 24;
   const logoWidth = logoDataUrl ? 20 : 0;
   if (logoDataUrl) {
     try { doc.addImage(logoDataUrl, MARGIN, y, logoWidth, 14); } catch { /* Invalid image data is omitted. */ }
@@ -58,8 +61,20 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
   doc.setFont("helvetica", "normal").setFontSize(7.5).setTextColor(...MUTED);
   doc.text(model.brand.tagline.toUpperCase(), letterheadX, y + 7);
   doc.setFontSize(7).text(model.brand.strapline, letterheadX, y + 11);
-  if (model.brand.contact) {
-    doc.setFontSize(6.5).text(doc.splitTextToSize(model.brand.contact, 105), letterheadX, y + 15);
+  const addressLines = model.brand.address
+    ? doc.splitTextToSize(model.brand.address, 105)
+    : [];
+  const contactLines = model.brand.contact
+    ? doc.splitTextToSize(model.brand.contact, 105)
+    : [];
+  let contactY = y + 15;
+  if (addressLines.length > 0) {
+    doc.setFontSize(6.5).text(addressLines, letterheadX, contactY);
+    contactY += addressLines.length * 3.2;
+  }
+  if (contactLines.length > 0) {
+    doc.setFontSize(6.5).text(contactLines, letterheadX, contactY);
+    contactY += contactLines.length * 3.2;
   }
 
   doc.setFont("helvetica", "bold").setFontSize(11).setTextColor(...NAVY);
@@ -67,16 +82,15 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
     align: "right",
   });
   doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(...INK);
-  doc.text(
-    model.isFinalized
-      ? [`Report No.  ${model.reportNo}`]
-      : [`Report No.  ${model.reportNo}`, "DRAFT"],
-    PAGE_W - MARGIN,
-    y + 5,
-    { align: "right" }
-  );
+  const metaLines = model.isFinalized
+    ? [`Report No.  ${model.reportNo}`, `Issue Date  ${model.generatedAt}`]
+    : [`Report No.  ${model.reportNo}`, `Report Date  ${model.generatedAt}`, "DRAFT"];
+  doc.text(metaLines, PAGE_W - MARGIN, y + 5, { align: "right" });
+  doc.addImage(qrDataUrl, PAGE_W - MARGIN - qrSize, y + 15, qrSize, qrSize);
+  doc.setFont("helvetica", "normal").setFontSize(5.5).setTextColor(...MUTED);
+  doc.text("Scan to verify report", PAGE_W - MARGIN, y + 42, { align: "right" });
 
-  y += model.brand.contact ? 19 : 15;
+  y += Math.max(contactY - y + 2, 45);
   doc.setDrawColor(...NAVY).setLineWidth(0.7).line(MARGIN, y, PAGE_W - MARGIN, y);
   y += 6;
 
@@ -163,10 +177,22 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
   };
 
   // ---- results, grouped by test ----
-  // Fixed column x-positions (mm from left margin) shared by header and every
-  // row so all result tables align identically. CONTENT_W is 178mm.
-  const cols = [MARGIN, MARGIN + 70, MARGIN + 95, MARGIN + 120, MARGIN + 166];
-  const widths = [66, 21, 21, 42, 12];
+  // Fixed five-column grid shared by headers and rows. The proportions mirror
+  // the printable report CSS so normal result words and the FLAG header keep
+  // enough room in both PDF export paths. CONTENT_W is 178mm.
+  const widths = [
+    CONTENT_W * 0.38,
+    CONTENT_W * 0.17,
+    CONTENT_W * 0.13,
+    CONTENT_W * 0.24,
+    CONTENT_W * 0.08,
+  ];
+  let columnX = MARGIN;
+  const cols = widths.map((width) => {
+    const currentX = columnX;
+    columnX += width;
+    return currentX;
+  });
 
   const drawResultsHeader = () => {
     need(8);

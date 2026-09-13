@@ -17,6 +17,7 @@ import {
   buildReportModel,
   type ReportModel,
 } from "../components/report/reportModel";
+import { isoDateFromLocalDate } from "../components/report/reportMeta";
 import ReportPreviewModal from "../components/report/ReportPreviewModal";
 import ClinicalStep, {
   type ClinicalDetails,
@@ -69,6 +70,9 @@ export default function NewReport({
   const [patientId, setPatientId] = useState("");
   const [selectedTestIds, setSelectedTestIds] = useState<string[]>([]);
   const [specimens, setSpecimens] = useState<string[]>([]);
+  const [specimenCollectionDate, setSpecimenCollectionDate] = useState(() =>
+    isoDateFromLocalDate(),
+  );
   const [results, setResults] = useState<Record<string, string>>({});
   const [clinical, setClinical] = useState<ClinicalDetails>({
     referringClinician: "",
@@ -83,13 +87,14 @@ export default function NewReport({
       patientId !== "" ||
       selectedTestIds.length > 0 ||
       specimens.length > 0 ||
+      specimenCollectionDate !== isoDateFromLocalDate() ||
       Object.values(results).some((value) => value.trim() !== "") ||
       clinical.clinicalHistory.trim() !== "" ||
       clinical.findings.trim() !== "" ||
       clinical.diagnosis.trim() !== "";
     onDirtyChange?.(hasProgress);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [patientId, selectedTestIds, specimens, results, clinical]);
+  }, [patientId, selectedTestIds, specimens, specimenCollectionDate, results, clinical]);
 
   const selectedTests = useMemo(
     () =>
@@ -152,6 +157,7 @@ export default function NewReport({
       id: crypto.randomUUID(),
       patientId,
       specimens,
+      specimenCollectionDate: specimenCollectionDate || isoDateFromLocalDate(),
       referringClinician: clinical.referringClinician,
       clinicalHistory: clinical.clinicalHistory,
       findings: clinical.findings,
@@ -183,9 +189,11 @@ export default function NewReport({
       panelName: draft.testName,
       department: draft.department,
       reportDate: draft.createdAt,
+      specimenCollectionDate: draft.specimenCollectionDate,
       laboratoryProfile: profile,
       content: {
         specimens: draft.specimens,
+        specimenCollectionDate: draft.specimenCollectionDate,
         referringClinician: draft.referringClinician,
         clinicalHistory: draft.clinicalHistory,
         findings: draft.findings,
@@ -281,8 +289,10 @@ export default function NewReport({
           <TestSpecimenStep
             selectedTestIds={selectedTestIds}
             specimens={specimens}
+            specimenCollectionDate={specimenCollectionDate}
             onChangeTests={setSelectedTestIds}
             onChangeSpecimens={setSpecimens}
+            onChangeSpecimenCollectionDate={setSpecimenCollectionDate}
           />
         )}
 
@@ -310,6 +320,7 @@ export default function NewReport({
             patientId={patientId}
             selectedTestIds={selectedTestIds}
             specimens={specimens}
+            specimenCollectionDate={specimenCollectionDate}
             results={results}
             clinical={clinical}
           />

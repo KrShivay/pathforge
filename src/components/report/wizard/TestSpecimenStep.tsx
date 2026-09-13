@@ -9,8 +9,10 @@ import { normalizeSpecimens } from "../../../domain/report-bridge.mjs";
 interface TestSpecimenStepProps {
   selectedTestIds: string[];
   specimens: string[];
+  specimenCollectionDate: string;
   onChangeTests: (testIds: string[]) => void;
   onChangeSpecimens: (specimens: string[]) => void;
+  onChangeSpecimenCollectionDate: (value: string) => void;
 }
 
 const COMMON_SPECIMENS = [
@@ -28,8 +30,10 @@ const COMMON_SPECIMENS = [
 export default function TestSpecimenStep({
   selectedTestIds,
   specimens,
+  specimenCollectionDate,
   onChangeTests,
   onChangeSpecimens,
+  onChangeSpecimenCollectionDate,
 }: TestSpecimenStepProps) {
   const { tests } = useTests();
 
@@ -97,6 +101,19 @@ export default function TestSpecimenStep({
           )}
           noOptionsText="No tests configured — add tests under Test Management"
         />
+      </div>
+
+      <div className="wizard-field">
+        <label htmlFor="nr-specimen-collection-date">Specimen collection date</label>
+        <input
+          id="nr-specimen-collection-date"
+          type="date"
+          value={specimenCollectionDate}
+          onChange={(event) => onChangeSpecimenCollectionDate(event.target.value)}
+        />
+        <p className="wizard-field-hint">
+          Defaults to the report creation date.
+        </p>
       </div>
 
       <div className="wizard-field">

@@ -1,5 +1,6 @@
 import type { ReportModel } from "./reportModel";
 import { getUsableLogoDataUrl } from "../../store/branding";
+import { buildQrCodeSvgDataUrl } from "./qrCode";
 
 interface PrintableReportProps {
   model: ReportModel;
@@ -24,6 +25,7 @@ export default function PrintableReport({ model }: PrintableReportProps) {
           <h1>{model.brand.name}</h1>
           <p className="pr-tagline">{model.brand.tagline}</p>
           <p className="pr-accred">{model.brand.strapline}</p>
+          {model.brand.address && <p className="pr-address">{model.brand.address}</p>}
           {model.brand.contact && <p className="pr-contact">{model.brand.contact}</p>}
         </div>
 
@@ -40,6 +42,14 @@ export default function PrintableReport({ model }: PrintableReportProps) {
               <div><dt>Status</dt><dd>Draft</dd></div>
             )}
           </dl>
+          <div className="pr-qr-block">
+            <img
+              className="pr-qr-image"
+              src={buildQrCodeSvgDataUrl(model.qrPayload ?? model.reportNo)}
+              alt={`QR code for report ${model.reportNo}`}
+            />
+            <span className="pr-qr-caption">Scan to verify report</span>
+          </div>
         </div>
       </header>
 

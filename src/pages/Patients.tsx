@@ -2,6 +2,7 @@ import { Plus, Search, Users, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import PageHeading from "../components/layout/PageHeading";
 import { SkeletonList } from "../components/common/Skeleton";
+import XlsxExportButton from "../components/common/XlsxExportButton";
 import SortableHeader, {
   type SortDirection,
 } from "../components/common/SortableHeader";
@@ -104,18 +105,33 @@ export default function Patients() {
             title="Patients Directory"
           subtitle="Search patient records or register a new patient for pathology reporting."
           actions={
-            <button
-              ref={addPatientButtonRef}
-              type="button"
-              className="primary-button"
-              onClick={() => {
-                formDirtyRef.current = false;
-                setIsModalOpen(true);
-              }}
-            >
-              <Plus size={16} />
-              Add Patient
-            </button>
+            <>
+              <XlsxExportButton
+                rows={sortedPatients.map((patient) => ({
+                  Patient: patient.name,
+                  "Patient ID": patient.patientId,
+                  Age: patient.age,
+                  Sex: patient.gender,
+                  Phone: patient.phone,
+                  Address: patient.address,
+                  Created: patient.createdAt,
+                }))}
+                fileName="PathForge_Patients.xlsx"
+                label="Export XLSX"
+              />
+              <button
+                ref={addPatientButtonRef}
+                type="button"
+                className="primary-button"
+                onClick={() => {
+                  formDirtyRef.current = false;
+                  setIsModalOpen(true);
+                }}
+              >
+                <Plus size={16} />
+                Add Patient
+              </button>
+            </>
           }
         />
 

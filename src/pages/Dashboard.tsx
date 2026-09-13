@@ -46,6 +46,17 @@ function formatReportDate(dateString: string): string {
   }
 }
 
+function isToday(value: string | undefined, today = new Date()): boolean {
+  if (!value) return false;
+  const date = new Date(value);
+  return (
+    !Number.isNaN(date.getTime()) &&
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate()
+  );
+}
+
 export default function Dashboard({
   onNavigate,
   onSelectReport,
@@ -58,6 +69,19 @@ export default function Dashboard({
     (report) => report.status === "finalized",
   );
   const needsAttentionReports = draftReports.filter(
+    (report) => checkClinicalCompleteness(report).length > 0,
+  );
+  const today = new Date();
+  const todayPatients = patients.filter((patient) =>
+    isToday(patient.createdAt, today),
+  );
+  const todayDraftReports = draftReports.filter((report) =>
+    isToday(report.createdAt, today),
+  );
+  const todayFinalizedReports = finalizedReports.filter((report) =>
+    isToday(report.finalizedAt ?? report.issueDate ?? report.createdAt, today),
+  );
+  const todayNeedsAttentionReports = todayDraftReports.filter(
     (report) => checkClinicalCompleteness(report).length > 0,
   );
 
@@ -81,33 +105,33 @@ export default function Dashboard({
     onClick?: () => void;
   }[] = [
     {
-      label: "Total Patients",
-      value: patients.length,
-      description: "Registered in clinic",
+      label: "Patients Today",
+      value: todayPatients.length,
+      description: "Registered today",
       icon: Users,
       tone: "patients",
       onClick: () => onNavigate("patients"),
     },
     {
-      label: "Draft Reports",
-      value: draftReports.length,
-      description: "In preparation",
+      label: "Draft Reports Today",
+      value: todayDraftReports.length,
+      description: "Created today",
       icon: FileText,
       tone: "drafts",
       onClick: () => onNavigate("worklist", "draft"),
     },
     {
-      label: "Finalized",
-      value: finalizedReports.length,
-      description: "Locked & verified",
+      label: "Finalized Today",
+      value: todayFinalizedReports.length,
+      description: "Finalized today",
       icon: CheckCircle2,
       tone: "finalized",
       onClick: () => onNavigate("worklist", "finalized"),
     },
     {
-      label: "Needs Attention",
-      value: needsAttentionReports.length,
-      description: "Incomplete items",
+      label: "Needs Attention Today",
+      value: todayNeedsAttentionReports.length,
+      description: "Incomplete drafts created today",
       icon: AlertCircle,
       tone: "attention",
       onClick: () => onNavigate("worklist", "attention"),

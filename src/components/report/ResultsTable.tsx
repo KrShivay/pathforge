@@ -6,6 +6,7 @@ import { getParameterHelp } from "./parameterHelp";
 import { formatReferenceRange } from "./referenceRange";
 import { resultTypeError } from "./resultValidation.mjs";
 import { useTests } from "../../store/TestContext";
+import XlsxExportButton from "../common/XlsxExportButton";
 
 interface ResultsTableProps {
   results: TestResult[];
@@ -23,13 +24,32 @@ export default function ResultsTable({
   if (results.length === 0) return null;
 
   const groups = groupResultsByTest(results);
+  const exportRows = results.map((result) => ({
+    Test: result.testName,
+    Parameter: result.parameterName,
+    Result: result.value,
+    Unit: result.unit,
+    "Reference Range": formatReferenceRange(result.referenceRange),
+    Flag: computeFlag(
+      result.value,
+      result.referenceRange?.min,
+      result.referenceRange?.max,
+    ) ?? "",
+  }));
 
   return (
     <div className="editor-section test-results-section">
-      <p className="results-range-note">
-        Ranges are typical adult guides; use the laboratory's own range when it
-        differs.
-      </p>
+      <div className="results-table-toolbar">
+        <p className="results-range-note">
+          Ranges are typical adult guides; use the laboratory's own range when it
+          differs.
+        </p>
+        <XlsxExportButton
+          rows={exportRows}
+          fileName="PathForge_Report_Results.xlsx"
+          label="Export XLSX"
+        />
+      </div>
 
       {groups.map((group) => (
         <div key={group.key} className="results-test-group">

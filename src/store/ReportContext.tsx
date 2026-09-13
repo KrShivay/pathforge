@@ -66,6 +66,7 @@ export interface Report {
   patientId: string;
 
   specimens: string[];
+  specimenCollectionDate?: string;
   referringClinician: string;
   clinicalHistory: string;
   findings: string;
@@ -209,6 +210,8 @@ function contentFromReport(
 ): WorkspaceReportContent {
   return {
     specimens: source.specimens ?? base?.specimens ?? [],
+    specimenCollectionDate:
+      source.specimenCollectionDate ?? base?.specimenCollectionDate ?? "",
     referringClinician:
       source.referringClinician ?? base?.referringClinician ?? "",
     clinicalHistory: source.clinicalHistory ?? base?.clinicalHistory ?? "",
@@ -590,6 +593,7 @@ function buildReport(
     id: makeId(reportId, snapshot.version),
     patientId: meta?.patientId ?? "",
     specimens: snapshot.content.specimens ?? [],
+    specimenCollectionDate: snapshot.content.specimenCollectionDate ?? "",
     referringClinician: snapshot.content.referringClinician ?? "",
     clinicalHistory: snapshot.content.clinicalHistory ?? "",
     findings: snapshot.content.findings ?? "",

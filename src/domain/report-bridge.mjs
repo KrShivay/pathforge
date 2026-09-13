@@ -28,6 +28,7 @@
 /**
  * @typedef {{
  *   specimens?: string[],
+ *   specimenCollectionDate?: string,
  *   referringClinician?: string,
  *   interpretation?: string,
  *   clinicalHistory?: string,
@@ -77,6 +78,22 @@ export function normalizeSpecimens(values) {
     }
   }
   return normalized;
+}
+
+/** @param {unknown} value @returns {string} */
+function specimenCollectionDateFromContent(value) {
+  return asText(value).trim();
+}
+
+/** @param {string} value @returns {boolean} */
+function isIsoDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parts = value.split('-').map(Number);
+  const year = parts[0] ?? 0;
+  const month = parts[1] ?? 0;
+  const day = parts[2] ?? 0;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 }
 
 /** @param {WorkspaceReportContent} content @returns {string[]} */
@@ -141,6 +158,9 @@ export function buildResolvedPayload(content) {
       value: specimens ? specimens.join(', ') : sanitizeText(content[key], 'general'),
       ...(specimens ? { specimens } : {}),
       source_catalog_version: WORKSPACE_CATALOG_VERSION,
+      ...(key === 'specimens' && specimenCollectionDateFromContent(content.specimenCollectionDate)
+        ? { specimen_collection_date: specimenCollectionDateFromContent(content.specimenCollectionDate) }
+        : {}),
     };
   }
 
@@ -187,6 +207,7 @@ export function readWorkspaceContent(reportVersion) {
   const narrative = {
     /** @type {string[]} */
     specimens: [],
+    specimenCollectionDate: '',
     referringClinician: '',
     clinicalHistory: '',
     findings: '',
@@ -197,6 +218,7 @@ export function readWorkspaceContent(reportVersion) {
     if (key === 'specimens') {
       const stored = payload[fieldId]?.specimens;
       narrative.specimens = normalizeSpecimens(Array.isArray(stored) ? stored : asText(payload[fieldId]?.value));
+      narrative.specimenCollectionDate = asText(payload[fieldId]?.specimen_collection_date);
     } else {
       narrative[key] = asText(payload[fieldId]?.value);
     }
@@ -225,6 +247,7 @@ export function readWorkspaceContent(reportVersion) {
 
   return {
     specimens: narrative.specimens,
+    specimenCollectionDate: narrative.specimenCollectionDate,
 
     referringClinician: narrative.referringClinician,
     interpretation: narrative.interpretation,
@@ -259,6 +282,10 @@ export function checkClinicalCompleteness(content) {
     if (containsInvalidChars(specimen, 'general')) {
       issues.push({ field: 'specimens', message: 'A specimen contains characters that are not allowed.' });
     }
+  }
+  const specimenCollectionDate = specimenCollectionDateFromContent(content.specimenCollectionDate);
+  if (specimenCollectionDate && !isIsoDate(specimenCollectionDate)) {
+    issues.push({ field: 'specimenCollectionDate', message: 'Specimen collection date must be a valid date.' });
   }
   checkChars('referringClinician', 'Referring clinician', 'general');
   checkChars('clinicalHistory', 'Clinical history', 'general');

@@ -2,7 +2,8 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  base: mode === 'github-pages' ? '/pathforge/' : '/',
   plugins: [react()],
   build: {
     rollupOptions: {
@@ -16,4 +17,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))

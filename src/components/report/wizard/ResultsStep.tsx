@@ -7,6 +7,7 @@ import { computeFlag } from "../flags";
 import { getParameterHelp } from "../parameterHelp";
 import { formatReferenceRange } from "../referenceRange";
 import { resultTypeError } from "../resultValidation.mjs";
+import XlsxExportButton from "../../common/XlsxExportButton";
 
 interface ResultsStepProps {
   selectedTestIds: string[];
@@ -37,6 +38,24 @@ export default function ResultsStep({
   const firstResultKey = selectedTests[0]?.parameters[0]
     ? resultKey(selectedTests[0].id, selectedTests[0].parameters[0].id)
     : null;
+  const exportRows = selectedTests.flatMap((test) =>
+    test.parameters.map((parameter) => {
+      const value = results[resultKey(test.id, parameter.id)] ?? "";
+      return {
+        Test: test.name,
+        Parameter: parameter.name,
+        Result: value,
+        Unit: parameter.unit,
+        "Reference Range": formatReferenceRange(parameter.referenceRange),
+        Flag:
+          computeFlag(
+            value,
+            parameter.referenceRange?.min,
+            parameter.referenceRange?.max,
+          ) ?? "",
+      };
+    }),
+  );
 
   return (
     <div className="wizard-panel">
@@ -45,11 +64,18 @@ export default function ResultsStep({
         Enter results for each parameter. Anything left blank can still be saved
         as a draft.
       </p>
-      <p className="results-range-note">
-        Reference ranges are typical adult guides. The laboratory's own range
-        should be used when it differs, especially for children, pregnancy, or
-        results affected by timing or treatment.
-      </p>
+      <div className="results-step-toolbar">
+        <p className="results-range-note">
+          Reference ranges are typical adult guides. The laboratory's own range
+          should be used when it differs, especially for children, pregnancy, or
+          results affected by timing or treatment.
+        </p>
+        <XlsxExportButton
+          rows={exportRows}
+          fileName="PathForge_Report_Results.xlsx"
+          label="Export XLSX"
+        />
+      </div>
 
       {selectedTests.map((test) => (
         <section key={test.id} className="results-block">

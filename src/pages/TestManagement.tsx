@@ -11,12 +11,14 @@ import {
 } from "lucide-react";
 import { useTests } from "../store/TestContext";
 import CardHeading from "../components/common/CardHeading";
+import XlsxExportButton from "../components/common/XlsxExportButton";
 import { formatReferenceRange } from "../components/report/referenceRange";
 import PageHeading from "../components/layout/PageHeading";
 import AddTestForm from "../components/tests/AddTestForm";
 import AddParameterForm from "../components/tests/AddParameterForm";
 import { sanitizeText } from "../domain/textRules.mjs";
 import { confirmDestructive, notifySuccess, notifyWarning } from "../lib/dialog";
+import type { SpreadsheetRow } from "../lib/xlsxExport";
 import type { LaboratoryTest, TestParameter } from "../domain/types";
 
 /** Approved clinical text for test / parameter / department / unit names. */
@@ -92,6 +94,32 @@ export default function TestManagement() {
       return matchesDept && matchesQuery;
     });
   }, [tests, selectedDepartment, query]);
+
+  const exportRows = useMemo<SpreadsheetRow[]>(
+    () =>
+      visibleTests.flatMap((test): SpreadsheetRow[] =>
+        test.parameters.length > 0
+          ? test.parameters.map((parameter) => ({
+              Test: test.name,
+              Department: test.department,
+              Specimen: test.specimen,
+              Parameter: parameter.name,
+              Type: parameter.type,
+              Unit: parameter.unit,
+              "Reference Range": formatReferenceRange(parameter.referenceRange),
+            }))
+          : [{
+              Test: test.name,
+              Department: test.department,
+              Specimen: test.specimen,
+              Parameter: "",
+              Type: "",
+              Unit: "",
+              "Reference Range": "",
+            }],
+      ),
+    [visibleTests],
+  );
 
   function toggleTest(testId: string) {
     setExpandedTests((previous) =>
@@ -371,14 +399,21 @@ export default function TestManagement() {
           title="Laboratory Test Management"
           subtitle="Configure laboratory tests, parameters, units and reference ranges."
           actions={
-            <button
-              type="button"
-              className="primary-button"
-              onClick={() => setShowAddTest(true)}
-            >
-              <Plus size={16} />
-              Add Test
-            </button>
+            <>
+              <XlsxExportButton
+                rows={exportRows}
+                fileName="PathForge_Test_Catalog.xlsx"
+                label="Export XLSX"
+              />
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => setShowAddTest(true)}
+              >
+                <Plus size={16} />
+                Add Test
+              </button>
+            </>
           }
         />
 

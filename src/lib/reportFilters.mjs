@@ -114,6 +114,10 @@ function stableSort(values, compare) {
  * @property {string} patientId
  * @property {string} status
  * @property {string} createdAt
+ * @property {string} [specimenCollectionDate]
+ * @property {string} [finalizedAt]
+ * @property {string} [amendedAt]
+ * @property {string} [issueDate]
  * @property {string} [testName]
  * @property {string[]} specimens
  * @property {number} [version]

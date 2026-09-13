@@ -8,6 +8,7 @@ import {
 import { useMemo, useState } from "react";
 import CardHeading from "../components/common/CardHeading";
 import DateRangeFilter from "../components/common/DateRangeFilter";
+import XlsxExportButton from "../components/common/XlsxExportButton";
 import SortableHeader from "../components/common/SortableHeader";
 import PageHeading from "../components/layout/PageHeading";
 import { usePatients } from "../store/PatientContext";
@@ -43,6 +44,20 @@ export default function VersionHistory({
   const [sort, setSort] = useState("newest");
   const versionedReports = useMemo(() => filterHistoryReports(reports, patients, { search, from: dateFrom, to: dateTo, lifecycle, sort }), [reports, patients, search, dateFrom, dateTo, lifecycle, sort]);
   const invalidRange = Boolean(dateFrom && dateTo && (!parseDate(dateFrom) || !parseDate(dateTo) || dateFrom > dateTo));
+  const exportRows = useMemo(
+    () =>
+      versionedReports.map((report) => ({
+        Patient: getPatient(report.patientId)?.name ?? "Unknown Patient",
+        "Patient ID": getPatient(report.patientId)?.patientId ?? "",
+        Test: report.testName ?? "",
+        Specimen: report.specimens.join(", "),
+        Version: report.version,
+        Status: report.status,
+        Event: historyEventDate(report),
+        "Report ID": report.id,
+      })),
+    [versionedReports, patients],
+  );
 
   return (
     <div className="version-history-page viewport-page">
@@ -50,6 +65,13 @@ export default function VersionHistory({
         <PageHeading
           title="Report Version History"
           subtitle="Audit and track version lineage, clinical amendments, and finalized pathology records."
+          actions={
+            <XlsxExportButton
+              rows={exportRows}
+              fileName="PathForge_Version_History.xlsx"
+              label="Export XLSX"
+            />
+          }
         />
       </div>
 
@@ -131,6 +153,9 @@ export default function VersionHistory({
                       {report.testName ||
                         report.specimens.join(", ") ||
                         "No specimen"}
+                    </span>
+                    <span className="version-specimen version-collection-date">
+                      Collected {formatDate(report.specimenCollectionDate || report.createdAt, true)}
                     </span>
                   </div>
 

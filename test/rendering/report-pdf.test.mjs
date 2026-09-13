@@ -6,7 +6,7 @@ import { buildReportPdf } from '../../src/components/report/reportPdf.ts';
 /** @type {import('../../src/components/report/reportModel.ts').ReportModel} */
 function baseModel(overrides = {}) {
   return {
-    brand: { name: 'PathForge', tagline: 'Tagline', strapline: 'Strapline' },
+    brand: { name: 'PathForge', tagline: 'Tagline', strapline: 'Strapline', address: '', contact: '', logoDataUrl: '' },
     documentTitle: 'Pathology Report',
     reportNo: 'PF-000001',
     version: 1,
@@ -29,6 +29,8 @@ function baseModel(overrides = {}) {
     endOfReport: '— End of Report —',
     footer: { reference: 'PathForge · PF-000001', disclaimer: 'Disclaimer' },
     generatedAt: '2026-01-01, 12:00 PM',
+    specimenCollectionDate: '01 Jan 2026',
+    qrPayload: '{"type":"pathforge-report","reportNo":"PF-000001"}',
     fileBaseName: 'PathForge_Jane_Doe_PF-000001',
     sourceCatalogVersion: 'v1',
     ...overrides,
@@ -95,7 +97,7 @@ test('PDF omits invalid legacy logo data instead of reserving logo space', async
     }),
   );
 
-  assert.doesNotMatch(pdfText, /\/Subtype \/Image/);
+  assert.equal((pdfText.match(/\/Subtype \/Image/g) ?? []).length, 1);
 });
 
 test('PDF embeds a valid uploaded logo data URL', async () => {
@@ -107,5 +109,5 @@ test('PDF embeds a valid uploaded logo data URL', async () => {
     }),
   );
 
-  assert.match(pdfText, /\/Subtype \/Image/);
+  assert.ok((pdfText.match(/\/Subtype \/Image/g) ?? []).length >= 2);
 });

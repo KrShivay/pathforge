@@ -23,6 +23,7 @@ export interface Patient {
   gender: string;
   phone: string;
   address?: string;
+  createdAt?: string;
 }
 
 /** Fields the user supplies when registering a patient. */
@@ -72,10 +73,11 @@ export function PatientProvider({ children }: { children: ReactNode }) {
           gender: string;
           phone: string | null;
           address: string | null;
+          created_at: string;
         }[]
       >(
         `
-        SELECT id, patient_id, name, age, gender, phone, address
+        SELECT id, patient_id, name, age, gender, phone, address, created_at
         FROM patients
         ORDER BY created_at DESC
         `,
@@ -99,6 +101,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
           gender: row.gender,
           phone: row.phone ?? "",
           address: row.address ?? undefined,
+          createdAt: row.created_at,
         })),
       );
     } catch (error) {
@@ -153,6 +156,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
           gender: input.gender,
           phone,
           address: input.address,
+          createdAt: new Date().toISOString(),
         };
 
         await db.execute(
@@ -170,7 +174,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
             patient.gender,
             patient.phone,
             patient.address ?? null,
-            new Date().toISOString(),
+            patient.createdAt ?? new Date().toISOString(),
           ],
         );
 
