@@ -20,6 +20,7 @@ import CardHeading from "../components/common/CardHeading";
 import PrintableReport from "../components/report/PrintableReport";
 import ReportPreviewModal from "../components/report/ReportPreviewModal";
 import ResultsTable from "../components/report/ResultsTable";
+import { resultTypeError } from "../components/report/resultValidation.mjs";
 import { formatReportDate } from "../components/report/reportMeta";
 import { buildReportModel } from "../components/report/reportModel";
 import { downloadReportPdf } from "../components/report/reportPdf";
@@ -35,6 +36,7 @@ import {
 import { usePatients } from "../store/PatientContext";
 import { useReports, type TestResult } from "../store/ReportContext";
 import { useBranding } from "../store/BrandingContext";
+import { useTests } from "../store/TestContext";
 
 interface ReportEditorProps {
   reportId: string;
@@ -58,6 +60,7 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
 
   const { patients } = usePatients();
   const { profile } = useBranding();
+  const { tests } = useTests();
 
   const foundReport = getReport(reportId);
 
@@ -303,6 +306,29 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
 
   async function handleFinalize() {
     if (isFinalized || busy) return;
+
+    const resultTypeErrors = formData.testResults.flatMap((result) => {
+      const parameterType =
+        tests
+          .find((test) => test.id === result.testId)
+          ?.parameters.find((parameter) => parameter.id === result.parameterId)
+          ?.type ?? "text";
+      const message = resultTypeError(result.value, parameterType);
+      return message
+        ? [{ field: `result.${result.testId}::${result.parameterId}`, message }]
+        : [];
+    });
+    if (resultTypeErrors.length > 0) {
+      setValidationErrors((previous) => ({
+        ...previous,
+        ...Object.fromEntries(resultTypeErrors.map((issue) => [issue.field, issue.message])),
+      }));
+      void notifyErrorList(
+        "Cannot finalize this report",
+        resultTypeErrors.map((issue) => issue.message),
+      );
+      return;
+    }
 
     setBusy(true);
     let result;

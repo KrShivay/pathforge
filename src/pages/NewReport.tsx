@@ -28,6 +28,7 @@ import ResultsStep, {
 import ReviewStep from "../components/report/wizard/ReviewStep";
 import Stepper from "../components/report/wizard/Stepper";
 import TestSpecimenStep from "../components/report/wizard/TestSpecimenStep";
+import { resultTypeError } from "../components/report/resultValidation.mjs";
 
 interface NewReportProps {
   onOpenReport: (reportId: string) => void;
@@ -101,7 +102,12 @@ export default function NewReport({
   const stepValid = [
     getPatient(patientId) !== undefined,
     selectedTests.length > 0 && specimens.length > 0,
-    true,
+    selectedTests.every((test) =>
+      test.parameters.every(
+        (parameter) =>
+          !resultTypeError(results[resultKey(test.id, parameter.id)] ?? "", parameter.type),
+      ),
+    ),
     true,
     true,
   ];

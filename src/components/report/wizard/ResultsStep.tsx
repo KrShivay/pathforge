@@ -6,6 +6,7 @@ import { useTests } from "../../../store/TestContext";
 import { computeFlag } from "../flags";
 import { getParameterHelp } from "../parameterHelp";
 import { formatReferenceRange } from "../referenceRange";
+import { resultTypeError } from "../resultValidation.mjs";
 
 interface ResultsStepProps {
   selectedTestIds: string[];
@@ -75,6 +76,7 @@ export default function ResultsStep({
                 {test.parameters.map((parameter) => {
                   const key = resultKey(test.id, parameter.id);
                   const value = results[key] ?? "";
+                  const typeError = resultTypeError(value, parameter.type);
                   const flag = computeFlag(
                     value,
                     parameter.referenceRange?.min,
@@ -92,6 +94,8 @@ export default function ResultsStep({
                         <input
                           aria-label={`${parameter.name} result`}
                           type="text"
+                          aria-invalid={Boolean(typeError)}
+                          aria-describedby={typeError ? `${key}-error` : undefined}
                           inputMode={
                             parameter.type === "number" ? "decimal" : "text"
                           }
@@ -105,6 +109,11 @@ export default function ResultsStep({
                           }
                           autoFocus={key === firstResultKey}
                         />
+                        {typeError ? (
+                          <span id={`${key}-error`} className="result-type-error">
+                            {typeError}
+                          </span>
+                        ) : null}
                       </td>
                       <td className="unit-cell">{parameter.unit || "—"}</td>
                       <td className="reference-cell">

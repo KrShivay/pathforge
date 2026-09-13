@@ -4,6 +4,8 @@ import { computeFlag } from "./flags";
 import { groupResultsByTest } from "./groupResults";
 import { getParameterHelp } from "./parameterHelp";
 import { formatReferenceRange } from "./referenceRange";
+import { resultTypeError } from "./resultValidation.mjs";
+import { useTests } from "../../store/TestContext";
 
 interface ResultsTableProps {
   results: TestResult[];
@@ -17,6 +19,7 @@ export default function ResultsTable({
   disabled,
   onResultChange,
 }: ResultsTableProps) {
+  const { tests } = useTests();
   if (results.length === 0) return null;
 
   const groups = groupResultsByTest(results);
@@ -47,6 +50,12 @@ export default function ResultsTable({
               </thead>
               <tbody>
                 {group.results.map((result) => {
+                  const parameterType =
+                    tests
+                      .find((test) => test.id === result.testId)
+                      ?.parameters.find((parameter) => parameter.id === result.parameterId)
+                      ?.type ?? "text";
+                  const typeError = resultTypeError(result.value, parameterType);
                   const flag = computeFlag(
                     result.value,
                     result.referenceRange?.min,
@@ -64,6 +73,9 @@ export default function ResultsTable({
                         <input
                           aria-label={`${result.parameterName} result`}
                           type="text"
+                          inputMode={parameterType === "number" ? "decimal" : "text"}
+                          aria-invalid={Boolean(typeError)}
+                          aria-describedby={typeError ? `editor-${result.testId}-${result.parameterId}-error` : undefined}
                           value={result.value}
                           onChange={(event) =>
                             onResultChange(
@@ -74,6 +86,14 @@ export default function ResultsTable({
                           }
                           disabled={disabled}
                         />
+                        {typeError ? (
+                          <span
+                            id={`editor-${result.testId}-${result.parameterId}-error`}
+                            className="result-type-error"
+                          >
+                            {typeError}
+                          </span>
+                        ) : null}
                       </td>
                       <td className="unit-cell">{result.unit || "—"}</td>
                       <td className="reference-cell">

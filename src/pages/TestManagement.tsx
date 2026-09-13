@@ -498,11 +498,29 @@ export default function TestManagement() {
                   key={test.id}
                 >
                   {/* TEST HEADER ROW */}
-                  <div className="test-item-header">
+                  <div
+                    className="test-item-header"
+                    role="button"
+                    tabIndex={isEditing ? -1 : 0}
+                    aria-expanded={isExpanded}
+                    aria-controls={`test-parameters-${test.id}`}
+                    onClick={() => {
+                      if (!isEditing) toggleTest(test.id);
+                    }}
+                    onKeyDown={(event) => {
+                      if (!isEditing && (event.key === "Enter" || event.key === " ")) {
+                        event.preventDefault();
+                        toggleTest(test.id);
+                      }
+                    }}
+                  >
                     <button
                       type="button"
                       className={`test-chevron-btn ${isExpanded ? "expanded" : ""}`}
-                      onClick={() => toggleTest(test.id)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        toggleTest(test.id);
+                      }}
                       aria-expanded={isExpanded}
                       aria-controls={`test-parameters-${test.id}`}
                       aria-label={
@@ -622,7 +640,10 @@ export default function TestManagement() {
                             className="icon-button"
                             title="Save test"
                             aria-label="Save test"
-                            onClick={() => saveTest(test.id)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              saveTest(test.id);
+                            }}
                           >
                             <Save size={18} />
                           </button>
@@ -632,7 +653,10 @@ export default function TestManagement() {
                             className="icon-button"
                             title="Cancel editing"
                             aria-label="Cancel editing"
-                            onClick={() => setEditingTestId(null)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setEditingTestId(null);
+                            }}
                           >
                             <X size={18} />
                           </button>
@@ -645,7 +669,10 @@ export default function TestManagement() {
                               className="icon-button"
                               title="Edit test"
                               aria-label="Edit test"
-                              onClick={() => startEditTest(test)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                startEditTest(test);
+                              }}
                             >
                               <Edit3 size={17} />
                             </button>
@@ -656,7 +683,10 @@ export default function TestManagement() {
                               className="icon-button danger-button"
                               title="Delete test"
                               aria-label="Delete test"
-                              onClick={() => void handleDeleteTest(test)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                void handleDeleteTest(test);
+                              }}
                             >
                               <Trash2 size={17} />
                             </button>

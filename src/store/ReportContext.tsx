@@ -335,64 +335,6 @@ export function ReportProvider({ children }: { children: ReactNode }) {
           metadata.map((meta) => [meta.reportId, meta]),
         );
 
-        const demoEnabled =
-          import.meta.env.DEV &&
-          import.meta.env.VITE_DEMO_WORKSPACE === "true" &&
-          metadata.length === 0 &&
-          state == null;
-        const missingDemoReports = demoEnabled
-          ? (await import("./demoData")).DEMO_REPORTS
-          : [];
-
-        if (missingDemoReports.length > 0) {
-          for (const demo of missingDemoReports) {
-            const created = await service.createDraft({
-              reportId: demo.id,
-              sourceCatalogVersion: WORKSPACE_CATALOG_VERSION,
-              resolvedPayload: buildResolvedPayload(demo),
-              actor: actorRef.current,
-            });
-
-            metaRef.current.set(demo.id, {
-              reportId: demo.id,
-              patientId: demo.patientId,
-              testId: demo.testId,
-              testName: demo.testName,
-              department: demo.department,
-              createdAt: created.auditEvent.occurred_at,
-            });
-            await saveReportWorkspaceMeta({
-              reportId: demo.id,
-              patientId: demo.patientId,
-              testId: demo.testId,
-              testName: demo.testName,
-              department: demo.department,
-              createdAt: created.auditEvent.occurred_at,
-            });
-
-            if (demo.finalize) {
-              await service.finalize({
-                identity: { report_id: demo.id, version: 1 },
-                expectedRevision: 1,
-                issueNumber: `PF-DEMO-${demo.id.slice(-3)}`,
-                issueDate: "2026-09-12",
-                actor: actorRef.current,
-              });
-            }
-
-            if (demo.amend) {
-              await service.amend({
-                baseline: { report_id: demo.id, version: 1 },
-                expectedRevision: 2,
-                actor: actorRef.current,
-                amendmentReason: "Demonstration of an amendment workflow.",
-                amendmentType: "correction",
-              });
-            }
-          }
-          await saveReportWorkspaceState(adapter.snapshot());
-        }
-
         if (active) await refresh();
       } catch (error) {
         console.error("Failed to load saved reports:", error);

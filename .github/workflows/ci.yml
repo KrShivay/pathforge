@@ -44,9 +44,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            mock-ui/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Set up MSVC Rust toolchain
         uses: dtolnay/rust-toolchain@d1031067263f94b142dd6c0ce24c5eb9d02d52a0
@@ -56,9 +54,5 @@ jobs:
       - name: Install root dependencies from lockfile
         run: npm ci
 
-      - name: Install desktop dependencies from lockfile
-        run: npm ci
-        working-directory: mock-ui
-
-      - name: Build Windows MSI and NSIS bundles
-        run: npm run desktop:build
+      - name: Build Windows Tauri bundle
+        run: npm run tauri build -- --ci --no-sign --bundles nsis

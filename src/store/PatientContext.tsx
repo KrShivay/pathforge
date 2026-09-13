@@ -90,50 +90,6 @@ export function PatientProvider({ children }: { children: ReactNode }) {
         dedupedRows.push(row);
       }
 
-      const demoEnabled =
-        import.meta.env.DEV &&
-        import.meta.env.VITE_DEMO_WORKSPACE === "true" &&
-        dedupedRows.length === 0;
-      const missingDemoPatients = demoEnabled
-        ? (await import("./demoData")).DEMO_PATIENTS
-        : [];
-
-      if (missingDemoPatients.length > 0) {
-        for (const patient of missingDemoPatients) {
-          await db.execute(
-            `
-            INSERT INTO patients (
-              id, patient_id, name, age, gender, phone, address, created_at
-            )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            `,
-            [
-              patient.id,
-              patient.patientId,
-              patient.name,
-              patient.age,
-              patient.gender,
-              patient.phone,
-              patient.address,
-              new Date("2026-09-12T09:00:00.000Z").toISOString(),
-            ],
-          );
-        }
-        setPatients([
-          ...missingDemoPatients,
-          ...dedupedRows.map((row) => ({
-            id: row.id,
-            patientId: row.patient_id,
-            name: row.name,
-            age: row.age,
-            gender: row.gender,
-            phone: row.phone ?? "",
-            address: row.address ?? undefined,
-          })),
-        ]);
-        return;
-      }
-
       setPatients(
         dedupedRows.map((row) => ({
           id: row.id,
