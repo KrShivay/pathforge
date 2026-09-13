@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PathForge — Clinical report workspace</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17232e;
+      --muted: #677681;
+      --quiet: #8c99a2;
+      --navy: #102b3f;
+      --navy-2: #193d55;
+      --teal: #0c7c73;
+      --teal-hover: #086a63;
+      --teal-soft: #e2f3f0;
+      --green: #247457;
+      --green-soft: #eaf5ef;
+      --amber: #a55f18;
+      --amber-soft: #fff2df;
+      --danger: #a53b35;
+      --danger-soft: #fae9e7;
+      --surface: #ffffff;
+      --canvas: #eef2f3;
+      --canvas-warm: #f4f5f2;
+      --line: #dce3e4;
+      --line-strong: #cbd4d6;
+      --shadow-soft: 0 8px 30px rgba(30, 51, 62, .08);
+      --shadow-paper: 0 18px 48px rgba(22, 40, 49, .15), 0 2px 8px rgba(22, 40, 49, .08);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; min-height: 100%; }
+    body { margin: 0; overflow: hidden; background: var(--canvas); color: var(--ink); font: 14px/1.45 Inter, "Segoe UI Variable", "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+    button, input, textarea, select { font: inherit; }
+    button { color: inherit; }
+    svg { display: block; }
+    [hidden] { display: none !important; }
+
+    .app { height: 100vh; min-height: 680px; display: grid; grid-template-columns: 224px minmax(0, 1fr); background: var(--surface); }
+    .sidebar { min-height: 0; display: flex; flex-direction: column; padding: 24px 14px 18px; background: var(--navy); color: #fff; }
+    .brand { display: flex; align-items: center; gap: 11px; padding: 0 10px 25px; }
+    .brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: #fff; color: var(--teal); box-shadow: 0 7px 18px rgba(0,0,0,.16); }
+    .brand-mark svg { width: 21px; height: 21px; }
+    .brand-name { font-size: 18px; font-weight: 720; letter-spacing: -.02em; }
+    .brand-kicker { margin-top: -2px; color: #a9becb; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+    .nav-label { padding: 12px 11px 7px; color: #7894a5; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    .nav-item { width: 100%; height: 43px; display: flex; align-items: center; gap: 11px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: #c8d7df; text-align: left; cursor: pointer; transition: .18s ease; }
+    .nav-item:hover { background: rgba(255,255,255,.07); color: #fff; }
+    .nav-item[aria-current="page"] { background: rgba(255,255,255,.12); color: #fff; box-shadow: inset 3px 0 #54c6ba; }
+    .nav-item svg { width: 18px; height: 18px; flex: 0 0 auto; }
+    .nav-item span { font-weight: 600; }
+    .sidebar-spacer { flex: 1; }
+    .workspace-state { margin: 16px 6px 0; padding: 13px 12px; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; background: rgba(255,255,255,.05); }
+    .state-line { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 650; }
+    .state-dot { width: 7px; height: 7px; border-radius: 50%; background: #61d5a5; box-shadow: 0 0 0 4px rgba(97,213,165,.12); }
+    .state-meta { margin: 4px 0 0 15px; color: #91a8b6; font-size: 11px; }
+    .operator { display: flex; align-items: center; gap: 10px; padding: 18px 8px 0; }
+    .avatar { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 50%; background: #2d546c; color: #dce8ed; font-size: 11px; font-weight: 700; }
+    .operator strong { display: block; color: #e7eff2; font-size: 12px; }
+    .operator span { color: #809aa9; font-size: 10px; }
+
+    .shell { min-width: 0; min-height: 0; display: grid; grid-template-rows: 78px minmax(0, 1fr); background: var(--canvas-warm); }
+    .topbar { display: flex; align-items: center; gap: 20px; padding: 0 28px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.93); }
+    .page-heading { min-width: 0; }
+    .eyebrow { color: var(--teal); font-size: 10px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+    .page-heading h1 { margin: 2px 0 0; font-size: 23px; line-height: 1.15; font-weight: 720; letter-spacing: -.03em; }
+    .topbar-spacer { flex: 1; }
+    .search { width: min(310px, 30vw); height: 39px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: #f8faf9; color: var(--muted); }
+    .search:focus-within { border-color: #72aaa5; box-shadow: 0 0 0 3px rgba(12,124,115,.09); }
+    .search svg { width: 16px; height: 16px; flex: 0 0 auto; }
+    .search input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 13px; }
+    .search input::placeholder { color: #9aa5ab; }
+    .btn { min-height: 39px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 10px; background: #fff; color: #34434d; font-weight: 650; cursor: pointer; transition: .18s ease; white-space: nowrap; }
+    .btn:hover { border-color: #aab8bb; background: #f7f9f8; transform: translateY(-1px); }
+    .btn svg { width: 17px; height: 17px; }
+    .btn.primary { border-color: var(--teal); background: var(--teal); color: #fff; box-shadow: 0 6px 16px rgba(12,124,115,.2); }
+    .btn.primary:hover { border-color: var(--teal-hover); background: var(--teal-hover); }
+    .btn.ghost { border-color: transparent; background: transparent; box-shadow: none; }
+    .btn.small { min-height: 34px; padding: 0 11px; border-radius: 9px; font-size: 12px; }
+    .icon-btn { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 10px; background: #fff; cursor: pointer; }
+    .icon-btn:hover { background: #f5f8f7; }
+    .icon-btn svg { width: 17px; height: 17px; }
+
+    .page { min-width: 0; min-height: 0; }
+    .worklist-page { display: grid; grid-template-columns: 332px minmax(0, 1fr); }
+    .queue { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto auto minmax(0, 1fr); border-right: 1px solid var(--line); background: #fff; }
+    .queue-head { padding: 23px 20px 15px; }
+    .queue-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .queue-title h2 { margin: 0; font-size: 16px; letter-spacing: -.015em; }
+    .count { min-width: 25px; height: 22px; display: grid; place-items: center; border-radius: 11px; background: var(--teal-soft); color: var(--teal); font-size: 11px; font-weight: 750; }
+    .queue-head p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+    .filters { display: flex; gap: 7px; padding: 0 20px 16px; border-bottom: 1px solid var(--line); }
+    .filter { height: 30px; padding: 0 11px; border: 1px solid var(--line); border-radius: 15px; background: #fff; color: var(--muted); font-size: 11px; font-weight: 650; cursor: pointer; }
+    .filter.active { border-color: #badbd7; background: var(--teal-soft); color: var(--teal); }
+    .report-list { min-height: 0; overflow: auto; padding: 9px; }
+    .empty-state { margin: 44px 18px; color: var(--muted); font-size: 12px; text-align: center; }
+    .report-card { width: 100%; display: block; margin: 0 0 7px; padding: 14px 13px; border: 1px solid transparent; border-radius: 12px; background: transparent; text-align: left; cursor: pointer; }
+    .report-card:hover { background: #f7f9f8; }
+    .report-card[aria-selected="true"] { border-color: #b9d8d4; background: #edf7f5; box-shadow: 0 4px 14px rgba(31,95,90,.08); }
+    .report-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .report-id { color: var(--ink); font-size: 14px; font-weight: 750; }
+    .badge { height: 22px; display: inline-flex; align-items: center; gap: 5px; padding: 0 8px; border-radius: 11px; background: var(--green-soft); color: var(--green); font-size: 10px; font-weight: 750; }
+    .badge::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+    .report-number { margin-top: 5px; color: #42525c; font: 12px/1.3 ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .report-meta { display: flex; justify-content: space-between; gap: 12px; margin-top: 10px; color: var(--muted); font-size: 11px; }
+    .version-pill { color: var(--teal); font-weight: 750; }
+
+    .detail { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto 48px minmax(0, 1fr); }
+    .detail-head { display: flex; align-items: center; gap: 20px; padding: 17px 24px 15px; border-bottom: 1px solid var(--line); background: #fff; }
+    .detail-identity { min-width: 0; }
+    .detail-identity-row { display: flex; align-items: center; gap: 10px; }
+    .detail-identity h2 { margin: 0; font-size: 18px; letter-spacing: -.02em; }
+    .detail-identity p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
+    .detail-actions { margin-left: auto; display: flex; gap: 8px; }
+    .tabs { display: flex; align-items: end; gap: 24px; padding: 0 24px; border-bottom: 1px solid var(--line); background: #fff; }
+    .tab { height: 48px; padding: 0; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); font-size: 12px; font-weight: 650; cursor: pointer; }
+    .tab[aria-selected="true"] { border-bottom-color: var(--teal); color: var(--teal); }
+    .detail-content { min-height: 0; overflow: auto; background: var(--canvas); }
+    .preview-stage { min-height: 100%; padding: 28px; background: radial-gradient(circle at 50% 10%, #f9fbfa 0, #e8eeed 55%, #dfe7e6 100%); }
+    .stage-note { width: min(100%, 690px); display: flex; align-items: center; gap: 8px; margin: 0 auto 12px; color: var(--muted); font-size: 11px; }
+    .stage-note svg { width: 14px; height: 14px; color: var(--teal); }
+    .paper { width: min(100%, 690px); min-height: 770px; margin: 0 auto; padding: 46px 52px 35px; background: #fff; color: #172129; box-shadow: var(--shadow-paper); }
+    .paper-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 28px; padding-bottom: 20px; border-bottom: 2px solid #193d55; }
+    .paper-logo { display: flex; align-items: center; gap: 10px; }
+    .paper-logo-mark { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: var(--navy); color: #fff; }
+    .paper-logo-mark svg { width: 18px; height: 18px; }
+    .paper-brand { color: var(--navy); font-size: 19px; line-height: 1; font-weight: 750; letter-spacing: -.02em; }
+    .paper-subtitle { margin-top: 4px; color: #70808a; font-size: 9px; letter-spacing: .08em; text-transform: uppercase; }
+    .paper-meta { display: grid; align-content: center; justify-items: end; gap: 3px; color: #71808a; font-size: 9px; text-align: right; }
+    .paper-meta strong { color: #25343e; font-size: 10px; }
+    .patient-band { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 14px; margin: 20px 0 24px; padding: 13px 15px; background: #f2f6f6; }
+    .patient-field span { display: block; color: #798890; font-size: 7.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .patient-field strong { display: block; margin-top: 3px; color: #22313a; font-size: 9.5px; }
+    .paper-section { margin-top: 22px; }
+    .paper-section h3 { margin: 0 0 8px; color: var(--navy); font-size: 9px; font-weight: 750; letter-spacing: .11em; text-transform: uppercase; }
+    .paper-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 9.5px; }
+    .paper-table th { padding: 7px 6px; border-block: 1px solid #cfd9db; color: #75838b; font-size: 7.5px; font-weight: 700; letter-spacing: .05em; text-align: left; text-transform: uppercase; }
+    .paper-table td { padding: 11px 6px; border-bottom: 1px solid #e1e7e8; }
+    .paper-table th:first-child { width: 37%; }
+    .result-value { font-weight: 750; }
+    .normal { color: var(--green); font-weight: 700; }
+    .high { color: var(--amber); font-weight: 700; }
+    .interpretation { padding: 13px 15px; border-left: 3px solid var(--teal); background: #f5f8f7; color: #45545d; font-size: 9px; }
+    .signature { display: flex; justify-content: space-between; gap: 20px; margin-top: 65px; }
+    .signature-line { width: 180px; padding-top: 7px; border-top: 1px solid #96a4aa; color: #56666f; font-size: 8px; }
+    .paper-footer { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 9px; border-top: 1px solid #d9e0e1; color: #8a969c; font-size: 7.5px; }
+
+    .panel { width: min(100%, 820px); margin: 28px auto; padding: 25px; border: 1px solid var(--line); border-radius: 16px; background: #fff; box-shadow: var(--shadow-soft); }
+    .panel h3 { margin: 0 0 18px; font-size: 15px; }
+    .facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--line); }
+    .fact { padding: 15px; background: #fff; }
+    .fact span { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+    .fact strong { display: block; margin-top: 5px; font-size: 13px; }
+    .timeline { position: relative; margin-left: 7px; padding-left: 28px; }
+    .timeline::before { content: ""; position: absolute; left: 5px; top: 8px; bottom: 12px; width: 1px; background: var(--line-strong); }
+    .version { position: relative; padding: 0 0 24px; }
+    .version::before { content: ""; position: absolute; left: -28px; top: 5px; width: 9px; height: 9px; border: 3px solid #fff; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 1px var(--teal); }
+    .version:last-child { padding-bottom: 0; }
+    .version-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .version h4 { margin: 0; font-size: 13px; }
+    .version p { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
+
+    .editor-page { min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); }
+    .editor-banner { display: flex; align-items: center; gap: 16px; padding: 16px 24px; border-bottom: 1px solid var(--line); background: #fff; }
+    .editor-banner h2 { margin: 0; font-size: 18px; letter-spacing: -.02em; }
+    .editor-banner p { margin: 2px 0 0; color: var(--muted); font-size: 11px; }
+    .steps { margin-left: auto; display: flex; align-items: center; gap: 7px; color: var(--quiet); font-size: 10px; font-weight: 700; }
+    .step { display: flex; align-items: center; gap: 6px; }
+    .step + .step::before { content: ""; width: 23px; height: 1px; margin-right: 2px; background: var(--line-strong); }
+    .step-num { width: 20px; height: 20px; display: grid; place-items: center; border: 1px solid var(--line-strong); border-radius: 50%; }
+    .step.active { color: var(--teal); }
+    .step.active .step-num { border-color: var(--teal); background: var(--teal); color: #fff; }
+    .editor-grid { min-width: 0; min-height: 0; display: grid; grid-template-columns: minmax(360px, 42%) minmax(0, 1fr); }
+    .source { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto auto minmax(220px, 1fr) auto auto; padding: 22px; border-right: 1px solid var(--line); background: #fff; }
+    .source h3 { margin: 0; font-size: 15px; }
+    .source-intro { margin: 4px 0 17px; color: var(--muted); font-size: 11px; }
+    .sample-switch { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .sample-switch span { color: var(--muted); font-size: 11px; font-weight: 650; }
+    .segmented { display: inline-flex; padding: 3px; border-radius: 9px; background: #edf1f1; }
+    .segmented button { height: 28px; padding: 0 10px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font-size: 10px; font-weight: 700; cursor: pointer; }
+    .segmented button[aria-pressed="true"] { background: #fff; color: var(--teal); box-shadow: 0 2px 7px rgba(25,45,55,.1); }
+    .import-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; color: var(--muted); font-size: 10px; }
+    .json-input { width: 100%; min-height: 220px; resize: none; padding: 15px; border: 1px solid var(--line-strong); border-radius: 12px; outline: 0; background: #f7f9f8; color: #31414a; font: 11px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; tab-size: 2; }
+    .json-input:focus { border-color: #77aba6; box-shadow: 0 0 0 3px rgba(12,124,115,.08); }
+    .json-input[aria-invalid="true"] { border-color: #d8948f; background: #fffafa; }
+    .validation { min-height: 46px; display: flex; align-items: flex-start; gap: 9px; margin-top: 12px; padding: 11px 12px; border-radius: 10px; background: var(--green-soft); color: var(--green); font-size: 11px; }
+    .validation.error { background: var(--danger-soft); color: var(--danger); }
+    .validation svg { width: 16px; height: 16px; flex: 0 0 auto; margin-top: 1px; }
+    .source-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 15px; }
+    .source-actions span { color: var(--quiet); font-size: 10px; }
+    .editor-preview { min-width: 0; min-height: 0; overflow: auto; background: var(--canvas); }
+    .editor-preview-head { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 52px; padding: 0 20px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.92); backdrop-filter: blur(12px); }
+    .editor-preview-head span { color: var(--muted); font-size: 11px; }
+    .editor-preview .preview-stage { min-height: calc(100% - 52px); }
+
+    @media (max-width: 1180px) {
+      .app { grid-template-columns: 76px minmax(0, 1fr); }
+      .sidebar { padding-inline: 10px; }
+      .brand { justify-content: center; padding-inline: 0; }
+      .brand-copy, .nav-label, .nav-item span, .workspace-state, .operator > div { display: none; }
+      .nav-item { justify-content: center; padding: 0; }
+      .operator { justify-content: center; padding-inline: 0; }
+      .worklist-page { grid-template-columns: 286px minmax(0, 1fr); }
+      .paper { padding-inline: 40px; }
+    }
+    @media (max-width: 820px) {
+      body { overflow: auto; }
+      .app { min-height: 100vh; height: auto; grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .shell { min-height: 100vh; }
+      .topbar { padding: 0 16px; }
+      .search { display: none; }
+      .worklist-page { grid-template-columns: 1fr; }
+      .queue { display: none; }
+      .detail-head, .tabs { padding-inline: 16px; }
+      .detail-actions .btn:first-child { display: none; }
+      .preview-stage { padding: 16px 8px; }
+      .paper { padding: 34px 28px; }
+      .editor-grid { grid-template-columns: 1fr; }
+      .source { border-right: 0; }
+      .editor-preview { display: none; }
+      .steps { display: none; }
+    }
+    @media print {
+      body { overflow: visible; background: #fff; }
+      .sidebar, .topbar, .queue, .detail-head, .tabs, .stage-note, .editor-banner, .source, .editor-preview-head { display: none !important; }
+      .app, .shell, .page, .worklist-page, .detail, .detail-content, .preview-stage, .editor-grid, .editor-preview { display: block !important; width: auto; height: auto; min-height: 0; background: #fff; }
+      .panel { display: none !important; }
+      .paper { width: 100%; min-height: 0; padding: 0; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" aria-hidden="true" style="position:absolute">
+    <symbol id="i-mark" viewBox="0 0 24 24"><path d="M12 2.5 21.5 12 12 21.5 2.5 12 12 2.5Z" fill="currentColor"/><path d="M12 7.2 16.8 12 12 16.8 7.2 12 12 7.2Z" fill="white"/></symbol>
+    <symbol id="i-reports" viewBox="0 0 24 24"><path d="M6 3.5h9l3 3V20.5H6v-17Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M15 3.5v3h3M9 11h6M9 14.5h6M9 18h4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24"><path d="M12 7v5l3 2m5-2a8 8 0 1 1-2.4-5.7M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m15 15 5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 8V4h10v4M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 14h10v6H7v-6Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="m5 19 3.5-.8L18 8.7 15.3 6 5.8 15.5 5 19ZM13.8 7.5l2.7 2.7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4.2 4.2L19 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="m14.5 5-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </svg>
+
+  <div class="app" role="application" aria-label="PathForge">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <div class="brand"><div class="brand-mark"><svg><use href="#i-mark"/></svg></div><div class="brand-copy"><div class="brand-name">PathForge</div><div class="brand-kicker">Clinical reports</div></div></div>
+      <div class="nav-label">Workspace</div>
+      <button class="nav-item" type="button" data-route="worklist" aria-current="page"><svg><use href="#i-reports"/></svg><span>Reports</span></button>
+      <button class="nav-item" type="button" data-route="editor" data-new-report aria-current="false"><svg><use href="#i-plus"/></svg><span>New report</span></button>
+      <button class="nav-item" type="button" data-route="worklist" data-open-history aria-current="false"><svg><use href="#i-history"/></svg><span>Version history</span></button>
+      <div class="sidebar-spacer"></div>
+      <div class="workspace-state"><div class="state-line"><span class="state-dot"></span>Local workspace</div><div class="state-meta">2 reports · 3 versions</div></div>
+      <div class="operator"><div class="avatar">PK</div><div><strong>Pathology desk</strong><span>Local prototype</span></div></div>
+    </aside>
+
+    <section class="shell">
+      <header class="topbar">
+        <div class="page-heading"><div class="eyebrow">Clinical pathology</div><h1 data-page-title>Reports</h1></div>
+        <div class="topbar-spacer"></div>
+        <label class="search"><svg><use href="#i-search"/></svg><input type="search" placeholder="Search report or issue number" aria-label="Search reports"></label>
+        <button class="btn primary" type="button" data-route="editor" data-new-report><svg><use href="#i-plus"/></svg>New report</button>
+      </header>
+
+      <main class="page worklist-page" data-page="worklist">
+        <section class="queue" aria-label="Report worklist">
+          <header class="queue-head"><div class="queue-title"><h2>Recent reports</h2><span class="count" data-report-count>2</span></div><p>Finalized reports ready to review or print.</p></header>
+          <div class="filters" aria-label="Report filters"><button class="filter active" type="button" data-filter="all">All</button><button class="filter" type="button" data-filter="finalized">Finalized</button><button class="filter" type="button" data-filter="amended">Amended</button></div>
+          <div class="report-list">
+            <button class="report-card" type="button" data-report-row="R100" data-state="finalized" data-amended="true" data-search="r100 inv-2026-004887" aria-selected="true"><span class="report-top"><span class="report-id">Report R100</span><span class="badge">Finalized</span></span><span class="report-number">INV-2026-004887</span><span class="report-meta"><span>14 Feb 2026</span><span class="version-pill">Version 2</span></span></button>
+            <button class="report-card" type="button" data-report-row="R101" data-state="finalized" data-amended="false" data-search="r101 inv-2026-004913" aria-selected="false"><span class="report-top"><span class="report-id">Report R101</span><span class="badge">Finalized</span></span><span class="report-number">INV-2026-004913</span><span class="report-meta"><span>18 Feb 2026</span><span class="version-pill">Version 1</span></span></button>
+            <div class="empty-state" data-empty-state hidden>No reports match this view.</div>
+          </div>
+        </section>
+
+        <section class="detail" aria-label="Selected report">
+          <header class="detail-head">
+            <div class="detail-identity"><div class="detail-identity-row"><h2 data-detail-id>Report R100</h2><span class="badge">Finalized</span></div><p><span data-detail-issue>INV-2026-004887</span> · <span data-detail-date>Issued 14 Feb 2026</span> · <span data-detail-version>Version 2</span></p></div>
+            <div class="detail-actions"><button class="btn small" type="button" data-amend><svg><use href="#i-edit"/></svg>Amend</button><button class="btn small primary" type="button" data-print><svg><use href="#i-print"/></svg>Print / Save PDF</button></div>
+          </header>
+          <div class="tabs" role="tablist" aria-label="Report details"><button class="tab" type="button" data-tab="preview" aria-selected="true">Report preview</button><button class="tab" type="button" data-tab="details" aria-selected="false">Report details</button><button class="tab" type="button" data-tab="history" aria-selected="false">Version history</button></div>
+          <div class="detail-content">
+            <div data-tab-panel="preview" class="preview-stage"><div class="stage-note"><svg><use href="#i-check"/></svg>Validated against the current report schema · A4 portrait</div><article class="paper" data-worklist-paper></article></div>
+            <section data-tab-panel="details" class="panel" hidden><h3>Report details</h3><div class="facts"><div class="fact"><span>Report ID</span><strong data-fact-id>R100</strong></div><div class="fact"><span>Issue number</span><strong data-fact-issue>INV-2026-004887</strong></div><div class="fact"><span>Lifecycle</span><strong>Finalized</strong></div><div class="fact"><span>Version</span><strong data-fact-version>Version 2</strong></div><div class="fact"><span>Catalog snapshot</span><strong>V1</strong></div><div class="fact"><span>Finalized by</span><strong>pathologist:kk</strong></div></div></section>
+            <section data-tab-panel="history" class="panel" hidden><h3>Version history</h3><div class="timeline" data-version-timeline><article class="version"><div class="version-top"><h4>Version 2 · Current issue</h4><span class="badge">Finalized</span></div><p>INV-2026-004887 · 14 Feb 2026</p><p>Supersedes Version 1. The clinical delta is retained in the local audit record.</p></article><article class="version"><div class="version-top"><h4>Version 1 · Initial issue</h4></div><p>INV-2026-004512 · 01 Feb 2026 · Superseded</p></article></div></section>
+          </div>
+        </section>
+      </main>
+
+      <main class="page editor-page" data-page="editor" hidden>
+        <header class="editor-banner"><button class="icon-btn" type="button" data-route="worklist" aria-label="Back to reports"><svg><use href="#i-back"/></svg></button><div><h2 data-editor-title>Create a report</h2><p data-editor-subtitle>Add fixture-shaped data, validate it, then print the house-format report.</p></div><div class="steps" aria-label="Report creation steps"><span class="step active"><span class="step-num">1</span>Data</span><span class="step"><span class="step-num">2</span>Validate</span><span class="step"><span class="step-num">3</span>Print</span></div></header>
+        <div class="editor-grid">
+          <section class="source" aria-label="Report data">
+            <h3>Report data</h3><p class="source-intro">Paste a report fixture or start from one of the sample records.</p>
+            <div class="sample-switch"><span>Sample record</span><div class="segmented"><button type="button" data-sample="initial" aria-pressed="true">Initial report</button><button type="button" data-sample="amended" aria-pressed="false">Amended report</button></div></div>
+            <div class="import-row"><span>Or load a fixture from this device</span><input type="file" accept="application/json,.json" data-file-input hidden><button class="btn small" type="button" data-choose-file>Choose JSON file</button></div>
+            <textarea class="json-input" data-json-input spellcheck="false" aria-label="Report JSON" aria-invalid="false">{
+  "report_id": "R100",
+  "version": 1,
+  "lifecycle_state": "finalized",
+  "issue_number": "INV-2026-004512",
+  "issue_date": "2026-02-01",
+  "resolved_payload": {
+    "test.fasting_glucose": {
+      "display": "Fasting Blood Sugar",
+      "value": 92,
+      "unit": "mg/dL",
+      "reference_range": { "low": 70, "high": 100 },
+      "flag": "normal"
+    }
+  }
+}</textarea>
+            <div class="validation" data-validation-message role="status"><svg><use href="#i-check"/></svg><span><strong>Ready to validate.</strong><br>The preview uses the current sample data.</span></div>
+            <div class="source-actions"><span>Kept only in this local session</span><button class="btn primary" type="button" data-generate-preview>Validate &amp; update preview</button></div>
+          </section>
+          <section class="editor-preview" aria-label="Print preview"><div class="editor-preview-head"><span>Live preview · A4 portrait</span><button class="btn small primary" type="button" data-print><svg><use href="#i-print"/></svg>Print / Save PDF</button></div><div class="preview-stage"><article class="paper" data-editor-paper></article></div></section>
+        </div>
+      </main>
+    </section>
+  </div>
+
+  <template id="paper-template">
+    <header class="paper-header"><div class="paper-logo"><span class="paper-logo-mark"><svg><use href="#i-mark"/></svg></span><div><div class="paper-brand">PathForge</div><div class="paper-subtitle">Clinical pathology report</div></div></div><div class="paper-meta"><strong data-paper-version>Report R100 · Version 2</strong><span data-paper-issue>Issue INV-2026-004887 · 14 Feb 2026</span></div></header>
+    <section class="patient-band"><div class="patient-field"><span>Patient</span><strong>Sample patient</strong></div><div class="patient-field"><span>Specimen</span><strong>Plasma</strong></div><div class="patient-field"><span>Collected</span><strong>14 Feb 2026 · 08:40</strong></div></section>
+    <section class="paper-section"><h3>Biochemistry results</h3><table class="paper-table"><thead><tr><th>Investigation</th><th>Result</th><th>Unit</th><th>Reference interval</th><th>Flag</th></tr></thead><tbody><tr><td>Fasting blood sugar</td><td class="result-value" data-paper-glucose>108</td><td>mg/dL</td><td>70–100</td><td class="high" data-paper-flag>High</td></tr><tr><td>HbA1c</td><td class="result-value">5.4</td><td>%</td><td>≤ 5.7</td><td class="normal">Normal</td></tr></tbody></table></section>
+    <section class="paper-section"><h3>Interpretation</h3><div class="interpretation" data-paper-interpretation>Fasting glucose is mildly above the stated reference interval. Correlate with clinical findings and repeat testing where appropriate.</div></section>
+    <section class="signature"><div class="signature-line">Authorized signatory<br><strong>Consultant Pathologist</strong></div><div class="signature-line">Report status<br><strong>Finalized</strong></div></section>
+    <footer class="paper-footer"><span>Generated by PathForge · House format 1</span><span>Page 1 of 1</span></footer>
+  </template>
+
+  <script>
+    const jsonInput = document.querySelector('[data-json-input]');
+    const initialJson = jsonInput.value;
+    const amendedJson = initialJson.replace('"version": 1', '"version": 2').replace('INV-2026-004512', 'INV-2026-004887').replace('"issue_date": "2026-02-01"', '"issue_date": "2026-02-14"').replace('"value": 92', '"value": 108');
+    const reports = {
+      R100: { report_id: 'R100', version: 2, issue_number: 'INV-2026-004887', issue_date: '2026-02-14', value: 108 },
+      R101: { report_id: 'R101', version: 1, issue_number: 'INV-2026-004913', issue_date: '2026-02-18', value: 92 }
+    };
+    let activeFilter = 'all';
+    let selectedReportId = 'R100';
+
+    function displayDate(isoDate) {
+      const [year, month, day] = isoDate.split('-').map(Number);
+      return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(year, month - 1, day));
+    }
+
+    function normalizedReport(source) {
+      if (typeof source === 'number') return source === 1 ? reports.R101 : reports.R100;
+      if ('value' in source && !source.resolved_payload) return {
+        display: 'Fasting blood sugar',
+        unit: 'mg/dL',
+        low: 70,
+        high: 100,
+        ...source
+      };
+      const result = Object.values(source.resolved_payload || {})[0] || {};
+      return {
+        report_id: source.report_id,
+        version: Number(source.version),
+        issue_number: source.issue_number,
+        issue_date: source.issue_date,
+        value: Number(result.value),
+        display: result.display || 'Fasting blood sugar',
+        unit: result.unit || 'mg/dL',
+        low: result.reference_range?.low ?? 70,
+        high: result.reference_range?.high ?? 100
+      };
+    }
+
+    function renderPaper(target, source) {
+      target.replaceChildren(document.getElementById('paper-template').content.cloneNode(true));
+      const report = normalizedReport(source);
+      const isHigh = report.value > report.high;
+      const firstRow = target.querySelector('.paper-table tbody tr');
+      target.querySelector('[data-paper-version]').textContent = `Report ${report.report_id} · Version ${report.version}`;
+      target.querySelector('[data-paper-issue]').textContent = `Issue ${report.issue_number} · ${displayDate(report.issue_date)}`;
+      firstRow.children[0].textContent = report.display || 'Fasting blood sugar';
+      target.querySelector('[data-paper-glucose]').textContent = String(report.value);
+      firstRow.children[2].textContent = report.unit || 'mg/dL';
+      firstRow.children[3].textContent = `${report.low}–${report.high}`;
+      target.querySelector('[data-paper-flag]').textContent = isHigh ? 'High' : 'Normal';
+      target.querySelector('[data-paper-flag]').className = isHigh ? 'high' : 'normal';
+      target.querySelector('[data-paper-interpretation]').textContent = isHigh ? 'Fasting glucose is mildly above the stated reference interval. Correlate with clinical findings and repeat testing where appropriate.' : 'Results are within the stated reference intervals.';
+    }
+
+    function showRoute(route) {
+      document.querySelectorAll('[data-page]').forEach((page) => { page.hidden = page.dataset.page !== route; });
+      document.querySelectorAll('.nav-item[data-route]').forEach((button) => button.setAttribute('aria-current', 'false'));
+      const activeNav = route === 'editor' ? document.querySelector('.nav-item[data-new-report]') : document.querySelector('.nav-item[data-route="worklist"]:not([data-open-history])');
+      activeNav.setAttribute('aria-current', 'page');
+      document.querySelector('[data-page-title]').textContent = route === 'editor' ? 'Report builder' : 'Reports';
+    }
+
+    function showTab(tabName) {
+      document.querySelectorAll('[data-tab]').forEach((tab) => tab.setAttribute('aria-selected', String(tab.dataset.tab === tabName)));
+      document.querySelectorAll('[data-tab-panel]').forEach((panel) => { panel.hidden = panel.dataset.tabPanel !== tabName; });
+    }
+
+    function filterReports() {
+      const query = document.querySelector('[aria-label="Search reports"]').value.trim().toLowerCase();
+      let visibleCount = 0;
+      document.querySelectorAll('[data-report-row]').forEach((card) => {
+        const matchesText = card.dataset.search.includes(query);
+        const matchesFilter = activeFilter === 'all' || (activeFilter === 'finalized' && card.dataset.state === 'finalized') || (activeFilter === 'amended' && card.dataset.amended === 'true');
+        card.hidden = !(matchesText && matchesFilter);
+        if (!card.hidden) visibleCount += 1;
+      });
+      document.querySelector('[data-report-count]').textContent = String(visibleCount);
+      document.querySelector('[data-empty-state]').hidden = visibleCount !== 0;
+    }
+
+    function selectReport(reportId) {
+      const report = reports[reportId];
+      selectedReportId = reportId;
+      document.querySelectorAll('[data-report-row]').forEach((peer) => peer.setAttribute('aria-selected', String(peer.dataset.reportRow === reportId)));
+      document.querySelector('[data-detail-id]').textContent = `Report ${report.report_id}`;
+      document.querySelector('[data-detail-issue]').textContent = report.issue_number;
+      document.querySelector('[data-detail-date]').textContent = `Issued ${displayDate(report.issue_date)}`;
+      document.querySelector('[data-detail-version]').textContent = `Version ${report.version}`;
+      document.querySelector('[data-fact-id]').textContent = report.report_id;
+      document.querySelector('[data-fact-issue]').textContent = report.issue_number;
+      document.querySelector('[data-fact-version]').textContent = `Version ${report.version}`;
+      document.querySelector('[data-version-timeline]').innerHTML = report.version > 1
+        ? `<article class="version"><div class="version-top"><h4>Version ${report.version} · Current issue</h4><span class="badge">Finalized</span></div><p>${report.issue_number} · ${displayDate(report.issue_date)}</p><p>Supersedes Version ${report.version - 1}. The clinical delta is retained in the local audit record.</p></article><article class="version"><div class="version-top"><h4>Version ${report.version - 1} · Previous issue</h4></div><p>Superseded by the current finalized report.</p></article>`
+        : `<article class="version"><div class="version-top"><h4>Version 1 · Initial issue</h4><span class="badge">Finalized</span></div><p>${report.issue_number} · ${displayDate(report.issue_date)}</p><p>This is the first finalized version of this report.</p></article>`;
+      renderPaper(document.querySelector('[data-worklist-paper]'), report);
+    }
+
+    function fixtureForReport(report, version = report.version) {
+      return JSON.stringify({
+        report_id: report.report_id,
+        version,
+        lifecycle_state: 'finalized',
+        issue_number: report.issue_number,
+        issue_date: report.issue_date,
+        resolved_payload: {
+          'test.fasting_glucose': {
+            display: 'Fasting Blood Sugar',
+            value: report.value,
+            unit: 'mg/dL',
+            reference_range: { low: 70, high: 100 },
+            flag: report.value > 100 ? 'high' : 'normal'
+          }
+        }
+      }, null, 2);
+    }
+
+    function validateAndPreview() {
+      const message = document.querySelector('[data-validation-message]');
+      try {
+        const report = JSON.parse(jsonInput.value);
+        if (!report.report_id || !report.version || !report.issue_number || !report.issue_date || !report.resolved_payload) throw new Error('Required report fields are missing');
+        jsonInput.setAttribute('aria-invalid', 'false');
+        message.classList.remove('error');
+        message.innerHTML = '<svg><use href="#i-check"/></svg><span><strong>Validation passed.</strong><br>The print preview is up to date.</span>';
+        renderPaper(document.querySelector('[data-editor-paper]'), report);
+      } catch (error) {
+        jsonInput.setAttribute('aria-invalid', 'true');
+        message.classList.add('error');
+        message.innerHTML = `<span><strong>Cannot generate preview.</strong><br>${error.message}.</span>`;
+      }
+    }
+
+    document.querySelectorAll('[data-route]').forEach((button) => button.addEventListener('click', () => {
+      if (button.hasAttribute('data-new-report')) {
+        document.querySelector('[data-editor-title]').textContent = 'Create a report';
+        document.querySelector('[data-editor-subtitle]').textContent = 'Add fixture-shaped data, validate it, then print the house-format report.';
+        jsonInput.value = initialJson;
+        document.querySelectorAll('[data-sample]').forEach((sample) => sample.setAttribute('aria-pressed', String(sample.dataset.sample === 'initial')));
+        renderPaper(document.querySelector('[data-editor-paper]'), JSON.parse(initialJson));
+      }
+      showRoute(button.dataset.route);
+    }));
+    document.querySelectorAll('[data-tab]').forEach((tab) => tab.addEventListener('click', () => showTab(tab.dataset.tab)));
+    document.querySelectorAll('[data-report-row]').forEach((row) => row.addEventListener('click', () => selectReport(row.dataset.reportRow)));
+    document.querySelector('[aria-label="Search reports"]').addEventListener('input', filterReports);
+    document.querySelectorAll('[data-filter]').forEach((button) => button.addEventListener('click', () => {
+      activeFilter = button.dataset.filter;
+      document.querySelectorAll('[data-filter]').forEach((peer) => peer.classList.toggle('active', peer === button));
+      filterReports();
+    }));
+    document.querySelectorAll('[data-sample]').forEach((button) => button.addEventListener('click', () => {
+      document.querySelectorAll('[data-sample]').forEach((peer) => peer.setAttribute('aria-pressed', String(peer === button)));
+      const amended = button.dataset.sample === 'amended';
+      jsonInput.value = amended ? amendedJson : initialJson;
+      renderPaper(document.querySelector('[data-editor-paper]'), amended ? 2 : 1);
+    }));
+    document.querySelectorAll('[data-generate-preview]').forEach((button) => button.addEventListener('click', validateAndPreview));
+    document.querySelector('[data-choose-file]').addEventListener('click', () => document.querySelector('[data-file-input]').click());
+    document.querySelector('[data-file-input]').addEventListener('change', async (event) => {
+      const [file] = event.target.files;
+      if (!file) return;
+      jsonInput.value = await file.text();
+      document.querySelectorAll('[data-sample]').forEach((button) => button.setAttribute('aria-pressed', 'false'));
+      validateAndPreview();
+    });
+    document.querySelectorAll('[data-amend]').forEach((button) => button.addEventListener('click', () => {
+      const selected = reports[selectedReportId];
+      showRoute('editor');
+      document.querySelector('[data-editor-title]').textContent = `Amend Report ${selected.report_id}`;
+      document.querySelector('[data-editor-subtitle]').textContent = `Version ${selected.version + 1} starts from the finalized Version ${selected.version} clinical payload.`;
+      jsonInput.value = fixtureForReport(selected, selected.version + 1);
+      document.querySelectorAll('[data-sample]').forEach((sample) => sample.setAttribute('aria-pressed', 'false'));
+      renderPaper(document.querySelector('[data-editor-paper]'), JSON.parse(jsonInput.value));
+    }));
+    document.querySelectorAll('[data-open-history]').forEach((button) => button.addEventListener('click', () => {
+      showRoute('worklist');
+      showTab('history');
+      document.querySelectorAll('.nav-item[data-route]').forEach((item) => item.setAttribute('aria-current', String(item === button ? 'page' : 'false')));
+    }));
+    document.querySelectorAll('[data-print]').forEach((button) => button.addEventListener('click', () => window.print()));
+
+    renderPaper(document.querySelector('[data-worklist-paper]'), reports.R100);
+    renderPaper(document.querySelector('[data-editor-paper]'), normalizedReport(JSON.parse(initialJson)));
+  </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "catalog_version": "V1",
+  "published_at": "2026-01-10T00:00:00Z",
+  "fields": {
+    "test.fasting_glucose": {
+      "field_id": "test.fasting_glucose",
+      "display": "Fasting Blood Sugar",
+      "unit": "mg/dL",
+      "reference_range": { "low": 70, "high": 100 }
+    },
+    "test.hba1c": {
+      "field_id": "test.hba1c",
+      "display": "HbA1c",
+      "unit": "%",
+      "reference_range": { "high": 5.7 }
+    },
+    "interpretation.glucose": {
+      "field_id": "interpretation.glucose",
+      "options": [
+        { "option_id": "glu_normal",      "label": "Normal" },
+        { "option_id": "glu_prediabetes", "label": "Pre-diabetes" },
+        { "option_id": "glu_diabetes",    "label": "Diabetes" }
+      ]
+    }
+  }
+}

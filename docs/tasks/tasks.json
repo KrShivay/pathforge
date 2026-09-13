@@ -1,0 +1,415 @@
+{
+  "version": 1,
+  "statuses": [
+    "todo",
+    "in_progress",
+    "blocked",
+    "deferred",
+    "done"
+  ],
+  "tasks": [
+    {
+      "id": "DOC-001",
+      "title": "Audit the existing evidence and requirements",
+      "status": "done",
+      "priority": "P0",
+      "area": "0-evidence",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Canonical documentation and fixtures are inventoried",
+        "Known prerequisites and unresolved production decisions are identified"
+      ],
+      "notes": "Verified against docs/README.md, architecture invariants, open questions, glossary, fixtures, and business-requirement headings."
+    },
+    {
+      "id": "DOC-002",
+      "title": "Profile sample PDFs and produce the field inventory",
+      "status": "deferred",
+      "priority": "P0",
+      "area": "0-evidence",
+      "dependsOn": [
+        "DOC-001"
+      ],
+      "acceptanceCriteria": [
+        "Each sample has tagged descriptive observations",
+        "Section and field inventory includes cardinality and provenance",
+        "Cross-sample patterns and anomalies are separated",
+        "Unknowns are added to the open-question log"
+      ],
+      "notes": "Basic intake is recorded in docs/expected-analysis/pdf-evidence-gap.md. Exhaustive profiling and field-inventory documentation are deferred because they are not required for the prototype; use samples only for short directional visual checks. S001 must be replaced with a de-identified copy before sample PDFs are committed."
+    },
+    {
+      "id": "DEC-001",
+      "title": "Confirm production-blocking domain decisions",
+      "status": "deferred",
+      "priority": "P0",
+      "area": "0-evidence",
+      "dependsOn": [
+        "DOC-001"
+      ],
+      "acceptanceCriteria": [
+        "Lifecycle and transition set are confirmed",
+        "Snapshot boundary and identifier reuse policy are confirmed",
+        "Roles, jurisdiction, retention, and integration boundaries are confirmed",
+        "Decisions are recorded in the resolved log"
+      ],
+      "notes": "Deferred outside the current one-to-two-user report-generation prototype. Reopen individual decisions only if they directly block SCOPE.md or the owner expands scope."
+    },
+    {
+      "id": "DEC-002",
+      "title": "Record core architecture decisions",
+      "status": "done",
+      "priority": "P0",
+      "area": "0-evidence",
+      "dependsOn": [
+        "DOC-002"
+      ],
+      "acceptanceCriteria": [
+        "Canonical payload and version identity decision passes INV-1 through INV-10",
+        "Lifecycle and audit decision names unresolved assumptions",
+        "Catalog snapshot decision names visible failure behavior"
+      ],
+      "notes": "Verified in ADR-0001 through ADR-0003: canonical identity/payload is checked against INV-1 through INV-10, lifecycle assumptions and production blockers remain explicit, and snapshot/error behavior is recorded. Accepted only for the reversible fixture-driven slice."
+    },
+    {
+      "id": "SET-001",
+      "title": "Create reproducible project scaffold",
+      "status": "done",
+      "priority": "P0",
+      "area": "1-setup",
+      "dependsOn": [
+        "DOC-001"
+      ],
+      "acceptanceCriteria": [
+        "Runtime and dependency versions are pinned",
+        "A clean checkout has documented install, verify, build, and start commands",
+        "Formatting, lint, type checking, and unit tests run from one verification command",
+        "Example environment contains no secrets"
+      ],
+      "notes": "Verified with a clean npm ci and full verify/build on the pinned Node 24.20.0 and npm 11.19.0 runtime. README documents install/verify/build/start; .env.example is non-sensitive. Technology choice remains reversible scaffolding."
+    },
+    {
+      "id": "SET-002",
+      "title": "Add continuous verification",
+      "status": "done",
+      "priority": "P1",
+      "area": "1-setup",
+      "dependsOn": [
+        "SET-001"
+      ],
+      "acceptanceCriteria": [
+        "CI installs from the lockfile",
+        "CI runs the same verification command used locally",
+        "Build artifacts and secrets are excluded from version control"
+      ],
+      "notes": "Verified .github/workflows/ci.yml uses the committed lockfile via npm ci, runs the local verify command plus build, and pins actions by commit SHA. Generated output, local environments, logs, and GitNexus data are ignored; repository scans found no secret-like values or generated artifacts."
+    },
+    {
+      "id": "SET-003",
+      "title": "Provide a local task dashboard",
+      "status": "done",
+      "priority": "P1",
+      "area": "1-setup",
+      "dependsOn": [
+        "DOC-001"
+      ],
+      "acceptanceCriteria": [
+        "An .mjs entry point reads docs/tasks/tasks.json",
+        "Summary counts and full task details can be viewed locally",
+        "Invalid statuses, duplicate IDs, and missing dependencies fail visibly",
+        "Dashboard does not mutate the task file"
+      ],
+      "notes": "Implemented as a dependency-free local server with API/detail filters and read-only validation; covered by the dashboard test suite."
+    },
+    {
+      "id": "DEV-001",
+      "title": "Validate domain fixtures and define typed contracts",
+      "status": "done",
+      "priority": "P0",
+      "area": "2-domain-core",
+      "dependsOn": [
+        "SET-001",
+        "DEC-002"
+      ],
+      "acceptanceCriteria": [
+        "Catalog and report fixtures validate with actionable errors",
+        "Contracts separate clinical, catalog, and presentation state",
+        "Historical resolved values do not require current catalog rows"
+      ],
+      "notes": "Verified fixture parsers report actionable JSON/schema paths, JSDoc contracts and canonicalization keep catalog/envelope/presentation metadata outside clinical comparison, and historical snapshots are self-contained. Scope is the supplied fixture schema only; no production schema claim."
+    },
+    {
+      "id": "DEV-002",
+      "title": "Implement explainable semantic comparison",
+      "status": "done",
+      "priority": "P0",
+      "area": "2-domain-core",
+      "dependsOn": [
+        "DEV-001"
+      ],
+      "acceptanceCriteria": [
+        "Comparison identifies added, removed, and changed clinical values",
+        "Presentation and issue metadata are excluded",
+        "Equality is explainable without a fingerprint",
+        "Expected comparison fixture passes"
+      ],
+      "notes": "Verified added/removed/changed traversal in comparison.mjs and CMP-1 through CMP-4 tests: clinical paths and before/after values are explained, issue/presentation/provenance annotations are excluded, and equality does not consult fingerprints."
+    },
+    {
+      "id": "DEV-003",
+      "title": "Implement immutable finalization and amendment lineage",
+      "status": "done",
+      "priority": "P0",
+      "area": "2-domain-core",
+      "dependsOn": [
+        "DEV-001"
+      ],
+      "acceptanceCriteria": [
+        "Finalization creates a stable immutable version and audit event",
+        "Amendment begins from the superseded resolved payload",
+        "Catalog V2 cannot alter the V1 historical payload",
+        "Lineage is queryable in both directions"
+      ],
+      "notes": "Verified deep-frozen copy-on-write finalization, audit events, historical-payload amendment cloning, V1 stability under Catalog V2, and bidirectional lineage/supersession evidence. This is in-memory domain behavior only; durability and concurrency remain SRV-001."
+    },
+    {
+      "id": "DEV-004",
+      "title": "Add invariant acceptance test suite",
+      "status": "done",
+      "priority": "P0",
+      "area": "2-domain-core",
+      "dependsOn": [
+        "DEV-002",
+        "DEV-003"
+      ],
+      "acceptanceCriteria": [
+        "Historical stability, amendment baseline, semantic equality, deleted reference, and audit reconstruction tests pass",
+        "Tests name the invariant they protect",
+        "Test failures explain the clinical risk"
+      ],
+      "notes": "Verified named INV-1 through INV-10 tests cover historical stability, amendment baseline, semantic equality, deprecated-reference readability/no remap, lifecycle audit evidence, and lineage reconstruction. Full suite passes 16/16; persistence-level reconstruction remains SRV-001."
+    },
+    {
+      "id": "SRV-001",
+      "title": "Implement durable version and audit storage",
+      "status": "deferred",
+      "priority": "P1",
+      "area": "3-service",
+      "dependsOn": [
+        "DEV-004",
+        "DEC-001"
+      ],
+      "acceptanceCriteria": [
+        "Versions and audit events survive restart",
+        "Finalization is atomic and concurrency-safe",
+        "Recovery test reconstructs version lineage"
+      ],
+      "notes": "Production durability, restart recovery, and concurrency infrastructure are outside the current prototype scope. Use in-memory or simple local storage only if the prototype needs it."
+    },
+    {
+      "id": "SRV-002",
+      "title": "Implement policy-neutral report use cases and in-memory adapter",
+      "status": "done",
+      "priority": "P1",
+      "area": "3-service",
+      "dependsOn": [
+        "DEV-004"
+      ],
+      "acceptanceCriteria": [
+        "Create draft, validate, finalize, retrieve history, compare, and amend are exposed through injected service ports",
+        "The in-memory adapter provides atomic report and audit writes with optimistic concurrency",
+        "Missing or deprecated references fail explicitly without partial persistence",
+        "Contract tests cover immutable results, concurrent finalization, and transaction rollback"
+      ],
+      "notes": "Verified by the service contract suite: six policy-neutral use cases use injected repositories, unit of work, clock, identity, and reference ports; the in-memory adapter provides per-report transaction isolation, explicit concurrency conflicts, rollback, and detached immutable results. This slice is for contract tests and local development only; restart durability, production storage, authorization, retention, and integrations remain open under SRV-001, DEC-001, and OPS-001."
+    },
+    {
+      "id": "REN-001",
+      "title": "Build presentation-neutral document model",
+      "status": "done",
+      "priority": "P1",
+      "area": "4-rendering",
+      "dependsOn": [
+        "DEV-004",
+        "DOC-002"
+      ],
+      "acceptanceCriteria": [
+        "Document model is derived only from a frozen report payload and explicit render config",
+        "Current catalog is not queried when rendering history",
+        "Content order is covered by tests"
+      ],
+      "notes": "Verified by six document-model tests: output is deterministic, deeply immutable, ordered only by explicit semantic configuration, detached from caller mutation, and derived from the frozen historical payload without current-catalog lookup. Missing optionals stay absent, amendment annotations stay outside visible clinical content, long/multiple rows remain layout-neutral, and incomplete mappings fail visibly. Sample-dependent styling and deterministic PDF generation remain open under DOC-002 and REN-002."
+    },
+    {
+      "id": "REN-002",
+      "title": "Generate deterministic clinical report PDFs",
+      "status": "deferred",
+      "priority": "P1",
+      "area": "4-rendering",
+      "dependsOn": [
+        "REN-001"
+      ],
+      "acceptanceCriteria": [
+        "PDF includes correct clinical content and issue identity",
+        "Export records renderer/config version and checksum",
+        "Long text, pagination, missing optionals, and font fallback are tested",
+        "Renderer-only changes remain clinically equal"
+      ],
+      "notes": "Server-generated archival PDFs, export metadata, checksums, and renderer-retention work are deferred. The current prototype uses a print-ready browser view and the browser's Print / Save as PDF action."
+    },
+    {
+      "id": "OPS-001",
+      "title": "Complete clinical production-readiness review",
+      "status": "deferred",
+      "priority": "P1",
+      "area": "5-hardening",
+      "dependsOn": [
+        "SRV-001",
+        "REN-002",
+        "DEC-001"
+      ],
+      "acceptanceCriteria": [
+        "Threat model and privacy review are approved",
+        "Backup and restore exercise succeeds",
+        "Authorization and audit-access tests pass",
+        "Load and failure-injection targets pass",
+        "No real clinical data is enabled before release approval"
+      ],
+      "notes": "Enterprise production hardening is outside SCOPE.md and requires explicit owner approval before implementation."
+    },
+    {
+      "id": "APP-001",
+      "title": "Deliver the report preview and print prototype",
+      "status": "done",
+      "priority": "P0",
+      "area": "4-rendering",
+      "dependsOn": [
+        "REN-001"
+      ],
+      "acceptanceCriteria": [
+        "npm start opens the report product rather than the internal task dashboard",
+        "A fixture-shaped report can be loaded or pasted and validated",
+        "The user can generate a readable house-format preview",
+        "The report view prints cleanly and supports browser Save as PDF",
+        "An end-to-end test covers data input through the rendered document model"
+      ],
+      "notes": "Verified end to end: npm start loads the initial sample, pasted/file JSON is validated server-side, all payload fields reach the document model and preview, the amended sample displays V2 and corrected value 129, print CSS provides an A4 report view, and Print / Save PDF invokes the browser print flow. The delivery dashboard remains available through npm run dashboard."
+    },
+    {
+      "id": "APP-002",
+      "title": "Make the canonical document model the product path and add the on-screen preview",
+      "status": "in_progress",
+      "priority": "P0",
+      "area": "4-rendering",
+      "dependsOn": [
+        "APP-001"
+      ],
+      "acceptanceCriteria": [
+        "The React product path builds its report through src/rendering/document-model.mjs",
+        "No second document-model implementation remains in the UI layer",
+        "A draft is representable in the document model; finalized reports still require issue identity",
+        "CBC result entry reaches the document model with name, value, unit and reference range intact",
+        "The report editor shows an on-screen preview rendered from the same node that prints",
+        "Preview, browser print and PDF share one report presentation structure",
+        "npm run verify passes",
+        "A finalized report renders in the report screen without a domain validation crash"
+      ],
+      "notes": "Canonical model wired in: reportModel.ts reworked from a rival model into a presenter over buildReportDocumentModel + buildWorkspaceDocumentConfig. Draft support added (issue: null; finalized still requires issue identity) - recorded as Q16. Report styling lifted out of @media print into one shared rule set so the screen preview cannot diverge from print. Dead duplicates removed: src/domain/report-bridge.ts, src/domain/validation.ts. Tests added: test/rendering/workspace-config.test.mjs, test/workspace/cbc-report.test.mjs. Q17 (result flags) deferred by owner decision. REMAINING: manual GUI verification of the exit gate under npm run tauri dev - not performed, no GUI in this environment. FIX (GUI-reported): finalizing blanked the screen with \"finalized_by must be a non-empty string\". Finalization provenance recorded by the domain (finalized_by/finalized_at, or amended_by/amended_at/amendment_type/amendment_reason for an amendment, plus supersedes) was dropped in ReportContext's version-to-snapshot mapping and never reconstructed by the presenter. Propagated through ReportContext -> Report -> ReportEditor, and version reconstruction moved into report-bridge.buildWorkspaceReportVersion so there is one implementation. Validator unchanged. Regression tests: test/workspace/finalized-preview.test.mjs."
+    },
+    {
+      "id": "UI-006",
+      "title": "Keep New Report as a single navbar action",
+      "status": "in_progress",
+      "priority": "P1",
+      "area": "6-ui-quality",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "The top navigation retains the single New Report action",
+        "Duplicate Create Report or New Report buttons are removed from dashboard, worklist, history and other screen empty states",
+        "Screens explain that New Report is available in the top navigation when an empty state needs guidance"
+      ],
+      "notes": "Static source audit confirms one actual New Report button remains in TopNav; remaining references are the New Report page heading or empty-state guidance. Browser verification is pending because no in-app browser is available in this environment."
+    },
+    {
+      "id": "UI-001",
+      "title": "Restore and polish New Report wizard styling across screens",
+      "status": "in_progress",
+      "priority": "P1",
+      "area": "6-ui-quality",
+      "dependsOn": [
+        "APP-002"
+      ],
+      "acceptanceCriteria": [
+        "New Report header, stepper, step panels, fields, navigation and responsive states are styled consistently",
+        "The same theme and control treatment is applied to all wizard steps",
+        "Worklist, history, dashboard, patients, tests, profile and editor screens are checked for the same missing-style regression",
+        "Browser verification confirms the intended New Report UI is visible at desktop and narrow widths"
+      ],
+      "notes": "Added a final screen-only wizard layout layer covering the page shell, stepper, panels, controls, navigation and responsive behavior. Static cross-screen class audit completed; browser verification is pending because no in-app browser is available in this environment."
+    },
+    {
+      "id": "UI-002",
+      "title": "Expose the workspace lock screen control",
+      "status": "in_progress",
+      "priority": "P1",
+      "area": "6-ui-quality",
+      "dependsOn": [
+        "APP-002"
+      ],
+      "acceptanceCriteria": [
+        "A labeled Lock screen action is visible in the top navigation",
+        "Activating it shows a clear lock screen with an accessible unlock action",
+        "Unlocking returns to the same local page and does not introduce authentication or permission logic",
+        "Browser verification confirms the control is visible on desktop and mobile navigation"
+      ],
+      "notes": "Added the visible top-navigation action and local workspace lock overlay using the existing quiet-mode visual system. Browser verification is pending because no in-app browser is available in this environment."
+    },
+    {
+      "id": "UI-003",
+      "title": "Replace duplicated raw date filters with a polished shared range control",
+      "status": "in_progress",
+      "priority": "P1",
+      "area": "6-ui-quality",
+      "dependsOn": [
+        "APP-002"
+      ],
+      "acceptanceCriteria": [
+        "Worklist and Version History use one reusable date-range component",
+        "Start and end dates are clearly grouped, validated and independently clearable",
+        "The full selected end date is included by the shared filter logic",
+        "Browser verification confirms the control is readable and usable at desktop and narrow widths"
+      ],
+      "notes": "Added DateRangeFilter with grouped labels, calendar cue, clear-dates action, inline validation and responsive layout. MUI X date pickers were not added because the dependency is not installed; the shared native control keeps this prototype lightweight and theme-consistent. Browser verification is pending because no in-app browser is available in this environment."
+    },
+    {
+      "id": "UI-004",
+      "title": "Adopt a Helvetica-style application font fallback",
+      "status": "in_progress",
+      "priority": "P2",
+      "area": "6-ui-quality",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Screen UI uses Helvetica Neue, Helvetica, Arial and system fallbacks consistently",
+        "MUI autocomplete widgets use the same screen font",
+        "Print report typography remains unchanged",
+        "The downloaded font asset is used when it is present in the codebase"
+      ],
+      "notes": "No font asset file (.woff/.woff2/.ttf/.otf) was found outside node_modules, so the implementation uses the requested Helvetica-style system stack without fabricating an asset. Print report font rules remain unchanged. Browser verification is pending because no in-app browser is available in this environment."
+    },
+    {
+      "id": "UI-005",
+      "title": "Replace the default logo with a custom PathForge mark",
+      "status": "in_progress",
+      "priority": "P2",
+      "area": "6-ui-quality",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Navbar displays the custom PathForge vector mark",
+        "Browser favicon uses the same custom mark",
+        "The mark remains crisp at navigation and favicon sizes",
+        "Laboratory logos remain conditional and are not replaced by the product mark in report output"
+      ],
+      "notes": "Added public/pathforge-mark.svg and wired it to the navbar and favicon. The laboratory logo remains conditional on an uploaded logoDataUrl. Browser verification is pending because no in-app browser is available in this environment."
+    }
+  ]
+}
