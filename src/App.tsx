@@ -1,6 +1,9 @@
-import { ArrowLeft, Lock, Unlock } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import TopNav, { type Page } from "./components/layout/TopNav";
+import WorkspaceGate, {
+  type WorkspaceGateKind,
+} from "./components/layout/WorkspaceGate";
 import { confirmDestructive } from "./lib/dialog";
 import Dashboard from "./pages/Dashboard";
 import LaboratoryProfilePage from "./pages/LaboratoryProfile";
@@ -16,9 +19,11 @@ export default function App() {
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [reportOrigin, setReportOrigin] = useState<Page>("worklist");
   const [worklistFilter, setWorklistFilter] = useState<"all" | "draft" | "finalized" | "attention">("all");
-  const [isLocked, setIsLocked] = useState(false);
+  const [workspaceGate, setWorkspaceGate] =
+    useState<WorkspaceGateKind | null>("entry");
   const newReportDirtyRef = useRef(false);
   const editorDirtyRef = useRef(false);
+  const entryButtonRef = useRef<HTMLButtonElement>(null);
   const lockButtonRef = useRef<HTMLButtonElement>(null);
   const unlockButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -44,8 +49,9 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (isLocked) unlockButtonRef.current?.focus();
-  }, [isLocked]);
+    if (workspaceGate === "entry") entryButtonRef.current?.focus();
+    if (workspaceGate === "locked") unlockButtonRef.current?.focus();
+  }, [workspaceGate]);
 
   const page = selectedReportId ? (
     <ReportEditor reportId={selectedReportId} onBack={() => void handleNavigate(reportOrigin)} onOpenReport={setSelectedReportId} onDirtyChange={(dirty) => { editorDirtyRef.current = dirty; }} />
@@ -62,7 +68,7 @@ export default function App() {
     <TopNav
       activePage={activePage}
       onNavigate={handleNavigate}
-      onLock={() => setIsLocked(true)}
+      onLock={() => setWorkspaceGate("locked")}
       lockButtonRef={lockButtonRef}
     />
     <main className="main-content">
@@ -71,37 +77,19 @@ export default function App() {
         {page}
       </div>
     </main>
-    {isLocked && (
-      <section
-        className="quiet-mode"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="quiet-mode-title"
-        onKeyDown={(event) => {
-          if (event.key === "Tab") event.preventDefault();
+    {workspaceGate ? (
+      <WorkspaceGate
+        kind={workspaceGate}
+        actionRef={
+          workspaceGate === "entry" ? entryButtonRef : unlockButtonRef
+        }
+        onAction={() => {
+          setWorkspaceGate(null);
+          if (workspaceGate === "locked") {
+            requestAnimationFrame(() => lockButtonRef.current?.focus());
+          }
         }}
-      >
-        <div className="quiet-mode-stars" aria-hidden="true" />
-        <div className="quiet-mode-orbit quiet-mode-orbit-one" aria-hidden="true" />
-        <div className="quiet-mode-orbit quiet-mode-orbit-two" aria-hidden="true" />
-        <div className="quiet-mode-content">
-          <span className="quiet-mode-mark" aria-hidden="true">
-            <Lock size={21} />
-          </span>
-          <p className="quiet-mode-kicker">PathForge workspace</p>
-          <h1 id="quiet-mode-title">Workspace locked</h1>
-          <p className="quiet-mode-copy">
-            Report work is paused while the workspace is locked. Unlock to return to your local report workflow.
-          </p>
-          <button ref={unlockButtonRef} type="button" className="quiet-mode-open" onClick={() => { setIsLocked(false); requestAnimationFrame(() => lockButtonRef.current?.focus()); }}>
-            <span className="quiet-mode-open-icon" aria-hidden="true">
-              <Unlock size={17} />
-            </span>
-            Unlock workspace
-          </button>
-          <p className="quiet-mode-hint">Local prototype · no sign-in required</p>
-        </div>
-      </section>
-    )}
+      />
+    ) : null}
   </div>;
 }

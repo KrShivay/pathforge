@@ -4754,35 +4754,134 @@ button {
 }
 
 .patient-pick-list {
-  min-height: 180px;
+  min-height: 0;
+  margin: 16px 0 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+  border: 1px solid var(--pf-theme-border);
+  border-radius: var(--pf-radius-md);
+  background: var(--pf-theme-surface);
+  box-shadow: var(--pf-shadow-sm);
+}
+
+.patient-pick-list li {
+  margin: 0;
+  border-bottom: 1px solid var(--pf-theme-row-border);
+}
+
+.patient-pick-list li:last-child {
+  border-bottom: 0;
 }
 
 .patient-pick {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.3fr) auto;
   align-items: center;
-  gap: 8px 14px;
+  gap: 12px;
   width: 100%;
-  padding: 12px;
+  min-height: 82px;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 0;
+  background: var(--pf-theme-surface);
+  color: var(--pf-theme-text);
+  font: inherit;
+  text-align: left;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .patient-pick:hover {
-  background: var(--pf-theme-surface-muted);
+  background: var(--pf-theme-row-hover);
+}
+
+.patient-pick:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 3px solid var(--pf-theme-brand-focus-strong);
+  outline-offset: -3px;
+  box-shadow: none;
 }
 
 .patient-pick.is-selected {
-  border-color: var(--pf-theme-brand);
-  background: var(--pf-theme-selection-soft);
+  background: var(--pf-theme-surface-selected);
+  box-shadow: inset 3px 0 0 var(--pf-theme-brand);
+}
+
+.patient-pick-avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--pf-theme-surface-hover);
+  color: var(--pf-theme-brand);
+}
+
+.patient-pick.is-selected .patient-pick-avatar {
+  background: var(--pf-theme-brand-soft);
 }
 
 .patient-pick-name {
   display: block;
   overflow-wrap: anywhere;
+  color: var(--pf-theme-text);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.patient-pick-id {
+  display: block;
+  margin-top: 3px;
+  color: var(--pf-theme-text-muted);
+  font-size: 11.5px;
+}
+
+.patient-pick-details {
+  grid-column: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  min-width: 0;
+  color: var(--pf-theme-text-muted);
+  font-size: 11.5px;
+  text-align: right;
+}
+
+.patient-pick-details span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.patient-pick-indicator {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  color: var(--pf-theme-text-subtle);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.patient-pick:hover .patient-pick-indicator,
+.patient-pick.is-selected .patient-pick-indicator {
+  background: var(--pf-theme-surface-hover);
+  color: var(--pf-theme-brand);
 }
 
 .patient-pick-meta {
-  font-size: 12px;
   color: var(--pf-theme-text-muted);
+  font-size: 12px;
 }
 
 .selection-confirm {
@@ -6822,9 +6921,15 @@ input[aria-invalid="true"] {
 
 .primary-button,
 .secondary-button {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   min-height: 36px;
   border-radius: 9px !important;
   font-size: 12.5px !important;
+  white-space: nowrap;
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease,
@@ -7113,19 +7218,21 @@ input[aria-invalid="true"] {
 .patient-pick-id {
   display: block;
   margin-top: 3px;
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--pf-theme-text-muted);
 }
 
 .patient-pick-details {
-  grid-column: 1 / -1;
+  grid-column: auto;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 5px 12px;
   min-width: 0;
-  font-size: 12px;
+  justify-content: flex-end;
+  font-size: 11.5px;
   color: var(--pf-theme-text-muted);
+  text-align: right;
 }
 
 .patient-pick-details span {
@@ -7160,8 +7267,11 @@ input[aria-invalid="true"] {
 }
 
 .patient-list-hint {
-  padding: 8px 4px 0;
-  font-size: 12px;
+  margin: 0;
+  padding: 11px 16px;
+  border-top: 1px solid var(--pf-theme-row-border);
+  background: var(--pf-theme-surface-muted);
+  font-size: 11.5px;
   color: var(--pf-theme-text-subtle);
   text-align: center;
 }
@@ -7551,7 +7661,7 @@ input[aria-invalid="true"] {
 
   .version-history-card-header .report-filter-row {
     display: grid;
-    grid-template-columns: minmax(180px, 1.5fr) repeat(4, minmax(130px, 1fr)) auto;
+    grid-template-columns: minmax(180px, 1.5fr) minmax(320px, 1.8fr) minmax(130px, 1fr) auto;
   }
 
   .version-history-card-header .report-filter-row label {
@@ -8029,6 +8139,189 @@ input[aria-invalid="true"] {
     width: var(--pf-control-height);
     padding: 0 !important;
     font-size: 0 !important;
+  }
+}
+
+/* Table/list headers own sorting so filters can stay focused on filtering. */
+@media screen {
+  .table-sort-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 5px;
+    width: 100%;
+    min-width: 0;
+    padding: 2px 0;
+    border: 0;
+    border-radius: var(--pf-radius-sm);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-align: left;
+    text-transform: inherit;
+    cursor: pointer;
+  }
+
+  .table-sort-button > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .table-sort-button > svg {
+    flex: 0 0 auto;
+    opacity: 0.48;
+  }
+
+  .table-sort-button:hover,
+  .table-sort-button:focus-visible,
+  .table-sort-button.is-active {
+    color: var(--pf-theme-brand);
+  }
+
+  .table-sort-button:hover > svg,
+  .table-sort-button.is-active > svg {
+    opacity: 1;
+  }
+
+  .worklist-table-header .col-date {
+    justify-content: flex-end;
+    text-align: right;
+  }
+
+  .version-list-header,
+  .version-item {
+    display: grid;
+    grid-template-columns:
+      40px
+      minmax(180px, 2fr)
+      minmax(68px, 0.6fr)
+      minmax(115px, 0.9fr)
+      minmax(190px, 1.4fr);
+    column-gap: 12px;
+    align-items: center;
+  }
+
+  .version-list-header {
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--pf-theme-border);
+    background: var(--pf-theme-surface-muted);
+    color: var(--pf-theme-text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .version-list-icon-space,
+  .version-icon {
+    width: 40px;
+  }
+
+  .version-item {
+    width: 100%;
+    min-width: 0;
+    padding: 10px 16px;
+    border: 0;
+    border-bottom: 1px solid var(--pf-theme-surface-muted);
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .version-patient-block {
+    min-width: 0;
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .version-patient-block strong,
+  .version-specimen {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .version-number-cell,
+  .version-status-cell,
+  .version-event-cell {
+    min-width: 0;
+  }
+
+  .version-number-cell,
+  .version-status-cell {
+    display: flex;
+    align-items: center;
+  }
+
+  .version-event-cell {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    color: var(--pf-theme-text-subtle);
+    font-size: 12px;
+  }
+
+  .version-event-cell > span:first-child {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  .version-event-cell .amendment-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media screen and (max-width: 760px) {
+  .version-list-header {
+    display: none;
+  }
+
+  .version-item {
+    grid-template-columns: 40px minmax(0, 1fr);
+    align-items: start;
+    gap: 6px 12px;
+    padding: 10px 16px !important;
+  }
+
+  .version-item .version-icon {
+    grid-column: 1;
+    grid-row: 1 / span 4;
+  }
+
+  .version-item .version-patient-block,
+  .version-item .version-number-cell,
+  .version-item .version-status-cell,
+  .version-item .version-event-cell {
+    grid-column: 2;
+  }
+
+  .version-item .version-patient-block {
+    grid-row: 1;
+  }
+
+  .version-item .version-number-cell {
+    grid-row: 2;
+  }
+
+  .version-item .version-status-cell {
+    grid-row: 3;
+  }
+
+  .version-item .version-event-cell {
+    grid-row: 4;
+    align-items: flex-start;
   }
 }
 
@@ -9255,7 +9548,7 @@ input[aria-invalid="true"] {
     background: var(--pf-theme-surface-raised);
   }
 
-  .date-range-filter legend {
+  .date-range-label {
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -9265,7 +9558,7 @@ input[aria-invalid="true"] {
     font-weight: 800;
   }
 
-  .date-range-filter legend svg {
+  .date-range-label svg {
     color: var(--pf-theme-brand);
   }
 
@@ -9352,7 +9645,7 @@ input[aria-invalid="true"] {
   }
 
   .version-history-card-header .report-filter-row {
-    grid-template-columns: minmax(170px, 1.2fr) minmax(320px, 1.8fr) repeat(2, minmax(120px, 1fr)) auto;
+    grid-template-columns: minmax(170px, 1.2fr) minmax(320px, 1.8fr) minmax(120px, 1fr) auto;
     align-items: end;
   }
 
@@ -9429,6 +9722,17 @@ input[aria-invalid="true"] {
   .review-grid,
   .patient-form .form-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .patient-pick {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .patient-pick-details {
+    grid-column: 2 / -1;
+    justify-content: flex-start;
+    text-align: left;
   }
 
   .clinical-step-grid .wizard-field:last-child {
@@ -9895,4 +10199,397 @@ input[aria-invalid="true"] {
     font-size: inherit !important;
     overflow: visible;
   }
+}
+
+/* Search fields use one quiet focus treatment instead of stacked blue rings. */
+@media screen {
+  .patients-search:focus-within {
+    border-color: var(--pf-theme-border-hover) !important;
+    box-shadow: 0 0 0 2px var(--pf-theme-brand-focus-soft) !important;
+  }
+
+  .patients-search input:focus-visible {
+    outline: none !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+}
+
+/* ============================================================
+   LIST FILTER SYSTEM
+   Keep list searches, selects, date ranges and status tabs on one
+   compact control rhythm with the same light surface treatment.
+   ============================================================ */
+@media screen {
+  :is(
+      .patients-page,
+      .test-management-page,
+      .worklist-page,
+      .version-history-page
+    )
+    :is(
+      .patients-search,
+      .department-filter select,
+      .report-filter-row > label > input,
+      .report-filter-row > label > select,
+      .result-count
+    ) {
+    min-height: var(--pf-control-height);
+    height: var(--pf-control-height);
+    border: 1px solid var(--pf-theme-border) !important;
+    border-radius: var(--pf-radius-md) !important;
+    background: var(--pf-theme-surface) !important;
+    box-shadow: var(--pf-shadow-sm);
+  }
+
+  :is(
+      .patients-page,
+      .test-management-page,
+      .worklist-page,
+      .version-history-page
+    )
+    :is(
+      .patients-search,
+      .department-filter select,
+      .report-filter-row > label > input,
+      .report-filter-row > label > select
+    ):hover {
+    border-color: var(--pf-theme-border-hover) !important;
+  }
+
+  :is(
+      .patients-page,
+      .test-management-page,
+      .worklist-page,
+      .version-history-page
+    )
+    :is(
+      .department-filter select,
+      .report-filter-row > label > input,
+      .report-filter-row > label > select
+    ):focus {
+    border-color: var(--pf-theme-control-focus) !important;
+    box-shadow: 0 0 0 2px var(--pf-theme-brand-focus-soft) !important;
+  }
+
+  .patients-page .toolbar-counter {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--pf-control-height);
+    padding: 0 10px;
+    border: 1px solid var(--pf-theme-border);
+    border-radius: var(--pf-radius-md);
+    background: var(--pf-theme-surface);
+    box-shadow: var(--pf-shadow-sm);
+  }
+
+  .test-management-page .department-filter {
+    gap: var(--pf-space-sm);
+  }
+
+  .test-management-page .department-filter select {
+    min-width: 210px;
+    padding: 0 11px;
+    color: var(--pf-theme-text);
+    font-size: 12.5px;
+  }
+
+  .report-filter-row > label {
+    min-width: 150px;
+    gap: 5px;
+  }
+
+  .report-filter-row > label > input,
+  .report-filter-row > label > select {
+    width: 100%;
+    padding: 0 11px;
+    color: var(--pf-theme-text);
+    font-size: 12.5px;
+  }
+
+  .status-filter-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    min-height: var(--pf-control-height);
+    padding: 3px;
+    border: 1px solid var(--pf-theme-border) !important;
+    border-radius: var(--pf-radius-md) !important;
+    background: var(--pf-theme-surface) !important;
+    box-shadow: var(--pf-shadow-sm);
+  }
+
+  .filter-tab {
+    min-height: 30px;
+    padding: 0 10px;
+    border-radius: var(--pf-radius-sm);
+  }
+
+  .filter-tab.is-active {
+    background: var(--pf-theme-surface-selected) !important;
+    color: var(--pf-theme-brand) !important;
+    box-shadow: none !important;
+  }
+
+  .filter-tab.is-active .tab-count {
+    background: var(--pf-theme-brand) !important;
+    color: var(--pf-theme-on-brand);
+  }
+
+  .tab-count {
+    min-width: 18px;
+    padding: 1px 5px;
+    background: var(--pf-theme-surface-muted);
+    color: var(--pf-theme-text-muted);
+    text-align: center;
+  }
+
+  .result-count {
+    color: var(--pf-theme-text-muted);
+    font-weight: var(--pf-font-weight-medium);
+  }
+
+  .date-range-filter {
+    display: grid;
+    grid-template-columns: auto minmax(300px, 1fr) auto;
+    align-items: end;
+    gap: 10px;
+    flex: 1 1 380px;
+    min-width: min(100%, 380px);
+    margin: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--pf-theme-border) !important;
+    border-radius: var(--pf-radius-md);
+    background: var(--pf-theme-surface) !important;
+    box-shadow: var(--pf-shadow-sm);
+  }
+
+  .date-range-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    width: auto;
+    padding: 0;
+    color: var(--pf-theme-text-muted);
+    font-size: 11px;
+    font-weight: var(--pf-font-weight-bold);
+    min-height: 32px;
+    white-space: nowrap;
+  }
+
+  .date-range-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: end;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .date-range-filter label {
+    display: grid;
+    grid-template-rows: auto 32px;
+    min-width: 0;
+    gap: 5px;
+    color: var(--pf-theme-text-muted);
+    font-size: 10px;
+    font-weight: var(--pf-font-weight-bold);
+    white-space: nowrap;
+  }
+
+  .date-range-filter label > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .date-range-filter input {
+    width: 100%;
+    min-width: 0;
+    height: 32px;
+    padding: 0 8px;
+    border: 1px solid var(--pf-theme-border) !important;
+    border-radius: var(--pf-radius-sm);
+    background: var(--pf-theme-surface) !important;
+    color: var(--pf-theme-text);
+    font-size: 11.5px;
+  }
+
+  .date-range-filter .MuiFormControl-root.MuiPickersTextField-root {
+    min-width: 0;
+    height: 32px;
+  }
+
+  .date-range-filter .MuiPickersInputBase-root {
+    min-width: 0;
+    height: 32px;
+    min-height: 32px;
+    padding: 0 4px 0 8px;
+    border-radius: var(--pf-radius-sm);
+    background: var(--pf-theme-surface) !important;
+    color: var(--pf-theme-text);
+  }
+
+  .date-range-filter .MuiPickersInputBase-root:hover,
+  .date-range-filter .MuiPickersInputBase-root.Mui-focused {
+    background: var(--pf-theme-surface) !important;
+  }
+
+  .date-range-filter .MuiPickersOutlinedInput-notchedOutline {
+    border: 1px solid var(--pf-theme-border) !important;
+  }
+
+  .date-range-filter .MuiPickersInputBase-root:hover
+    .MuiPickersOutlinedInput-notchedOutline {
+    border-color: var(--pf-theme-border-hover) !important;
+  }
+
+  .date-range-filter .MuiPickersInputBase-root.Mui-focused
+    .MuiPickersOutlinedInput-notchedOutline {
+    border: 1px solid var(--pf-theme-control-focus) !important;
+    box-shadow: 0 0 0 2px var(--pf-theme-brand-focus-soft);
+  }
+
+  .date-range-filter .MuiPickersSectionList-root {
+    min-height: 32px;
+    padding: 0;
+  }
+
+  .date-range-filter .MuiPickersInputBase-sectionContent {
+    color: var(--pf-theme-text);
+    font-size: 11.5px;
+  }
+
+  .date-range-filter .MuiInputAdornment-root {
+    margin-left: 4px;
+  }
+
+  .date-range-filter .MuiIconButton-root {
+    width: 26px;
+    height: 26px;
+    padding: 4px;
+    color: var(--pf-theme-text-muted);
+  }
+
+  .date-range-filter .MuiIconButton-root:hover {
+    background: var(--pf-theme-surface-hover);
+    color: var(--pf-theme-brand);
+  }
+
+  .date-range-filter input:focus {
+    border-color: var(--pf-theme-control-focus) !important;
+    box-shadow: 0 0 0 2px var(--pf-theme-brand-focus-soft) !important;
+    outline: none;
+  }
+
+  .date-range-to {
+    padding: 0;
+    color: var(--pf-theme-text-subtle);
+    font-size: 10px;
+    font-weight: var(--pf-font-weight-bold);
+  }
+
+  .date-range-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-height: 32px;
+    margin: 0;
+  }
+
+  .date-range-hint {
+    display: none;
+  }
+
+  .date-range-footer .form-error {
+    max-width: 180px;
+    margin: 0;
+    color: var(--pf-theme-danger);
+    font-size: 10px;
+    text-align: right;
+  }
+
+  .date-range-clear {
+    min-height: 28px;
+    padding: 0 6px;
+    border-radius: var(--pf-radius-sm);
+    color: var(--pf-theme-text-muted);
+    font-size: 10px;
+  }
+
+  .date-range-clear:hover {
+    background: var(--pf-theme-surface-hover);
+    color: var(--pf-theme-brand);
+  }
+
+  .date-range-filter.is-invalid {
+    border-color: color-mix(in srgb, var(--pf-theme-danger) 52%, var(--pf-theme-border)) !important;
+    background: var(--pf-theme-danger-soft) !important;
+  }
+}
+
+@media screen and (max-width: 760px) {
+  .date-range-filter {
+    grid-template-columns: auto minmax(0, 1fr);
+    min-width: 100%;
+  }
+
+  .date-range-footer {
+    grid-column: 2;
+  }
+}
+
+@media screen and (max-width: 520px) {
+  .date-range-filter {
+    grid-template-columns: 1fr;
+    align-items: end;
+    gap: 8px;
+    min-height: 0;
+    padding: 8px 10px;
+  }
+
+  .date-range-label,
+  .date-range-fields,
+  .date-range-footer {
+    grid-column: auto;
+  }
+
+  .date-range-label {
+    min-height: 18px;
+  }
+
+  .date-range-filter label {
+    display: grid;
+    align-items: stretch;
+    gap: 4px;
+    white-space: normal;
+  }
+
+  .date-range-filter label > span {
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .date-range-footer {
+    justify-content: flex-start;
+  }
+
+  .date-range-footer .form-error {
+    max-width: none;
+    text-align: left;
+  }
+}
+
+.pf-date-picker-popper .MuiPaper-root {
+  border: 1px solid var(--pf-theme-border);
+  border-radius: var(--pf-radius-md);
+  background: var(--pf-theme-surface);
+  box-shadow: 0 12px 28px rgba(20, 32, 51, 0.16);
+}
+
+.pf-date-picker-popper .MuiPickersDay-root.Mui-selected {
+  background: var(--pf-theme-brand);
+}
+
+.pf-date-picker-popper .MuiPickersDay-root:focus-visible {
+  outline: 2px solid var(--pf-theme-control-focus);
+  outline-offset: 1px;
 }

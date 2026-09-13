@@ -68,6 +68,34 @@ export function historyEventDate(report) {
 }
 
 /**
+ * @param {string | undefined} sort
+ * @returns {string}
+ */
+export function sortField(sort = 'newest') {
+  if (sort === 'newest' || sort === 'oldest') return 'created';
+  return sort.endsWith('-desc') ? sort.slice(0, -5) : sort;
+}
+
+/**
+ * @param {string | undefined} sort
+ * @returns {'asc' | 'desc'}
+ */
+export function sortDirection(sort = 'newest') {
+  return sort === 'newest' || sort.endsWith('-desc') ? 'desc' : 'asc';
+}
+
+/**
+ * @param {string | undefined} currentSort
+ * @param {'created' | 'patient' | 'test' | 'status' | 'version'} field
+ * @returns {string}
+ */
+export function toggleSort(currentSort = 'newest', field) {
+  if (sortField(currentSort) !== field) return field === 'created' ? 'newest' : field;
+  if (field === 'created') return currentSort === 'newest' ? 'oldest' : 'newest';
+  return currentSort.endsWith('-desc') ? field : `${field}-desc`;
+}
+
+/**
  * @template T
  * @param {T[]} values
  * @param {(a: T, b: T) => number} compare
@@ -140,15 +168,24 @@ export function filterWorklistReports(reports, patients, filters = {}) {
       .includes(query);
   });
   const sort = filters.sort ?? 'newest';
+  const descending = sortDirection(sort) === 'desc';
+  const field = sortField(sort);
   return stableSort(filtered, (a, b) => {
-    if (sort === 'oldest') return (parseDate(a.createdAt)?.getTime() ?? 0) - (parseDate(b.createdAt)?.getTime() ?? 0);
-    if (sort === 'patient')
-      return String(patientById.get(a.patientId)?.name ?? '').localeCompare(
+    let comparison = 0;
+    if (field === 'created') {
+      comparison = (parseDate(a.createdAt)?.getTime() ?? 0) - (parseDate(b.createdAt)?.getTime() ?? 0);
+    } else if (field === 'patient') {
+      comparison = String(patientById.get(a.patientId)?.name ?? '').localeCompare(
         String(patientById.get(b.patientId)?.name ?? ''),
       );
-    if (sort === 'test') return String(a.testName ?? '').localeCompare(String(b.testName ?? ''));
-    if (sort === 'status') return String(a.status).localeCompare(String(b.status));
-    return (parseDate(b.createdAt)?.getTime() ?? 0) - (parseDate(a.createdAt)?.getTime() ?? 0);
+    } else if (field === 'test') {
+      comparison = String(a.testName ?? '').localeCompare(String(b.testName ?? ''));
+    } else if (field === 'status') {
+      comparison = String(a.status).localeCompare(String(b.status));
+    } else if (field === 'version') {
+      comparison = Number(a.version ?? 0) - Number(b.version ?? 0);
+    }
+    return descending ? -comparison : comparison;
   });
 }
 

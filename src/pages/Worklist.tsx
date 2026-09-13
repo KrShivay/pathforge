@@ -8,16 +8,20 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import DateRangeFilter from "../components/common/DateRangeFilter";
+import { SkeletonList } from "../components/common/Skeleton";
+import SortableHeader from "../components/common/SortableHeader";
 import PageHeading from "../components/layout/PageHeading";
 import { checkClinicalCompleteness } from "../domain/report-bridge.mjs";
-import { usePatients } from "../store/PatientContext";
-import { useReports, type Report } from "../store/ReportContext";
-import { SkeletonList } from "../components/common/Skeleton";
 import {
   filterWorklistReports,
   formatDate as formatReportFilterDate,
   parseDate,
+  sortDirection,
+  sortField,
+  toggleSort,
 } from "../lib/reportFilters.mjs";
+import { usePatients } from "../store/PatientContext";
+import { useReports, type Report } from "../store/ReportContext";
 
 interface WorklistProps {
   onSelectReport?: (reportId: string) => void;
@@ -39,8 +43,8 @@ export default function Worklist({
   const [sort, setSort] = useState("newest");
   const invalidRange = Boolean(
     dateFrom &&
-      dateTo &&
-      (!parseDate(dateFrom) || !parseDate(dateTo) || dateFrom > dateTo),
+    dateTo &&
+    (!parseDate(dateFrom) || !parseDate(dateTo) || dateFrom > dateTo),
   );
 
   const counts = useMemo(() => {
@@ -55,7 +59,15 @@ export default function Worklist({
   }, [reports]);
 
   const filteredReports = useMemo(() => {
-    return filterWorklistReports(reports, patients, { search, status: statusFilter, from: dateFrom, to: dateTo, sort, needsAttention: (report: Report) => checkClinicalCompleteness(report).length > 0 });
+    return filterWorklistReports(reports, patients, {
+      search,
+      status: statusFilter,
+      from: dateFrom,
+      to: dateTo,
+      sort,
+      needsAttention: (report: Report) =>
+        checkClinicalCompleteness(report).length > 0,
+    });
   }, [reports, patients, search, statusFilter, dateFrom, dateTo, sort]);
 
   function getPatient(patientId: string) {
@@ -111,8 +123,11 @@ export default function Worklist({
               <span className="tab-count">{counts.attention}</span>
             </button>
           </div>
-          <div className="worklist-filter-group" role="group" aria-label="Date and sort filters">
-            <span className="filter-group-label">Date &amp; sort</span>
+          <div
+            className="worklist-filter-group"
+            role="group"
+            aria-label="Worklist filters"
+          >
             <div className="report-filter-row">
               <DateRangeFilter
                 id="worklist-date-range"
@@ -124,9 +139,29 @@ export default function Worklist({
                 onToChange={setDateTo}
                 invalid={invalidRange}
               />
-              <label>Sort<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="patient">Patient</option><option value="test">Test</option><option value="status">Status</option></select></label>
-              <span className="result-count" role="status">{filteredReports.length} result{filteredReports.length === 1 ? "" : "s"}</span>
-              {(search || statusFilter !== "all" || dateFrom || dateTo || sort !== "newest") && <button type="button" className="text-button" onClick={() => { setSearch(""); setStatusFilter("all"); setDateFrom(""); setDateTo(""); setSort("newest"); }}>Clear filters</button>}
+              <span className="result-count" role="status">
+                {filteredReports.length} result
+                {filteredReports.length === 1 ? "" : "s"}
+              </span>
+              {(search ||
+                statusFilter !== "all" ||
+                dateFrom ||
+                dateTo ||
+                sort !== "newest") && (
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => {
+                    setSearch("");
+                    setStatusFilter("all");
+                    setDateFrom("");
+                    setDateTo("");
+                    setSort("newest");
+                  }}
+                >
+                  Clear filters
+                </button>
+              )}
             </div>
           </div>
 
@@ -155,10 +190,34 @@ export default function Worklist({
 
       <div className="pf-card worklist-card content-card-fill">
         <div className="worklist-table-header">
-          <span className="col-patient">Patient</span>
-          <span className="col-test">Test / Specimen</span>
-          <span className="col-status">Status</span>
-          <span className="col-date">Created</span>
+          <SortableHeader
+            className="col-patient"
+            label="Patient"
+            active={sortField(sort) === "patient"}
+            direction={sortDirection(sort)}
+            onClick={() => setSort(toggleSort(sort, "patient"))}
+          />
+          <SortableHeader
+            className="col-test"
+            label="Test / Specimen"
+            active={sortField(sort) === "test"}
+            direction={sortDirection(sort)}
+            onClick={() => setSort(toggleSort(sort, "test"))}
+          />
+          <SortableHeader
+            className="col-status"
+            label="Status"
+            active={sortField(sort) === "status"}
+            direction={sortDirection(sort)}
+            onClick={() => setSort(toggleSort(sort, "status"))}
+          />
+          <SortableHeader
+            className="col-date"
+            label="Created"
+            active={sortField(sort) === "created"}
+            direction={sortDirection(sort)}
+            onClick={() => setSort(toggleSort(sort, "created"))}
+          />
           <span className="col-action" />
         </div>
 
@@ -225,7 +284,11 @@ export default function Worklist({
               <FileText size={36} />
               <h3>No reports found</h3>
               <p>
-                {search || statusFilter !== "all" || dateFrom || dateTo || sort !== "newest"
+                {search ||
+                statusFilter !== "all" ||
+                dateFrom ||
+                dateTo ||
+                sort !== "newest"
                   ? "No pathology reports match your current filter criteria."
                   : "Use New Report in the top navigation to get started."}
               </p>

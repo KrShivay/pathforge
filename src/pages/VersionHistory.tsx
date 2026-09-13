@@ -8,10 +8,19 @@ import {
 import { useMemo, useState } from "react";
 import CardHeading from "../components/common/CardHeading";
 import DateRangeFilter from "../components/common/DateRangeFilter";
+import SortableHeader from "../components/common/SortableHeader";
 import PageHeading from "../components/layout/PageHeading";
 import { usePatients } from "../store/PatientContext";
 import { useReports } from "../store/ReportContext";
-import { filterHistoryReports, formatDate, historyEventDate, parseDate } from "../lib/reportFilters.mjs";
+import {
+  filterHistoryReports,
+  formatDate,
+  historyEventDate,
+  parseDate,
+  sortDirection,
+  sortField,
+  toggleSort,
+} from "../lib/reportFilters.mjs";
 
 interface VersionHistoryProps {
   onSelectReport: (reportId: string) => void;
@@ -69,13 +78,44 @@ export default function VersionHistory({
               invalid={invalidRange}
             />
             <label>Lifecycle<select value={lifecycle} onChange={(event) => setLifecycle(event.target.value)}><option value="all">All</option><option value="draft">Draft</option><option value="finalized">Finalized</option><option value="amended">Amendments</option></select></label>
-            <label>Sort<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="newest">Newest</option><option value="oldest">Oldest</option></select></label>
             <button type="button" className="text-button" onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); setLifecycle("all"); setSort("newest"); }}>Clear filters</button>
           </div>
         </div>
 
         {versionedReports.length > 0 ? (
-          <div className="version-list scrollable-container">
+          <>
+            <div className="version-list-header">
+              <span className="version-list-icon-space" aria-hidden="true" />
+              <SortableHeader
+                className="version-col-patient"
+                label="Patient"
+                active={sortField(sort) === "patient"}
+                direction={sortDirection(sort)}
+                onClick={() => setSort(toggleSort(sort, "patient"))}
+              />
+              <SortableHeader
+                className="version-col-version"
+                label="Version"
+                active={sortField(sort) === "version"}
+                direction={sortDirection(sort)}
+                onClick={() => setSort(toggleSort(sort, "version"))}
+              />
+              <SortableHeader
+                className="version-col-status"
+                label="Status"
+                active={sortField(sort) === "status"}
+                direction={sortDirection(sort)}
+                onClick={() => setSort(toggleSort(sort, "status"))}
+              />
+              <SortableHeader
+                className="version-col-event"
+                label="Event"
+                active={sortField(sort) === "created"}
+                direction={sortDirection(sort)}
+                onClick={() => setSort(toggleSort(sort, "created"))}
+              />
+            </div>
+            <div className="version-list scrollable-container">
             {versionedReports.map((report) => {
               const pt = getPatient(report.patientId);
               const isFinalized = report.status === "finalized";
@@ -85,55 +125,52 @@ export default function VersionHistory({
                     <History size={17} />
                   </div>
 
-                  <div className="version-main">
-                    <div className="version-title-row">
-                      <div className="version-patient-block">
-                        <strong>{pt?.name ?? "Unknown Patient"}</strong>
-                        <span className="version-specimen">
-                          {report.testName ||
-                            report.specimens.join(", ") ||
-                            "No specimen"}
-                        </span>
-                      </div>
+                  <div className="version-patient-block">
+                    <strong>{pt?.name ?? "Unknown Patient"}</strong>
+                    <span className="version-specimen">
+                      {report.testName ||
+                        report.specimens.join(", ") ||
+                        "No specimen"}
+                    </span>
+                  </div>
 
-                      <div className="version-badges">
-                        <span className="version-number-pill">
-                          v{report.version}
-                        </span>
+                  <div className="version-number-cell">
+                    <span className="version-number-pill">v{report.version}</span>
+                  </div>
 
-                        {isFinalized ? (
-                          <span className="status-badge finalized">
-                            <CheckCircle2 size={12} />
-                            Finalized
-                          </span>
-                        ) : (
-                          <span className="status-badge draft">
-                            <Clock size={12} />
-                            Draft
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="version-meta">
-                      <span>
-                        <FileText size={13} />
-                        Event {formatDate(historyEventDate(report), true)}
+                  <div className="version-status-cell">
+                    {isFinalized ? (
+                      <span className="status-badge finalized">
+                        <CheckCircle2 size={12} />
+                        Finalized
                       </span>
+                    ) : (
+                      <span className="status-badge draft">
+                        <Clock size={12} />
+                        Draft
+                      </span>
+                    )}
+                  </div>
 
-                      {report.supersedesReportId && (
-                        <span className="amendment-label">
-                          <GitBranch size={12} />
-                          Amendment of previous version
-                        </span>
-                      )}
-                    </div>
+                  <div className="version-event-cell">
+                    <span>
+                      <FileText size={13} />
+                      {formatDate(historyEventDate(report), true)}
+                    </span>
+
+                    {report.supersedesReportId && (
+                      <span className="amendment-label">
+                        <GitBranch size={12} />
+                        Amendment
+                      </span>
+                    )}
                   </div>
 
                 </button>
               );
             })}
-          </div>
+            </div>
+          </>
         ) : (
           <div className="version-history-empty">
             <History size={36} />

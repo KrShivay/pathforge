@@ -6,6 +6,9 @@ import {
   historyEventDate,
   parseDate,
   formatDate,
+  sortDirection,
+  sortField,
+  toggleSort,
 } from '../../src/lib/reportFilters.mjs';
 
 test('parseDate safely handles empty and ISO date strings', () => {
@@ -67,6 +70,36 @@ test('filterWorklistReports searches across patient and report details', () => {
   const searchSerum = filterWorklistReports(reports, patients, { search: 'serum' });
   assert.equal(searchSerum.length, 1);
   assert.equal(searchSerum[0].id, 'R2');
+});
+
+test('table header sorts toggle direction while preserving equal-value order', () => {
+  const reports = [
+    { id: 'R1', patientId: 'P2', status: 'draft', createdAt: '2026-09-10', version: 1, specimens: [] },
+    { id: 'R2', patientId: 'P1', status: 'finalized', createdAt: '2026-09-11', version: 3, specimens: [] },
+    { id: 'R3', patientId: 'P1', status: 'draft', createdAt: '2026-09-12', version: 2, specimens: [] },
+  ];
+  const patients = [
+    { id: 'P1', name: 'Jane Smith' },
+    { id: 'P2', name: 'John Doe' },
+  ];
+
+  assert.deepEqual(
+    filterWorklistReports(reports, patients, { sort: 'patient' }).map((report) => report.id),
+    ['R2', 'R3', 'R1'],
+  );
+  assert.deepEqual(
+    filterWorklistReports(reports, patients, { sort: 'patient-desc' }).map((report) => report.id),
+    ['R1', 'R2', 'R3'],
+  );
+  assert.deepEqual(
+    filterWorklistReports(reports, patients, { sort: 'version' }).map((report) => report.id),
+    ['R1', 'R3', 'R2'],
+  );
+  assert.equal(sortField('newest'), 'created');
+  assert.equal(sortDirection('patient-desc'), 'desc');
+  assert.equal(toggleSort('newest', 'patient'), 'patient');
+  assert.equal(toggleSort('patient', 'patient'), 'patient-desc');
+  assert.equal(toggleSort('patient-desc', 'patient'), 'patient');
 });
 
 test('Version History uses amendment, then finalization, then creation as its event date', () => {

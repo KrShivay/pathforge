@@ -1,10 +1,12 @@
 import {
   Check,
+  ChevronRight,
   MapPin,
   Phone,
   Search,
   UserCheck,
   UserPlus,
+  UserRound,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -204,6 +206,9 @@ export default function PatientStep({
                       }}
                       aria-pressed={isSelected}
                     >
+                      <span className="patient-pick-avatar" aria-hidden="true">
+                        <UserRound size={18} />
+                      </span>
                       <div className="patient-pick-main">
                         <span className="patient-pick-name">
                           {patient.name}
@@ -228,6 +233,9 @@ export default function PatientStep({
                           </span>
                         ) : null}
                       </div>
+                      <span className="patient-pick-indicator" aria-hidden="true">
+                        <ChevronRight size={17} />
+                      </span>
                     </button>
                   </li>
                 );

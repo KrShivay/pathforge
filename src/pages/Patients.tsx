@@ -2,14 +2,21 @@ import { Plus, Search, Users, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import PageHeading from "../components/layout/PageHeading";
 import { SkeletonList } from "../components/common/Skeleton";
+import SortableHeader, {
+  type SortDirection,
+} from "../components/common/SortableHeader";
 import PatientForm from "../components/patients/PatientForm";
 import { confirmDestructive } from "../lib/dialog";
 import { usePatients } from "../store/PatientContext";
+
+type PatientSortField = "name" | "age" | "phone";
 
 export default function Patients() {
   const { patients, loading } = usePatients();
 
   const [search, setSearch] = useState("");
+  const [sortField, setSortField] = useState<PatientSortField>("name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const formDirtyRef = useRef(false);
   const addPatientButtonRef = useRef<HTMLButtonElement>(null);
@@ -71,6 +78,25 @@ export default function Patients() {
       )
     : patients;
 
+  const sortedPatients = [...filteredPatients].sort((a, b) => {
+    const comparison =
+      sortField === "age"
+        ? a.age - b.age
+        : sortField === "phone"
+          ? a.phone.localeCompare(b.phone, undefined, { numeric: true })
+          : a.name.localeCompare(b.name);
+    return sortDirection === "asc" ? comparison : -comparison;
+  });
+
+  function handleSort(field: PatientSortField) {
+    if (field === sortField) {
+      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortField(field);
+    setSortDirection("asc");
+  }
+
   return (
     <div className="patients-page viewport-page">
       <div className="patients-header-bar">
@@ -129,16 +155,34 @@ export default function Patients() {
 
       <div className="pf-card content-card-fill">
         <div className="patients-table-header">
-          <span className="col-p-name">Patient</span>
-          <span className="col-p-age">Age / Sex</span>
-          <span className="col-p-phone">Phone</span>
+          <SortableHeader
+            className="col-p-name"
+            label="Patient"
+            active={sortField === "name"}
+            direction={sortDirection}
+            onClick={() => handleSort("name")}
+          />
+          <SortableHeader
+            className="col-p-age"
+            label="Age / Sex"
+            active={sortField === "age"}
+            direction={sortDirection}
+            onClick={() => handleSort("age")}
+          />
+          <SortableHeader
+            className="col-p-phone"
+            label="Phone"
+            active={sortField === "phone"}
+            direction={sortDirection}
+            onClick={() => handleSort("phone")}
+          />
         </div>
 
         <div className="patients-table-body scrollable-container">
           {loading ? (
             <SkeletonList count={5} />
-          ) : filteredPatients.length > 0 ? (
-            filteredPatients.map((patient) => (
+          ) : sortedPatients.length > 0 ? (
+            sortedPatients.map((patient) => (
               <div className="table-row patients-row" key={patient.id}>
                 <div className="patient-name col-p-name">
                   <div className="patient-avatar">
