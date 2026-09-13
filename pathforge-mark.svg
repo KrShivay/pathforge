@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="title desc">
+  <title id="title">PathForge</title>
+  <desc id="desc">A stylized P and F mark inside a rounded navy square</desc>
+  <rect width="48" height="48" rx="14" fill="#142033"/>
+  <path d="M13.5 34V14h9.2c5.9 0 9.4 2.8 9.4 7.5s-3.5 7.5-9.4 7.5h-4.2" fill="none" stroke="#F8FBFF" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.4"/>
+  <path d="M31.6 14 24 34m2.8-7.6h8.3" fill="none" stroke="#60A5FA" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.4"/>
+  <path d="m36.2 10.8.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9Z" fill="#F4B860"/>
+</svg>
