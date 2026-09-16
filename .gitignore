@@ -1,0 +1,31 @@
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Editor and local environment files
+.idea/
+.vscode/
+*.swp
+.env
+.env.*
+!.env.example
+
+# Generated build and runtime output
+.gitnexus/
+node_modules/
+dist/
+build/
+coverage/
+playwright-report/
+test-results/
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.log
+
+# Local reference PDFs may contain personal/clinical data; never commit them.
+docs/samples/pdfs/*.pdf
+Cross-platform design system foundations/*
+.env
+.env.local
