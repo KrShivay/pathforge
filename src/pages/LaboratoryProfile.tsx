@@ -146,7 +146,36 @@ export default function LaboratoryProfilePage() {
           <button type="button" className="secondary-button destructive-secondary-button" onClick={async () => { const accepted = await confirmDestructive({ title: "Restore default profile?", text: "This replaces the current laboratory profile. Finalized report snapshots are not changed.", confirmText: "Restore defaults", cancelText: "Keep profile" }); if (accepted) { restoreDefault(); location.reload(); } }}><RotateCcw size={16} />Restore defaults</button>
         </div>
       </div>
-      <aside className="profile-preview" aria-label="Laboratory identity preview">{hasLogo && <img src={logoDataUrl} alt="" />}<span className="profile-preview-kicker">Report header preview</span><strong>{draft.laboratoryName || "Laboratory name"}</strong><span>{draft.reportSubtitle || "Report subtitle"}</span>{draft.proprietorName && <span>Prop. {draft.proprietorName}</span>}<small>{[draft.addressLine1, draft.addressLine2, draft.city, draft.phone, draft.email].filter(Boolean).join(" · ") || "Contact details will appear here"}</small>{draft.registrationNumber && <small>Reg. No. {draft.registrationNumber}</small>}</aside>
+      <aside className="profile-preview" aria-label="Laboratory identity preview">
+          {hasLogo && <img src={logoDataUrl} alt="" />}
+          <span className="profile-preview-kicker">Report header preview</span>
+          <strong>{draft.laboratoryName || "Laboratory name"}</strong>
+          <span>{draft.reportSubtitle || "Report subtitle"}</span>
+          {draft.proprietorName && <span>Prop. {draft.proprietorName}</span>}
+          {(() => {
+            const address = [draft.addressLine1, draft.addressLine2, draft.city, draft.state, draft.postcode, draft.country].filter(Boolean).join(", ");
+            const contact = [draft.phone, draft.alternatePhone, draft.email, draft.website].filter(Boolean).join(" · ");
+            const strapline = [draft.accreditationName, draft.accreditationNumber, draft.registrationNumber ? `Reg. No. ${draft.registrationNumber}` : ""].filter(Boolean).join(" · ");
+            const hours = draft.workingHours.trim();
+            const techLine = [draft.technologistName, draft.technologistDesignation].filter(Boolean).join(", ");
+            const pathoLine = [draft.pathologistName, draft.pathologistQualifications, draft.pathologistDesignation].filter(Boolean).join(", ");
+            const footer = draft.shortName || draft.laboratoryName || "";
+            const footerNote = draft.footerNote || draft.phone || "";
+            return <>
+              {address && <small>{address}</small>}
+              {contact && <small>{contact}</small>}
+              {hours && <small>{hours}</small>}
+              {strapline && <small>{strapline}</small>}
+              {!address && !contact && !strapline && <small className="profile-preview-empty">Contact details will appear here</small>}
+              {(techLine || pathoLine) && <span className="profile-preview-divider" />}
+              {techLine && <small><em>Technologist:</em> {techLine}</small>}
+              {pathoLine && <small><em>Pathologist:</em> {pathoLine}</small>}
+              {(footer || footerNote) && <span className="profile-preview-divider" />}
+              {footer && <small><em>Footer ref:</em> {footer}</small>}
+              {footerNote && <small><em>Footer note:</em> {footerNote}</small>}
+            </>;
+          })()}
+        </aside>
     </div>
   </section>;
 }

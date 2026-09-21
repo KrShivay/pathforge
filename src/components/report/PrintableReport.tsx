@@ -28,7 +28,6 @@ export default function PrintableReport({ model }: PrintableReportProps) {
             <h1>{model.brand.name}</h1>
             <p className="pr-tagline">{model.brand.tagline}</p>
             {model.brand.proprietor && <p className="pr-proprietor">{model.brand.proprietor}</p>}
-            <p className="pr-accred">{model.brand.strapline}</p>
             {model.brand.address && <p className="pr-address">{model.brand.address}</p>}
             {model.brand.contact && <p className="pr-contact">{model.brand.contact}</p>}
             {model.brand.hours && <p className="pr-contact">{model.brand.hours}</p>}
@@ -36,6 +35,9 @@ export default function PrintableReport({ model }: PrintableReportProps) {
         </div>
 
         <div className="pr-docmeta">
+          {model.brand.strapline && (
+            <p className="pr-docmeta-regnum">{model.brand.strapline}</p>
+          )}
           <dl>
             {model.isFinalized ? (
               <div><dt>Issue Date</dt><dd>{model.generatedAt}</dd></div>

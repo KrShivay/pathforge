@@ -233,9 +233,13 @@ export default function NewReport({
   return (
     <div className="wizard-page viewport-page">
       <div className="wizard-header">
-        <div>
+        <div className="wizard-header-text">
           <h1>New Report</h1>
-          <p>Follow the steps to create and configure a pathology report.</p>
+          <p>
+            {canSave
+              ? "Follow the steps to create and configure a pathology report."
+              : "Choose a patient and at least one test to save a draft."}
+          </p>
         </div>
         {step < STEPS.length - 1 ? (
           <button
@@ -254,11 +258,6 @@ export default function NewReport({
           </button>
         ) : null}
       </div>
-      {!canSave ? (
-        <p className="wizard-prerequisite">
-          To save a draft, choose a patient and at least one test.
-        </p>
-      ) : null}
 
       <Stepper
         steps={STEPS}
