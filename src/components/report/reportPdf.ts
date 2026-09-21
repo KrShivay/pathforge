@@ -298,14 +298,18 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
     doc.setDrawColor(...INK).setLineWidth(0.2).line(x, y, x + sigW, y);
     doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(...INK);
     doc.text(entry.role, x, y + 4);
-    doc.setFont("helvetica", "normal").setFontSize(7.5).setTextColor(...MUTED);
-    doc.text(doc.splitTextToSize(entry.note, sigW), x, y + 8);
+    if (entry.note.trim()) {
+      doc.setFont("helvetica", "normal").setFontSize(7.5).setTextColor(...MUTED);
+      doc.text(doc.splitTextToSize(entry.note, sigW), x, y + 8);
+    }
   });
   y += 14;
 
-  doc.setFont("helvetica", "italic").setFontSize(7.5).setTextColor(...MUTED);
-  doc.text(doc.splitTextToSize(model.authorisationNote, CONTENT_W), MARGIN, y);
-  y += 6;
+  if (model.authorisationNote.trim()) {
+    doc.setFont("helvetica", "italic").setFontSize(7.5).setTextColor(...MUTED);
+    doc.text(doc.splitTextToSize(model.authorisationNote, CONTENT_W), MARGIN, y);
+    y += 6;
+  }
   need(6);
   doc.setFont("helvetica", "normal").setFontSize(7.5).setTextColor(...MUTED);
   doc.text(model.endOfReport, PAGE_W / 2, y, { align: "center" });

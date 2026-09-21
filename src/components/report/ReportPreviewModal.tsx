@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { X, Printer, Download } from "lucide-react";
 
+import A4PreviewSheet from "./A4PreviewSheet";
 import PrintableReport from "./PrintableReport";
 import type { ReportModel } from "./reportModel";
 
@@ -118,9 +119,9 @@ export default function ReportPreviewModal({
         </div>
 
         <div className="preview-modal-body">
-          <div className="preview-modal-sheet">
+          <A4PreviewSheet className="preview-modal-sheet">
             <PrintableReport model={model} />
-          </div>
+          </A4PreviewSheet>
         </div>
       </div>
     </div>

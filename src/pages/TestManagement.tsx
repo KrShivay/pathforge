@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Plus,
   Trash2,
@@ -29,7 +29,11 @@ type EditingParameter = {
   parameterId: string;
 } | null;
 
-export default function TestManagement() {
+interface TestManagementProps {
+  onDirtyChange?: (dirty: boolean) => void;
+}
+
+export default function TestManagement({ onDirtyChange }: TestManagementProps) {
   const {
     tests,
     addTest,
@@ -80,6 +84,15 @@ export default function TestManagement() {
     max: "",
     referenceText: "",
   });
+
+  const isDirty = Boolean(
+    showAddTest || editingTestId || editingParameter || showAddParameter,
+  );
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+    return () => onDirtyChange?.(false);
+  }, [isDirty, onDirtyChange]);
 
   const query = search.trim().toLowerCase();
   const visibleTests = useMemo(() => {
@@ -535,23 +548,11 @@ export default function TestManagement() {
                   {/* TEST HEADER ROW */}
                   <div
                     className="test-item-header"
-                    role="button"
-                    tabIndex={isEditing ? -1 : 0}
-                    aria-expanded={isExpanded}
-                    aria-controls={`test-parameters-${test.id}`}
-                    onClick={() => {
-                      if (!isEditing) toggleTest(test.id);
-                    }}
-                    onKeyDown={(event) => {
-                      if (!isEditing && (event.key === "Enter" || event.key === " ")) {
-                        event.preventDefault();
-                        toggleTest(test.id);
-                      }
-                    }}
                   >
                     <button
                       type="button"
                       className={`test-chevron-btn ${isExpanded ? "expanded" : ""}`}
+                      disabled={isEditing}
                       onClick={(event) => {
                         event.stopPropagation();
                         toggleTest(test.id);

@@ -21,9 +21,9 @@ import ResultsTable from "../components/report/ResultsTable";
 import { resultTypeError } from "../components/report/resultValidation.mjs";
 import { formatReportDate, isoDateFromLocalDate } from "../components/report/reportMeta";
 import { buildReportModel } from "../components/report/reportModel";
-import { downloadReportPdf } from "../components/report/reportPdf";
 import { sanitizeText } from "../domain/textRules.mjs";
 import {
+  confirmDestructive,
   notifyError,
   notifyErrorList,
   notifySuccess,
@@ -338,6 +338,14 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
       return;
     }
 
+    const confirmed = await confirmDestructive({
+      title: "Finalize this report?",
+      text: "This version will become finalized and locked. Any later corrections will require an amendment.",
+      confirmText: "Finalize",
+      cancelText: "Cancel",
+    });
+    if (!confirmed) return;
+
     setBusy(true);
     let result;
     try {
@@ -471,6 +479,7 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
   async function handleDownloadPdf() {
     setBusy(true);
     try {
+      const { downloadReportPdf } = await import("../components/report/reportPdf");
       await downloadReportPdf(model);
     } catch (error) {
       void notifyError({

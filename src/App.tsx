@@ -1,5 +1,5 @@
 import { ArrowLeft } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import TopNav, { type Page } from "./components/layout/TopNav";
 import WorkspaceGate, {
   type WorkspaceGateKind,
@@ -21,32 +21,57 @@ export default function App() {
   const [worklistFilter, setWorklistFilter] = useState<"all" | "draft" | "finalized" | "attention">("all");
   const [workspaceGate, setWorkspaceGate] =
     useState<WorkspaceGateKind | null>("entry");
-  const newReportDirtyRef = useRef(false);
-  const editorDirtyRef = useRef(false);
+  type DirtyScope = "new-report" | "report-editor" | "test-management" | "lab-profile";
+  const dirtyScopesRef = useRef<Record<DirtyScope, boolean>>({
+    "new-report": false,
+    "report-editor": false,
+    "test-management": false,
+    "lab-profile": false,
+  });
+  const updateDirtyScope = useCallback((scope: DirtyScope, dirty: boolean) => {
+    dirtyScopesRef.current[scope] = dirty;
+  }, []);
+  const onNewReportDirtyChange = useCallback((dirty: boolean) => updateDirtyScope("new-report", dirty), [updateDirtyScope]);
+  const onReportEditorDirtyChange = useCallback((dirty: boolean) => updateDirtyScope("report-editor", dirty), [updateDirtyScope]);
+  const onTestManagementDirtyChange = useCallback((dirty: boolean) => updateDirtyScope("test-management", dirty), [updateDirtyScope]);
+  const onLabProfileDirtyChange = useCallback((dirty: boolean) => updateDirtyScope("lab-profile", dirty), [updateDirtyScope]);
   const entryButtonRef = useRef<HTMLButtonElement>(null);
   const lockButtonRef = useRef<HTMLButtonElement>(null);
   const unlockButtonRef = useRef<HTMLButtonElement>(null);
 
   async function confirmExit(): Promise<boolean> {
-    const dirtyNew = activePage === "new-report" && !selectedReportId && newReportDirtyRef.current;
-    if (!dirtyNew && !editorDirtyRef.current) return true;
+    if (!Object.values(dirtyScopesRef.current).some(Boolean)) return true;
     return confirmDestructive({ title: "Discard unsaved changes?", text: "Leaving now will discard changes that have not been saved.", confirmText: "Discard", cancelText: "Keep editing" });
   }
 
   async function handleNavigate(page: Page, filter: "all" | "draft" | "finalized" | "attention" = "all") {
     if (!(await confirmExit())) return;
-    newReportDirtyRef.current = false;
-    editorDirtyRef.current = false;
+    for (const scope of Object.keys(dirtyScopesRef.current) as DirtyScope[]) {
+      dirtyScopesRef.current[scope] = false;
+    }
     setSelectedReportId(null);
     if (page === "worklist") setWorklistFilter(filter);
     setActivePage(page);
   }
 
-  function handleSelectReport(reportId: string) {
-    setReportOrigin(activePage);
-    editorDirtyRef.current = false;
+  async function handleSelectReport(reportId: string) {
+    if (!(await confirmExit())) return;
+    if (!selectedReportId) setReportOrigin(activePage);
+    for (const scope of Object.keys(dirtyScopesRef.current) as DirtyScope[]) {
+      dirtyScopesRef.current[scope] = false;
+    }
     setSelectedReportId(reportId);
   }
+
+  useEffect(() => {
+    function guardUnsavedChanges(event: BeforeUnloadEvent) {
+      if (!Object.values(dirtyScopesRef.current).some(Boolean)) return;
+      event.preventDefault();
+      event.returnValue = "";
+    }
+    window.addEventListener("beforeunload", guardUnsavedChanges);
+    return () => window.removeEventListener("beforeunload", guardUnsavedChanges);
+  }, []);
 
   useEffect(() => {
     if (workspaceGate === "entry") entryButtonRef.current?.focus();
@@ -54,15 +79,15 @@ export default function App() {
   }, [workspaceGate]);
 
   const page = selectedReportId ? (
-    <ReportEditor reportId={selectedReportId} onBack={() => void handleNavigate(reportOrigin)} onOpenReport={setSelectedReportId} onDirtyChange={(dirty) => { editorDirtyRef.current = dirty; }} />
+    <ReportEditor reportId={selectedReportId} onBack={() => void handleNavigate(reportOrigin)} onOpenReport={(reportId) => void handleSelectReport(reportId)} onDirtyChange={onReportEditorDirtyChange} />
   ) : activePage === "dashboard" ? (
     <Dashboard onNavigate={handleNavigate} onSelectReport={handleSelectReport} />
   ) : activePage === "patients" ? <Patients />
     : activePage === "worklist" ? <Worklist onSelectReport={handleSelectReport} initialFilter={worklistFilter} />
-    : activePage === "new-report" ? <NewReport onOpenReport={handleSelectReport} onDirtyChange={(dirty) => { newReportDirtyRef.current = dirty; }} />
+    : activePage === "new-report" ? <NewReport onOpenReport={handleSelectReport} onDirtyChange={onNewReportDirtyChange} />
     : activePage === "history" ? <VersionHistory onSelectReport={handleSelectReport} />
-    : activePage === "test-management" ? <TestManagement />
-    : <LaboratoryProfilePage />;
+    : activePage === "test-management" ? <TestManagement onDirtyChange={onTestManagementDirtyChange} />
+    : <LaboratoryProfilePage onDirtyChange={onLabProfileDirtyChange} />;
 
   return <div className="app-shell">
     <TopNav

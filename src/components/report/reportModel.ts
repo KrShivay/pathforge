@@ -185,6 +185,14 @@ function valueForRole(
   return field ? text((field.content as Record<string, unknown>).value) : "";
 }
 
+function signoffNote(role: string, values: string[]): string {
+  const roleText = role.trim().toLowerCase();
+  return values
+    .map((value) => value.trim())
+    .filter((value) => value && value.toLowerCase() !== roleText)
+    .join(", ");
+}
+
 export function buildReportModel(input: ReportModelInput): ReportModel {
   // Snapshots frozen into old reports predate later profile fields, so a stored
   // brandingSnapshot can be missing string keys. Normalize to backfill defaults
@@ -265,6 +273,18 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
     emphasis: role === "diagnosis",
   }));
 
+  const signoff = [
+    {
+      role: "Lab technologist",
+      note: signoffNote("Lab technologist", [profile.technologistName, profile.technologistDesignation]),
+    },
+    {
+      role: "Consultant pathologist",
+      note: signoffNote("Consultant pathologist", [profile.pathologistName, profile.pathologistQualifications, profile.pathologistDesignation]),
+    },
+  ];
+  const hasSignatoryDetails = signoff.some((entry) => entry.note.trim());
+
   return {
     brand: {
       name: profile.laboratoryName || BRAND.name,
@@ -327,17 +347,12 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
     resultGroups,
     showGroupHeadings: resultGroups.length > 1,
     narratives,
-    signoff: [
-      {
-        role: "Lab technologist",
-        note: [profile.technologistName, profile.technologistDesignation].filter(Boolean).join(", ") || "Lab technologist",
-      },
-      {
-        role: "Consultant pathologist",
-        note: [profile.pathologistName, profile.pathologistQualifications, profile.pathologistDesignation].filter(Boolean).join(", ") || "Consultant pathologist",
-      },
-    ],
-    authorisationNote: input.isFinalized ? AUTH_NOTE_FINAL : AUTH_NOTE_DRAFT,
+    signoff,
+    authorisationNote: input.isFinalized
+      ? hasSignatoryDetails
+        ? AUTH_NOTE_FINAL
+        : ""
+      : AUTH_NOTE_DRAFT,
     endOfReport: "— End of Report —",
     footer: { reference: profile.shortName || BRAND.name, disclaimer: profile.footerNote || profile.phone || DISCLAIMER },
     generatedAt: formatReportDate(input.issueDate ?? input.reportDate),

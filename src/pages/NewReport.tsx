@@ -210,6 +210,7 @@ export default function NewReport({
     try {
       const draft = await addReport(buildReport());
       if (!draft) throw new Error("The report could not be created.");
+      onDirtyChange?.(false);
 
       if (proceed) {
         onOpenReport(draft.id);

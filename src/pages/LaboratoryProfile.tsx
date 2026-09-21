@@ -1,5 +1,5 @@
 import { RotateCcw, Save, Trash2, Upload } from "lucide-react";
-import { useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import PageHeading from "../components/layout/PageHeading";
 import { confirmDestructive, notifyError, notifySuccess } from "../lib/dialog";
 import { useBranding } from "../store/BrandingContext";
@@ -16,6 +16,10 @@ interface ProfileGroup {
   legend: string;
   hint: string;
   fields: ProfileField[];
+}
+
+interface LaboratoryProfilePageProps {
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 /**
@@ -79,12 +83,18 @@ const PROFILE_GROUPS: ProfileGroup[] = [
   },
 ];
 
-export default function LaboratoryProfilePage() {
+export default function LaboratoryProfilePage({ onDirtyChange }: LaboratoryProfilePageProps) {
   const { profile, updateProfile, restoreDefault } = useBranding();
   const [draft, setDraft] = useState(profile);
   const [processingLogo, setProcessingLogo] = useState(false);
   const logoDataUrl = getUsableLogoDataUrl(draft.logoDataUrl);
   const hasLogo = Boolean(logoDataUrl);
+  const isDirty = JSON.stringify(draft) !== JSON.stringify(profile);
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+    return () => onDirtyChange?.(false);
+  }, [isDirty, onDirtyChange]);
 
   async function saveProfile() {
     if (!draft[REQUIRED_FIELD.key].trim()) {
@@ -92,6 +102,7 @@ export default function LaboratoryProfilePage() {
       return;
     }
     updateProfile(draft);
+    onDirtyChange?.(false);
     void notifySuccess({ title: "Laboratory profile saved" });
   }
 
@@ -143,7 +154,7 @@ export default function LaboratoryProfilePage() {
             <h3 id="profile-reset-title">Reset profile</h3>
             <p>Restore the default laboratory identity and contact details.</p>
           </div>
-          <button type="button" className="secondary-button destructive-secondary-button" onClick={async () => { const accepted = await confirmDestructive({ title: "Restore default profile?", text: "This replaces the current laboratory profile. Finalized report snapshots are not changed.", confirmText: "Restore defaults", cancelText: "Keep profile" }); if (accepted) { restoreDefault(); location.reload(); } }}><RotateCcw size={16} />Restore defaults</button>
+          <button type="button" className="secondary-button destructive-secondary-button" onClick={async () => { const accepted = await confirmDestructive({ title: "Restore default profile?", text: "This replaces the current laboratory profile. Finalized report snapshots are not changed.", confirmText: "Restore defaults", cancelText: "Keep profile" }); if (accepted) { restoreDefault(); onDirtyChange?.(false); location.reload(); } }}><RotateCcw size={16} />Restore defaults</button>
         </div>
       </div>
       <aside className="profile-preview" aria-label="Laboratory identity preview">

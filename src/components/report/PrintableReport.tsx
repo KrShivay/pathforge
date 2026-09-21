@@ -136,12 +136,14 @@ export default function PrintableReport({ model }: PrintableReportProps) {
           <div key={entry.role} className="pr-sig">
             <div className="pr-sigline" />
             <p className="pr-sigrole">{entry.role}</p>
-            <p className="pr-signote">{entry.note}</p>
+            {entry.note.trim() && <p className="pr-signote">{entry.note}</p>}
           </div>
         ))}
       </section>
 
-      <p className="pr-authnote">{model.authorisationNote}</p>
+      {model.authorisationNote.trim() && (
+        <p className="pr-authnote">{model.authorisationNote}</p>
+      )}
 
       <p className="pr-endmark">{model.endOfReport}</p>
 

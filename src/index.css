@@ -30,11 +30,11 @@
   --pf-theme-border-hover: #a9c7f7;
   --pf-theme-row-border: #edf1f5;
   --pf-theme-brand-soft: #cfe0fb;
-  --pf-theme-brand-focus: rgba(23, 105, 224, 0.12);
+  --pf-theme-brand-focus: rgba(23, 105, 224, 0.18);
   --pf-theme-brand-focus-strong: rgba(23, 105, 224, 0.22);
-  --pf-theme-brand-focus-soft: rgba(23, 105, 224, 0.1);
+  --pf-theme-brand-focus-soft: rgba(23, 105, 224, 0.15);
   --pf-theme-control-focus: #8db5f2;
-  --pf-theme-control-focus-ring: rgba(37, 99, 235, 0.1);
+  --pf-theme-control-focus-ring: rgba(37, 99, 235, 0.14);
   --pf-theme-focus-ring-soft: rgba(23, 105, 224, 0.18);
   --pf-theme-selection: #cfe2ff;
   --pf-theme-selection-soft: #eff4ff;
@@ -3572,19 +3572,12 @@ button {
   min-height: 72px;
   padding: 14px 20px !important;
   background: #ffffff;
-  cursor: pointer;
+  cursor: default;
   transition: background 0.15s ease, box-shadow 0.15s ease;
 }
 
 .test-item-header:hover {
   background: var(--pf-theme-surface-muted);
-}
-
-.test-item-header:focus-visible {
-  position: relative;
-  z-index: 1;
-  outline: none;
-  box-shadow: inset 0 0 0 2px var(--pf-theme-brand);
 }
 
 .test-chevron-btn {
@@ -4316,6 +4309,29 @@ button {
 .report-output > * {
   position: relative;
   z-index: 1;
+}
+
+/* Screen-only A4 preview frame. Shared report styles remain unchanged for print. */
+.a4-preview-viewport {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.a4-preview-sheet {
+  width: 210mm;
+  max-width: none;
+  margin: 0 auto;
+}
+
+@supports not (zoom: 1) {
+  .a4-preview-viewport {
+    overflow-x: auto;
+  }
+
+  .a4-preview-sheet {
+    margin-inline: 0;
+  }
 }
 
 .report-preview-bar {
@@ -5670,6 +5686,7 @@ button {
   overflow: hidden;
   box-sizing: border-box;
   width: 100%;
+  min-height: 297mm;
   padding: 16mm 14mm;
   background: #ffffff;
   color: #1a1a1a;
@@ -5723,7 +5740,7 @@ button {
   background: #ffffff;
   border: 1px solid var(--pf-theme-border);
   border-radius: 10px;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
+  box-shadow: var(--pf-shadow-md);
   padding: 6px;
   z-index: 101;
 }
@@ -7377,6 +7394,12 @@ input[aria-invalid="true"] {
   box-shadow: var(--pf-shadow) !important;
 }
 
+.stat-card,
+.test-item-card,
+.profile-preview {
+  box-shadow: var(--pf-shadow-sm);
+}
+
 .dashboard-card-header,
 .quick-actions-panel-header,
 .patients-table-header,
@@ -8287,13 +8310,14 @@ input[aria-invalid="true"] {
 
   .profile-preview {
     position: sticky;
-    top: 0;
+    top: var(--pf-page-padding);
     display: flex;
     min-height: 260px;
-    align-self: stretch;
+    height: fit-content;
+    align-self: start;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 8px;
     padding: 28px;
     border-left: 1px solid var(--pf-theme-border);
@@ -8335,6 +8359,7 @@ input[aria-invalid="true"] {
 
   .profile-preview {
     position: static;
+    height: auto;
     min-height: 210px;
     border-top: 1px solid var(--pf-theme-border);
     border-left: 0;
@@ -8507,15 +8532,20 @@ input[aria-invalid="true"] {
   }
 
   .worklist-row {
-    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
     grid-template-areas:
-      "patient"
-      "test"
-      "status";
+      "patient status"
+      "test date";
+  }
+
+  .worklist-row .col-test,
+  .worklist-row .col-date {
+    display: block;
   }
 
   .worklist-row .col-date {
-    display: none;
+    grid-area: date;
+    text-align: right;
   }
 
   .editor-actions {
@@ -9235,7 +9265,7 @@ input[aria-invalid="true"] {
 
   .top-nav-menu-list {
     border-color: var(--pf-theme-border) !important;
-    box-shadow: 0 16px 34px rgba(20, 32, 51, 0.14) !important;
+    box-shadow: var(--pf-shadow-md) !important;
   }
 
   .top-nav-lock {
@@ -9339,7 +9369,7 @@ input[aria-invalid="true"] {
 
   :is(input, select, textarea):focus-visible {
     border-color: var(--pf-theme-brand) !important;
-    box-shadow: 0 0 0 3px var(--pf-theme-brand-focus) !important;
+    box-shadow: 0 0 0 3px var(--pf-theme-brand-focus-strong) !important;
   }
 
   .dashboard-empty {
