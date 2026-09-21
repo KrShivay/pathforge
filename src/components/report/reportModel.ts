@@ -200,9 +200,8 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
 
   // A draft has no issue identity yet, so it is labelled with a provisional
   // accession derived from the report id. Once finalized the report prints the
-  // real issue number: per docs/expected-analysis/amendment-presentation.md
-  // (row C) that number is the visible surface change between a report and its
-  // amendment.
+  // real issue number: per docs/ARCHITECTURE.md ("Amendment behaviour") that
+  // number is the visible surface change between a report and its amendment.
   const reportNo =
     input.isFinalized && input.issueNumber
       ? input.issueNumber

@@ -28,15 +28,10 @@ runs the native shell with the local SQLite database; `npm run dev` serves the
 same UI in a browser for quick iteration, and `npm run build` produces the
 desktop-compatible production bundle. `npm run build:web` produces the
 GitHub Pages bundle for `https://krshivay.github.io/pathforge/`. Load report data,
-generate the preview, then use
-**Print / Save PDF**. The internal task dashboard remains available through
-`npm run dashboard`.
-
-The standalone app in [`desktop/`](desktop/) is frozen UX reference only — it is
-not a build target and is not wired into `npm run verify` or CI.
+generate the preview, then use **Print / Save PDF**.
 
 `npm run verify` is the local and CI quality gate. It checks formatting, lint,
-types, unit tests, domain fixtures, and the task ledger. Run `npm run format`
+CSS integrity, types, unit tests, and domain fixtures. Run `npm run format`
 before verification when changing source or tests.
 
 Only non-sensitive local settings belong in `.env`. Never commit credentials,
@@ -45,15 +40,12 @@ documents safe defaults; all other local `.env*` files remain ignored.
 
 ## Documentation
 
-Start with the [project brief](docs/README.md). It defines the evidence
-boundary, provenance labels, and expected work order.
-
-| Area | Purpose |
-| --- | --- |
-| [Requirements](docs/requirements/) | The non-negotiable invariants, detailed business reference, and unresolved decisions. |
-| [Reference](docs/reference/) | Project-specific terminology and meaning. |
-| [Fixtures](docs/fixtures/) | Small, worked semantic examples for catalog and amendment behavior. |
-| [Analysis](docs/expected-analysis/) | Current design specifications, including amendment presentation behavior. |
-| [Samples](docs/samples/) | Metadata for the illustrative rendered-report sample set. |
-
-The active source of truth is the structured material under `docs/`.
+- [SCOPE.md](SCOPE.md) — authoritative product scope; read before planning work.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — layers, the ten correctness
+  invariants, key design decisions, and amendment behaviour.
+- [docs/reference/domain-glossary.md](docs/reference/domain-glossary.md) —
+  project-specific terminology.
+- [docs/fixtures/](docs/fixtures/) — worked semantic examples exercised by the
+  domain and rendering tests.
+- [docs/release/windows.md](docs/release/windows.md) — signed Windows release
+  process.

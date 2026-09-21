@@ -40,6 +40,6 @@ R100/V1 must NOT be:  Fasting Plasma Glucose (ref 74-106 mg/dL)    would violate
 
 A **new** report created after V2 uses V2 and would show "Fasting Plasma Glucose (ref 74-106)" -- correct, because it is a new clinical artifact under the new catalog. Same `field_id`, different snapshot, different report. Both are right for their own issue time.
 
-## Amendment interaction (Option A -- see expected-analysis/amendment-presentation.md)
+## Amendment interaction (Option A -- see ../ARCHITECTURE.md, "Amendment behaviour")
 
 When R100/V1 is amended to R100/V2 **after** catalog V2 is published, the amendment is cloned from V1's frozen snapshot (INV-10). Unchanged fields therefore still render "Fasting Blood Sugar (70-100)", NOT the V2 relabel/range. The amended PDF is a clean report with a new issue number/date and no visible amendment marker; only the corrected field differs from the original.

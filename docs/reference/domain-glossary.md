@@ -1,6 +1,6 @@
 # Domain Glossary
 
-Definitions reflect **this project's intended semantics**. Pathology terminology varies between organizations; where a definition is a working assumption rather than a confirmed business decision, it is tagged. Confirm tagged entries against the full [business requirements](../requirements/business-requirements.md) before relying on them.
+Definitions reflect **this project's intended semantics**. Pathology terminology varies between organizations; where a definition is a working assumption rather than a confirmed business decision, it is tagged. Confirm tagged entries against [ARCHITECTURE.md](../ARCHITECTURE.md) before relying on them.
 
 | Term | Meaning in this project | Provenance |
 | --- | --- | --- |
@@ -15,8 +15,8 @@ Definitions reflect **this project's intended semantics**. Pathology terminology
 | **Finalization / sign-out / issue** | The act that establishes an immutable clinical report version. | `CONFIRMED_REQUIREMENT` |
 | **Authorization** | Permission to perform a clinically meaningful action (finalize, amend, transition state). | `CONFIRMED_REQUIREMENT` |
 | **Amendment** | A new version that changes/supplements a previously issued report; starts from the superseded payload (INV-10). | `CONFIRMED_REQUIREMENT` |
-| **Amendment (Option A)** | A **new version of the same logical report** superseding the prior version; cloned from its frozen payload (INV-10). Regenerated PDF is a clean report with a new issue number/date and **no visible amendment marker**. See [amendment presentation](../expected-analysis/amendment-presentation.md). | `CONFIRMED_REQUIREMENT` |
-| **Correction vs supplementary report** | Whether these are further distinct version sub-types beyond a plain amendment is **not yet fixed**. | `UNKNOWN` → [Open questions](../requirements/open-questions.md) (Q1) |
+| **Amendment (Option A)** | A **new version of the same logical report** superseding the prior version; cloned from its frozen payload (INV-10). Regenerated PDF is a clean report with a new issue number/date and **no visible amendment marker**. See [ARCHITECTURE.md](../ARCHITECTURE.md) ("Amendment behaviour"). | `CONFIRMED_REQUIREMENT` |
+| **Correction vs supplementary report** | Whether these are further distinct version sub-types beyond a plain amendment is **not yet fixed**. | `UNKNOWN` |
 | **Issue number / issue date** | Per-issue identifier + date printed on the PDF; a **new** pair is assigned to each version. Provenance metadata, **not** clinical content — the clinical comparator ignores them. | `CONFIRMED_REQUIREMENT` |
 | **Superseded report** | A prior version replaced by a later one; remains identifiable and auditable. | `CONFIRMED_REQUIREMENT` |
 | **Semantic fingerprint** | A hash of the canonical payload used to accelerate/diagnose comparison. Never the authority for equality (INV-7). | `CONFIRMED_REQUIREMENT` |
