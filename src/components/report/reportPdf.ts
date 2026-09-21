@@ -3,7 +3,6 @@ import { isTauri } from "@tauri-apps/api/core";
 
 import type { ReportModel } from "./reportModel";
 import { getUsableLogoDataUrl } from "../../store/branding.ts";
-import { buildQrCodePngDataUrl } from "./qrCode.ts";
 
 const NAVY: [number, number, number] = [31, 58, 95];
 const INK: [number, number, number] = [26, 26, 26];
@@ -33,7 +32,7 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
     doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(...NAVY);
     doc.text(model.brand.name, MARGIN, y);
     doc.setFont("helvetica", "normal").setFontSize(7).setTextColor(...MUTED);
-    doc.text(`Report ${model.reportNo} · Patient ${patient}`, PAGE_W - MARGIN, y, { align: "right" });
+    doc.text(`Patient ${patient}`, PAGE_W - MARGIN, y, { align: "right" });
     y += 4;
     doc.setDrawColor(...HAIRLINE).setLineWidth(0.2).line(MARGIN, y, PAGE_W - MARGIN, y);
     y += 5;
@@ -48,26 +47,51 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
   };
 
   // ---- letterhead ----
+  // The logo is drawn at its own aspect ratio inside a fixed box, so a portrait
+  // or square mark is never squashed into a landscape strip.
+  const LOGO_BOX_W = 26;
+  const LOGO_BOX_H = 18;
   const logoDataUrl = getUsableLogoDataUrl(model.brand.logoDataUrl);
-  const qrDataUrl = await buildQrCodePngDataUrl(model.qrPayload ?? model.reportNo);
-  const qrSize = 24;
-  const logoWidth = logoDataUrl ? 20 : 0;
+  let logoWidth = 0;
   if (logoDataUrl) {
-    try { doc.addImage(logoDataUrl, MARGIN, y, logoWidth, 14); } catch { /* Invalid image data is omitted. */ }
+    try {
+      const properties = doc.getImageProperties(logoDataUrl);
+      const scale = Math.min(
+        LOGO_BOX_W / properties.width,
+        LOGO_BOX_H / properties.height,
+      );
+      const drawnW = properties.width * scale;
+      const drawnH = properties.height * scale;
+      doc.addImage(logoDataUrl, MARGIN, y, drawnW, drawnH);
+      logoWidth = drawnW;
+    } catch {
+      // Invalid image data is omitted, and reserves no letterhead space.
+    }
   }
   const letterheadX = MARGIN + logoWidth + (logoWidth ? 3 : 0);
   doc.setFont("helvetica", "bold").setFontSize(18).setTextColor(...NAVY);
   doc.text(model.brand.name, letterheadX, y + 2);
   doc.setFont("helvetica", "normal").setFontSize(7.5).setTextColor(...MUTED);
   doc.text(model.brand.tagline.toUpperCase(), letterheadX, y + 7);
-  doc.setFontSize(7).text(model.brand.strapline, letterheadX, y + 11);
+  let letterheadY = y + 7;
+  if (model.brand.proprietor) {
+    letterheadY += 3.6;
+    doc.setFont("helvetica", "bold").setFontSize(7.5).setTextColor(...NAVY);
+    doc.text(model.brand.proprietor, letterheadX, letterheadY);
+  }
+  letterheadY += 4;
+  doc.setFont("helvetica", "normal").setFontSize(7).setTextColor(...MUTED);
+  doc.text(model.brand.strapline, letterheadX, letterheadY);
   const addressLines = model.brand.address
     ? doc.splitTextToSize(model.brand.address, 105)
     : [];
-  const contactLines = model.brand.contact
-    ? doc.splitTextToSize(model.brand.contact, 105)
-    : [];
-  let contactY = y + 15;
+  // Contact details and opening hours are optional: each prints only when the
+  // laboratory profile carries it, and the block shrinks when it does not.
+  const contactLines = [
+    ...(model.brand.contact ? doc.splitTextToSize(model.brand.contact, 105) : []),
+    ...(model.brand.hours ? doc.splitTextToSize(model.brand.hours, 105) : []),
+  ];
+  let contactY = letterheadY + 4;
   if (addressLines.length > 0) {
     doc.setFont("helvetica", "bold").setFontSize(7.5).setTextColor(...INK);
     doc.text(addressLines, letterheadX, contactY);
@@ -85,16 +109,14 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
   });
   doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(...INK);
   const metaLines = model.isFinalized
-    ? [`Report No.  ${model.reportNo}`, `Issue Date  ${model.generatedAt}`]
-    : [`Report No.  ${model.reportNo}`, `Report Date  ${model.generatedAt}`, "DRAFT"];
+    ? [`Issue Date  ${model.generatedAt}`]
+    : [`Report Date  ${model.generatedAt}`, "DRAFT"];
   doc.text(metaLines, PAGE_W - MARGIN, y + 5, { align: "right" });
-  doc.addImage(qrDataUrl, PAGE_W - MARGIN - qrSize, y + 15, qrSize, qrSize);
-  doc.setFont("helvetica", "normal").setFontSize(5.5).setTextColor(...MUTED);
-  doc.text("Scan to verify report", PAGE_W - MARGIN, y + 42, { align: "right" });
 
-  y += Math.max(contactY - y + 2, 45);
+  // Without the QR block the letterhead is only as tall as its text.
+  y += Math.max(contactY - y + 2, 20);
   doc.setDrawColor(...NAVY).setLineWidth(0.7).line(MARGIN, y, PAGE_W - MARGIN, y);
-  y += 6;
+  y += 4;
 
   if (model.draftNotice) {
     const lines = doc
@@ -121,7 +143,7 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
   // Row height adapts to the longest wrapped value in that row so long
   // patient/specimen text is never cut down to its first line (it prints in
   // full in the on-screen preview, so the PDF must match).
-  const bandRowMinH = 9;
+  const bandRowMinH = 7;
   const bandColW = CONTENT_W / 2 - 8;
   const bandLineH = 3.8;
   doc.setFont("helvetica", "bold").setFontSize(9);
@@ -135,7 +157,7 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
   }
   const bandRowHeights = bandRows.map((row) => {
     const maxLines = Math.max(1, ...row.map((cell) => cell.lines.length));
-    return Math.max(bandRowMinH, 7 + (maxLines - 1) * bandLineH);
+    return Math.max(bandRowMinH, 6 + (maxLines - 1) * bandLineH);
   });
   const bandH = bandRowHeights.reduce((sum, h) => sum + h, 0);
   need(bandH);
@@ -148,13 +170,13 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
     row.forEach((cell, col) => {
       const cx = MARGIN + 3 + col * (CONTENT_W / 2);
       doc.setFont("helvetica", "bold").setFontSize(6.5).setTextColor(...MUTED);
-      doc.text(cell.entry.label.toUpperCase(), cx, bandCy + 3.5);
-      doc.setFont("helvetica", "bold").setFontSize(9).setTextColor(...INK);
-      doc.text(cell.lines, cx, bandCy + 7.5);
+      doc.text(cell.entry.label.toUpperCase(), cx, bandCy + 2.8);
+      doc.setFont("helvetica", "bold").setFontSize(8.5).setTextColor(...INK);
+      doc.text(cell.lines, cx, bandCy + 6.2);
     });
     bandCy += bandRowHeights[rowIndex] ?? bandRowMinH;
   });
-  y += bandH + 8;
+  y += bandH + 5;
 
   const sectionHeading = (title: string) => {
     need(12);
@@ -162,20 +184,20 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
     doc.text(title.toUpperCase(), MARGIN, y);
     y += 1.5;
     doc.setDrawColor(...NAVY).setLineWidth(0.3).line(MARGIN, y, PAGE_W - MARGIN, y);
-    y += 5;
+    y += 4;
   };
 
   const paragraph = (text: string, emphasis: boolean) => {
     doc
       .setFont("helvetica", emphasis ? "bold" : "normal")
-      .setFontSize(emphasis ? 10 : 9.5)
+      .setFontSize(emphasis ? 9.5 : 9)
       .setTextColor(...INK);
     for (const line of doc.splitTextToSize(text, CONTENT_W)) {
-      need(6);
+      need(5);
       doc.text(line, MARGIN, y);
-      y += 5;
+      y += 4.2;
     }
-    y += 5;
+    y += 3.5;
   };
 
   // ---- results, grouped by test ----
@@ -202,9 +224,9 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
     ["PARAMETER", "RESULT", "UNIT", "REFERENCE RANGE", "FLAG"].forEach(
       (label, i) => doc.text(label, cols[i] ?? MARGIN, y + 3)
     );
-    y += 4.5;
+    y += 4;
     doc.setDrawColor(...NAVY).setLineWidth(0.4).line(MARGIN, y, PAGE_W - MARGIN, y);
-    y += 3.5;
+    y += 2.5;
   };
 
   if (model.resultGroups.length > 0) {
@@ -215,7 +237,7 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
         need(10);
         doc.setFont("helvetica", "bold").setFontSize(8.5).setTextColor(...INK);
         doc.text(group.testName, MARGIN, y + 3);
-        y += 6;
+        y += 5;
       }
 
       drawResultsHeader();
@@ -226,8 +248,8 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
         doc.setFont("helvetica", "normal").setFontSize(8.5);
         const cells = [row.name, row.value, row.unit, row.reference, row.flag].map((value, index) => doc.splitTextToSize(value, widths[index] ?? 12));
         const rowH = Math.max(
-          5.5,
-          ...cells.map((lines) => lines.length * 4),
+          4.6,
+          ...cells.map((lines) => lines.length * 3.6),
         );
         if (y + rowH + 2 > FOOTER_Y - 4) {
           doc.addPage();
@@ -256,9 +278,9 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
           .setDrawColor(...HAIRLINE)
           .setLineWidth(0.15)
           .line(MARGIN, y, PAGE_W - MARGIN, y);
-        y += 2;
+        y += 1.4;
       }
-      y += 4;
+      y += 3;
     }
   }
 
@@ -268,8 +290,8 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
   }
 
   // ---- sign-off ----
-  need(30);
-  y += 6;
+  need(26);
+  y += 4;
   const sigW = (CONTENT_W - 16) / 2;
   model.signoff.forEach((entry, i) => {
     const x = MARGIN + i * (sigW + 16);
@@ -279,20 +301,55 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
     doc.setFont("helvetica", "normal").setFontSize(7.5).setTextColor(...MUTED);
     doc.text(doc.splitTextToSize(entry.note, sigW), x, y + 8);
   });
-  y += 16;
+  y += 14;
 
   doc.setFont("helvetica", "italic").setFontSize(7.5).setTextColor(...MUTED);
   doc.text(doc.splitTextToSize(model.authorisationNote, CONTENT_W), MARGIN, y);
-  y += 8;
+  y += 6;
   need(6);
   doc.setFont("helvetica", "normal").setFontSize(7.5).setTextColor(...MUTED);
   doc.text(model.endOfReport, PAGE_W / 2, y, { align: "center" });
+
+  // ---- finalized logo watermark ----
+  // Once the report is issued, a faint centred logo sits behind every page,
+  // mirroring the DRAFT watermark that the print DOM shows while drafting.
+  let watermark: { url: string; w: number; h: number } | null = null;
+  if (model.isFinalized && logoDataUrl) {
+    try {
+      const properties = doc.getImageProperties(logoDataUrl);
+      const WATERMARK_MAX = 110; // mm, longest side
+      const scale = WATERMARK_MAX / Math.max(properties.width, properties.height);
+      watermark = {
+        url: logoDataUrl,
+        w: properties.width * scale,
+        h: properties.height * scale,
+      };
+    } catch {
+      // Invalid image data prints without a watermark.
+    }
+  }
 
   // ---- footer on every page ----
   const reportDate = model.generatedAt;
   const pages = doc.getNumberOfPages();
   for (let page = 1; page <= pages; page += 1) {
     doc.setPage(page);
+    if (watermark) {
+      const gState = new (doc as unknown as {
+        GState: new (options: { opacity: number }) => unknown;
+      }).GState({ opacity: 0.06 });
+      doc.setGState(gState);
+      doc.addImage(
+        watermark.url,
+        (PAGE_W - watermark.w) / 2,
+        (PAGE_H - watermark.h) / 2,
+        watermark.w,
+        watermark.h,
+      );
+      doc.setGState(new (doc as unknown as {
+        GState: new (options: { opacity: number }) => unknown;
+      }).GState({ opacity: 1 }));
+    }
     doc.setDrawColor(...HAIRLINE).setLineWidth(0.15);
     doc.line(MARGIN, FOOTER_Y, PAGE_W - MARGIN, FOOTER_Y);
     doc.setFont("helvetica", "normal").setFontSize(7).setTextColor(...MUTED);

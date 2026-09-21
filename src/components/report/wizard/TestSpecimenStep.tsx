@@ -4,35 +4,18 @@ import TextField from "@mui/material/TextField";
 
 import { useTests } from "../../../store/TestContext";
 import type { LaboratoryTest } from "../../../domain/types";
-import { normalizeSpecimens } from "../../../domain/report-bridge.mjs";
 
 interface TestSpecimenStepProps {
   selectedTestIds: string[];
-  specimens: string[];
   specimenCollectionDate: string;
   onChangeTests: (testIds: string[]) => void;
-  onChangeSpecimens: (specimens: string[]) => void;
   onChangeSpecimenCollectionDate: (value: string) => void;
 }
 
-const COMMON_SPECIMENS = [
-  "Whole Blood EDTA",
-  "Serum",
-  "Plasma",
-  "Urine",
-  "Stool",
-  "CSF",
-  "Sputum",
-  "Swab",
-  "Tissue",
-];
-
 export default function TestSpecimenStep({
   selectedTestIds,
-  specimens,
   specimenCollectionDate,
   onChangeTests,
-  onChangeSpecimens,
   onChangeSpecimenCollectionDate,
 }: TestSpecimenStepProps) {
   const { tests } = useTests();
@@ -45,19 +28,12 @@ export default function TestSpecimenStep({
     [selectedTestIds, tests]
   );
 
-  const specimenOptions = useMemo(() => {
-    const fromTests = selectedTests
-      .map((test) => test.specimen)
-      .filter((value): value is string => Boolean(value));
-    return [...new Set([...fromTests, ...COMMON_SPECIMENS])];
-  }, [selectedTests]);
-
   return (
     <div className="wizard-panel">
-      <h2>Test &amp; specimen</h2>
+      <h2>Tests</h2>
       <p className="wizard-panel-hint">
-        Pick one or more laboratory tests. Each brings its own department,
-        parameters, units and reference ranges.
+        Pick one or more laboratory tests. Each brings its own parameters, units
+        and reference ranges.
       </p>
 
       <div className="wizard-field">
@@ -104,7 +80,7 @@ export default function TestSpecimenStep({
       </div>
 
       <div className="wizard-field">
-        <label htmlFor="nr-specimen-collection-date">Specimen collection date</label>
+        <label htmlFor="nr-specimen-collection-date">Collection date</label>
         <input
           id="nr-specimen-collection-date"
           type="date"
@@ -116,26 +92,6 @@ export default function TestSpecimenStep({
         </p>
       </div>
 
-      <div className="wizard-field">
-        <label htmlFor="nr-specimens">Specimen</label>
-        <Autocomplete
-          id="nr-specimens"
-          multiple
-          freeSolo
-          options={specimenOptions}
-          value={specimens}
-          onChange={(_event, value) => onChangeSpecimens(normalizeSpecimens(value))}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              placeholder="Select or type a specimen…"
-            />
-          )}
-        />
-        <p className="wizard-field-hint">
-          Choose suggested specimens or type a custom value and press Enter.
-        </p>
-      </div>
     </div>
   );
 }

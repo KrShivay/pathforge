@@ -9,6 +9,8 @@ import {
   Users,
 } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type RefObject } from "react";
+import { useBranding } from "../../store/BrandingContext";
+import { getUsableLogoDataUrl } from "../../store/branding";
 
 export type Page = "dashboard" | "patients" | "worklist" | "new-report" | "history" | "test-management" | "lab-profile";
 interface TopNavProps {
@@ -25,6 +27,10 @@ export default function TopNav({
   onLock,
   lockButtonRef,
 }: TopNavProps) {
+  // The workspace belongs to the laboratory, so the bar carries the laboratory's
+  // own identity rather than the product's.
+  const { profile } = useBranding();
+  const navLogoUrl = getUsableLogoDataUrl(profile.logoDataUrl);
   const [openMenu, setOpenMenu] = useState<MenuName | null>(null);
   const navRef = useRef<HTMLElement>(null);
   const reportsTrigger = useRef<HTMLButtonElement>(null);
@@ -89,7 +95,7 @@ export default function TopNav({
   );
 
   return <header className="top-nav">
-    <button type="button" className="top-nav-brand" onClick={() => void onNavigate("dashboard")} aria-label="PathForge dashboard"><span className="top-nav-brand-icon"><img src="/pathforge-mark.svg" alt="" aria-hidden="true" /></span><span className="top-nav-brand-text"><strong>PathForge</strong><span>Clinical Pathology</span></span></button>
+    <button type="button" className="top-nav-brand" onClick={() => void onNavigate("dashboard")} aria-label={`${profile.laboratoryName || "Laboratory"} dashboard`}><span className={`top-nav-brand-icon${navLogoUrl ? " has-logo" : ""}`}><img src={navLogoUrl || "/pathforge-mark.svg"} alt="" aria-hidden="true" /></span><span className="top-nav-brand-text"><strong>{profile.laboratoryName || "Laboratory"}</strong><span>{profile.reportSubtitle}</span></span></button>
     <nav ref={navRef} className="top-nav-links" aria-label="Primary navigation">
       <button type="button" className="top-nav-new-report" aria-label="New report" onClick={() => void onNavigate("new-report")}><Plus size={15} aria-hidden="true" />New Report</button>
       {renderMenu("reports", "Reports", reportsTrigger)}

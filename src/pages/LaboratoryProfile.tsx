@@ -5,24 +5,78 @@ import { confirmDestructive, notifyError, notifySuccess } from "../lib/dialog";
 import { useBranding } from "../store/BrandingContext";
 import { getUsableLogoDataUrl, type LaboratoryProfile } from "../store/branding";
 
-const PROFILE_FIELDS: Array<{
+interface ProfileField {
   key: keyof LaboratoryProfile;
   label: string;
   placeholder: string;
-  required?: boolean;
   type?: "email" | "text";
-}> = [
-  { key: "laboratoryName", label: "Laboratory name", placeholder: "PathForge Clinical Laboratory", required: true },
-  { key: "shortName", label: "Short display name", placeholder: "PathForge", required: true },
-  { key: "reportSubtitle", label: "Report subtitle", placeholder: "Clinical Pathology Report", required: true },
-  { key: "addressLine1", label: "Address", placeholder: "Street address" },
-  { key: "city", label: "City", placeholder: "City" },
-  { key: "country", label: "Country", placeholder: "Country" },
-  { key: "phone", label: "Phone", placeholder: "+91 …" },
-  { key: "email", label: "Email", placeholder: "reports@example.com", type: "email" },
-  { key: "pathologistName", label: "Consultant pathologist", placeholder: "Dr. …" },
-  { key: "pathologistQualifications", label: "Pathologist qualifications", placeholder: "MD, DNB …" },
-  { key: "pathologistDesignation", label: "Pathologist designation", placeholder: "Consultant pathologist" },
+}
+
+interface ProfileGroup {
+  legend: string;
+  hint: string;
+  fields: ProfileField[];
+}
+
+/**
+ * Every profile detail is editable here. Only the laboratory name is required —
+ * each of the others prints on the report exactly when it is filled in, and is
+ * simply left off the page while it is blank.
+ */
+const REQUIRED_FIELD: ProfileField = {
+  key: "laboratoryName",
+  label: "Laboratory name",
+  placeholder: "Adarsh Diagnostics Center",
+};
+
+const PROFILE_GROUPS: ProfileGroup[] = [
+  {
+    legend: "Report identity",
+    hint: "The laboratory name heads every report. The rest print under it when filled.",
+    fields: [
+      { key: "shortName", label: "Short display name", placeholder: "Adarsh Diagnostics" },
+      { key: "reportSubtitle", label: "Report subtitle", placeholder: "Clinical Pathology Report" },
+      { key: "proprietorName", label: "Proprietor", placeholder: "Kapil Kumar Porwal" },
+      { key: "registrationNumber", label: "Registration number", placeholder: "ETW/ALO/0002/05" },
+      { key: "accreditationName", label: "Accreditation body", placeholder: "NABL" },
+      { key: "accreditationNumber", label: "Accreditation number", placeholder: "MC-1234" },
+    ],
+  },
+  {
+    legend: "Address",
+    hint: "Printed as one address line in the report letterhead.",
+    fields: [
+      { key: "addressLine1", label: "Address line 1", placeholder: "Collectry Road" },
+      { key: "addressLine2", label: "Address line 2", placeholder: "Dibiyapur" },
+      { key: "city", label: "City / district", placeholder: "Auraiya" },
+      { key: "state", label: "State", placeholder: "Uttar Pradesh" },
+      { key: "postcode", label: "PIN code", placeholder: "206244" },
+      { key: "country", label: "Country", placeholder: "India" },
+    ],
+  },
+  {
+    legend: "Contact",
+    hint: "Phone, email and website print together under the address; the footer note replaces the default footer line.",
+    fields: [
+      { key: "phone", label: "Phone", placeholder: "+91 …" },
+      { key: "alternatePhone", label: "Alternate phone", placeholder: "+91 …" },
+      { key: "email", label: "Email", placeholder: "reports@example.com", type: "email" },
+      { key: "website", label: "Website", placeholder: "www.example.com" },
+      { key: "workingHours", label: "Working hours", placeholder: "Mon–Sat, 8:00 AM – 8:00 PM" },
+      { key: "footerNote", label: "Report footer note", placeholder: "Shown in the centre of the report footer" },
+    ],
+  },
+  {
+    legend: "Sign-off",
+    hint: "These name the two signature blocks at the end of the report.",
+    fields: [
+      { key: "technologistName", label: "Lab technologist", placeholder: "Name" },
+      { key: "technologistDesignation", label: "Technologist designation", placeholder: "Lab technologist" },
+      { key: "pathologistName", label: "Consultant pathologist", placeholder: "Dr. …" },
+      { key: "pathologistQualifications", label: "Pathologist qualifications", placeholder: "MD, DNB …" },
+      { key: "pathologistDesignation", label: "Pathologist designation", placeholder: "Consultant pathologist" },
+    ],
+  },
 ];
 
 export default function LaboratoryProfilePage() {
@@ -33,11 +87,8 @@ export default function LaboratoryProfilePage() {
   const hasLogo = Boolean(logoDataUrl);
 
   async function saveProfile() {
-    const missing = PROFILE_FIELDS.slice(0, 3)
-      .filter(({ key }) => !draft[key].trim())
-      .map(({ label }) => label.toLowerCase());
-    if (missing.length > 0) {
-      await notifyError({ title: "Complete the report identity", text: `Enter ${missing.join(", ")} before saving.` });
+    if (!draft[REQUIRED_FIELD.key].trim()) {
+      await notifyError({ title: "Laboratory name is required", text: "Every report is headed by the laboratory name. Enter one before saving." });
       return;
     }
     updateProfile(draft);
@@ -68,20 +119,14 @@ export default function LaboratoryProfilePage() {
     />
     <div className="pf-card lab-profile-layout">
       <div className="card-body lab-profile-form">
-        <fieldset>
-          <legend>Report identity</legend>
-          <p className="fieldset-hint">These details appear in the report header and footer.</p>
+        {PROFILE_GROUPS.map((group, groupIndex) => <fieldset key={group.legend}>
+          <legend>{group.legend}{groupIndex > 0 && <span className="fieldset-optional">Optional</span>}</legend>
+          <p className="fieldset-hint">{group.hint}</p>
           <div className="profile-fields">
-            {PROFILE_FIELDS.slice(0, 3).map(({ key, label, placeholder, required }) => <label key={key}><span>{label}{required && <em>Required</em>}</span><input value={draft[key]} placeholder={placeholder} aria-required={required} required={required} onChange={(event) => setDraft((value) => ({ ...value, [key]: event.target.value }))} /></label>)}
+            {groupIndex === 0 && <label key={REQUIRED_FIELD.key}><span>{REQUIRED_FIELD.label}<em>Required</em></span><input value={draft[REQUIRED_FIELD.key]} placeholder={REQUIRED_FIELD.placeholder} aria-required required onChange={(event) => setDraft((value) => ({ ...value, [REQUIRED_FIELD.key]: event.target.value }))} /></label>}
+            {group.fields.map(({ key, label, placeholder, type }) => <label key={key}><span>{label}</span><input type={type ?? "text"} value={draft[key]} placeholder={placeholder} onChange={(event) => setDraft((value) => ({ ...value, [key]: event.target.value }))} /></label>)}
           </div>
-        </fieldset>
-        <fieldset>
-          <legend>Contact and sign-off</legend>
-          <p className="fieldset-hint">Only the contact and consultant details needed for a clear report are shown here.</p>
-          <div className="profile-fields">
-            {PROFILE_FIELDS.slice(3).map(({ key, label, placeholder, type }) => <label key={key}><span>{label}</span><input type={type ?? "text"} value={draft[key]} placeholder={placeholder} onChange={(event) => setDraft((value) => ({ ...value, [key]: event.target.value }))} /></label>)}
-          </div>
-        </fieldset>
+        </fieldset>)}
         <fieldset>
           <legend>Laboratory logo <span className="fieldset-optional">Optional</span></legend>
           <div className="logo-editor">
@@ -101,7 +146,7 @@ export default function LaboratoryProfilePage() {
           <button type="button" className="secondary-button destructive-secondary-button" onClick={async () => { const accepted = await confirmDestructive({ title: "Restore default profile?", text: "This replaces the current laboratory profile. Finalized report snapshots are not changed.", confirmText: "Restore defaults", cancelText: "Keep profile" }); if (accepted) { restoreDefault(); location.reload(); } }}><RotateCcw size={16} />Restore defaults</button>
         </div>
       </div>
-      <aside className="profile-preview" aria-label="Laboratory identity preview">{hasLogo && <img src={logoDataUrl} alt="" />}<span className="profile-preview-kicker">Report header preview</span><strong>{draft.laboratoryName || "Laboratory name"}</strong><span>{draft.reportSubtitle || "Report subtitle"}</span><small>{[draft.city, draft.phone, draft.email].filter(Boolean).join(" · ") || "Contact details will appear here"}</small></aside>
+      <aside className="profile-preview" aria-label="Laboratory identity preview">{hasLogo && <img src={logoDataUrl} alt="" />}<span className="profile-preview-kicker">Report header preview</span><strong>{draft.laboratoryName || "Laboratory name"}</strong><span>{draft.reportSubtitle || "Report subtitle"}</span>{draft.proprietorName && <span>Prop. {draft.proprietorName}</span>}<small>{[draft.addressLine1, draft.addressLine2, draft.city, draft.phone, draft.email].filter(Boolean).join(" · ") || "Contact details will appear here"}</small>{draft.registrationNumber && <small>Reg. No. {draft.registrationNumber}</small>}</aside>
     </div>
   </section>;
 }

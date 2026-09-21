@@ -226,9 +226,7 @@ export default function Dashboard({
                         <strong>{pt?.name ?? "Unknown Patient"}</strong>
                       </div>
                       <span className="recent-report-test">
-                        {report.testName ||
-                          report.specimens.join(", ") ||
-                          "Pathology Report"}
+                        {report.testName || "Pathology Report"}
                       </span>
                     </div>
                     <div className="recent-report-meta">
@@ -294,7 +292,7 @@ export default function Dashboard({
                         <strong>{pt?.name ?? "Unknown Patient"}</strong>
                       </div>
                       <span className="recent-report-test">
-                        {report.testName || report.specimens.join(", ") || "Pathology Report"}
+                        {report.testName || "Pathology Report"}
                       </span>
                     </div>
                   </button>

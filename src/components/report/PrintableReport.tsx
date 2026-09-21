@@ -1,6 +1,5 @@
 import type { ReportModel } from "./reportModel";
 import { getUsableLogoDataUrl } from "../../store/branding";
-import { buildQrCodeSvgDataUrl } from "./qrCode";
 
 interface PrintableReportProps {
   model: ReportModel;
@@ -19,38 +18,31 @@ export default function PrintableReport({ model }: PrintableReportProps) {
     <div
       className={`print-report${model.isFinalized ? "" : " pr-draft"}`}
     >
+      {model.isFinalized && logoDataUrl && (
+        <img className="pr-watermark" src={logoDataUrl} alt="" aria-hidden="true" />
+      )}
       <header className="pr-letterhead">
         <div className="pr-brand">
           {logoDataUrl && <img className="pr-logo" src={logoDataUrl} alt="Laboratory logo" />}
           <div className="pr-brand-text">
             <h1>{model.brand.name}</h1>
             <p className="pr-tagline">{model.brand.tagline}</p>
+            {model.brand.proprietor && <p className="pr-proprietor">{model.brand.proprietor}</p>}
             <p className="pr-accred">{model.brand.strapline}</p>
             {model.brand.address && <p className="pr-address">{model.brand.address}</p>}
             {model.brand.contact && <p className="pr-contact">{model.brand.contact}</p>}
+            {model.brand.hours && <p className="pr-contact">{model.brand.hours}</p>}
           </div>
         </div>
 
         <div className="pr-docmeta">
           <dl>
-            <div>
-              <dt>Report No.</dt>
-              <dd>{model.reportNo}</dd>
-            </div>
             {model.isFinalized ? (
               <div><dt>Issue Date</dt><dd>{model.generatedAt}</dd></div>
             ) : (
               <div><dt>Status</dt><dd>Draft</dd></div>
             )}
           </dl>
-          <div className="pr-qr-block">
-            <img
-              className="pr-qr-image"
-              src={buildQrCodeSvgDataUrl(model.qrPayload ?? model.reportNo)}
-              alt={`QR code for report ${model.reportNo}`}
-            />
-            <span className="pr-qr-caption">Scan to verify report</span>
-          </div>
         </div>
       </header>
 
@@ -61,7 +53,7 @@ export default function PrintableReport({ model }: PrintableReportProps) {
         <p className="pr-amendmentbanner">{model.amendmentNotice}</p>
       )}
 
-      <section className="pr-band" aria-label="Patient and specimen details">
+      <section className="pr-band" aria-label="Patient details">
         {model.band.map((row) => (
           <div key={row.label}>
             <dt>{row.label}</dt>

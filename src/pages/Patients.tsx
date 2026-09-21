@@ -1,4 +1,4 @@
-import { Plus, Search, Users, X } from "lucide-react";
+import { Plus, Search, Trash2, Users, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import PageHeading from "../components/layout/PageHeading";
 import { SkeletonList } from "../components/common/Skeleton";
@@ -7,13 +7,15 @@ import SortableHeader, {
   type SortDirection,
 } from "../components/common/SortableHeader";
 import PatientForm from "../components/patients/PatientForm";
-import { confirmDestructive } from "../lib/dialog";
+import { confirmDestructive, notifyError } from "../lib/dialog";
 import { usePatients } from "../store/PatientContext";
+import { useReports } from "../store/ReportContext";
 
 type PatientSortField = "name" | "age" | "phone";
 
 export default function Patients() {
-  const { patients, loading } = usePatients();
+  const { patients, loading, deletePatient } = usePatients();
+  const { reports } = useReports();
 
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<PatientSortField>("name");
@@ -88,6 +90,42 @@ export default function Patients() {
           : a.name.localeCompare(b.name);
     return sortDirection === "asc" ? comparison : -comparison;
   });
+
+  // A patient's reports are owned by the report service, which has no delete
+  // operation — removing the patient alone would leave those reports pointing
+  // at a record that no longer exists, so deletion is refused while any exist.
+  async function handleDelete(patient: (typeof patients)[number]) {
+    const reportCount = reports.filter(
+      (report) => report.patientId === patient.id,
+    ).length;
+
+    if (reportCount > 0) {
+      await notifyError({
+        title: "Patient has reports",
+        text: `${patient.name} has ${reportCount} report ${
+          reportCount === 1 ? "version" : "versions"
+        } on file and cannot be deleted.`,
+      });
+      return;
+    }
+
+    const proceed = await confirmDestructive({
+      title: `Delete ${patient.name}?`,
+      text: `Patient record ${patient.patientId} will be permanently removed. This cannot be undone.`,
+      confirmText: "Delete patient",
+    });
+    if (!proceed) return;
+
+    try {
+      await deletePatient(patient.id);
+    } catch (error) {
+      console.error("Failed to delete patient:", error);
+      await notifyError({
+        title: "Could not delete patient",
+        text: "The patient record could not be removed. Please try again.",
+      });
+    }
+  }
 
   function handleSort(field: PatientSortField) {
     if (field === sortField) {
@@ -192,6 +230,7 @@ export default function Patients() {
             direction={sortDirection}
             onClick={() => handleSort("phone")}
           />
+          <div className="col-p-actions" aria-hidden="true" />
         </div>
 
         <div className="patients-table-body scrollable-container">
@@ -219,6 +258,18 @@ export default function Patients() {
 
                 <div className="col-p-phone">
                   <span className="phone-text">{patient.phone || "—"}</span>
+                </div>
+
+                <div className="col-p-actions">
+                  <button
+                    type="button"
+                    className="row-delete-button"
+                    onClick={() => void handleDelete(patient)}
+                    aria-label={`Delete patient ${patient.name}`}
+                    title="Delete patient"
+                  >
+                    <Trash2 size={15} />
+                  </button>
                 </div>
               </div>
             ))

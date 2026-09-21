@@ -198,6 +198,11 @@ class BrowserDatabase implements DatabaseLike {
         address,
         created_at: createdAt,
       });
+    } else if (normalized.startsWith("delete from patients")) {
+      const [id] = values;
+      this.state.patients = this.state.patients.filter(
+        (patient) => patient.id !== id,
+      );
     } else if (normalized.startsWith("insert into report_workspace_state")) {
       this.state.reportWorkspaceState = String(values[0]);
     } else if (normalized.startsWith("insert into report_workspace_meta")) {

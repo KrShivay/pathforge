@@ -301,9 +301,6 @@ export function checkClinicalCompleteness(content) {
     }
   }
 
-  if (specimensFromContent(content).length === 0) {
-    issues.push({ field: 'specimens', message: 'At least one specimen is required.' });
-  }
   if (!asText(content.findings).trim()) {
     issues.push({ field: 'findings', message: 'Microscopic findings are required.' });
   }

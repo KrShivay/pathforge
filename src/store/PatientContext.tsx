@@ -35,6 +35,8 @@ interface PatientContextType {
   /** Register a patient. The Patient ID is generated here, never by the caller. */
   addPatient: (input: NewPatientInput) => Promise<Patient>;
   getPatient: (id: string) => Patient | undefined;
+  /** Remove a patient record. Callers must check the patient has no reports. */
+  deletePatient: (id: string) => Promise<void>;
   /** Preview the next Patient ID (for display before the form is submitted). */
   previewPatientId: () => string;
 }
@@ -202,6 +204,12 @@ export function PatientProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const deletePatient = useCallback(async (id: string): Promise<void> => {
+    const db = await getDatabase();
+    await db.execute("DELETE FROM patients WHERE id = $1", [id]);
+    setPatients((previous) => previous.filter((patient) => patient.id !== id));
+  }, []);
+
   const getPatient = useCallback(
     (id: string) => patients.find((patient) => patient.id === id),
     [patients],
@@ -213,9 +221,10 @@ export function PatientProvider({ children }: { children: ReactNode }) {
       loading,
       addPatient,
       getPatient,
+      deletePatient,
       previewPatientId,
     }),
-    [patients, loading, addPatient, getPatient, previewPatientId],
+    [patients, loading, addPatient, getPatient, deletePatient, previewPatientId],
   );
 
   return (

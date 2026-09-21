@@ -405,8 +405,8 @@
     color: #1a1a1a !important;
     box-shadow: none !important;
     font-family: Georgia, "Times New Roman", serif !important;
-    font-size: 10.5pt !important;
-    line-height: 1.5 !important;
+    font-size: 9.5pt !important;
+    line-height: 1.35 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -506,7 +506,7 @@
   }
 
   .quiet-mode h1 {
-    font-size: 48px;
+    font-size: clamp(30px, 8vw, 40px);
   }
 
   .quiet-mode-orbit {
@@ -667,7 +667,7 @@
 
   .patients-table-header,
   .patients-row {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
   }
 
   .patients-table-header .col-p-phone,
@@ -4308,7 +4308,8 @@ button {
   border-radius: 12px;
 }
 
-.report-output.is-preview .print-report.pr-draft::before {
+.report-output.is-preview .print-report.pr-draft::before,
+.report-output.is-preview .print-report .pr-watermark {
   position: absolute;
 }
 
@@ -4335,12 +4336,12 @@ button {
   width: 100%;
   max-width: 210mm;
   margin: 0 auto;
-  padding: 14mm 12mm;
+  padding: 10mm 10mm;
   background: #ffffff;
   color: #1a1a1a;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 10.5pt;
-  line-height: 1.5;
+  font-size: 9.5pt;
+  line-height: 1.35;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
 }
 
@@ -4361,6 +4362,22 @@ button {
   pointer-events: none;
 }
 
+/* ---- finalized logo watermark ---- */
+/* Replaces the DRAFT text once the report is issued: the same faint,
+   behind-content mark, drawn from the transparent lab logo. */
+.print-report .pr-watermark {
+  position: fixed;
+  top: 45%;
+  left: 50%;
+  width: 120mm;
+  height: auto;
+  transform: translate(-50%, -50%);
+  object-fit: contain;
+  opacity: 0.06;
+  z-index: 0;
+  pointer-events: none;
+}
+
 /* ---- letterhead ---- */
 
 .pr-letterhead {
@@ -4368,8 +4385,8 @@ button {
   justify-content: space-between;
   align-items: flex-start;
   gap: 24px;
-  padding-bottom: 8px;
-  border-bottom: 2.5pt solid #1f3a5f;
+  padding-bottom: 5px;
+  border-bottom: 2pt solid #1f3a5f;
 }
 
 .pr-brand {
@@ -4382,10 +4399,13 @@ button {
   gap: 18px;
 }
 
+/* Bounded by height so any logo aspect ratio keeps the letterhead one band
+   tall; `height: 100%` here would stretch a portrait mark down the page. */
 .pr-logo {
   display: block;
-  width: 140px;
-  height: 100%;
+  width: auto;
+  max-width: 34mm;
+  height: 18mm;
   margin: 0;
   object-fit: contain;
   flex-shrink: 0;
@@ -4415,6 +4435,14 @@ button {
   text-transform: uppercase;
   letter-spacing: 2pt;
   color: #5a6673;
+}
+
+.pr-proprietor {
+  margin: 3px 0 0;
+  font-family: Arial, sans-serif;
+  font-size: 8pt;
+  font-weight: 600;
+  color: #1f3a5f;
 }
 
 .pr-accred {
@@ -4527,14 +4555,14 @@ button {
 .pr-band {
   display: grid !important;
   grid-template-columns: 1fr 1fr;
-  margin-top: 16px;
+  margin-top: 10px;
   border: 0.75pt solid #c8ced6;
   border-radius: 3px;
   overflow: hidden;
 }
 
 .pr-band > div {
-  padding: 7px 12px;
+  padding: 4px 10px;
   border-bottom: 0.75pt solid #e3e7ec;
 }
 
@@ -4542,7 +4570,10 @@ button {
   border-right: 0.75pt solid #e3e7ec;
 }
 
-.pr-band > div:nth-last-child(-n + 2) {
+/* Only the cells on the final row lose their bottom rule — with an odd cell
+   count the second-to-last cell still sits on a row above. */
+.pr-band > div:last-child,
+.pr-band > div:nth-last-child(2):nth-child(odd) {
   border-bottom: none;
 }
 
@@ -4556,9 +4587,9 @@ button {
 }
 
 .pr-band dd {
-  margin: 3px 0 0;
+  margin: 1px 0 0;
   font-family: Arial, sans-serif;
-  font-size: 9.5pt;
+  font-size: 8.5pt;
   font-weight: 600;
   color: #1a1a1a;
 }
@@ -4568,13 +4599,13 @@ button {
 /* Sections may span pages (a long results section must be allowed to break);
    smaller units below opt back into "keep together". */
 .pr-section {
-  margin-top: 16px;
+  margin-top: 10px;
   break-inside: auto;
 }
 
 .pr-section > h2 {
-  margin: 0 0 7px;
-  padding-bottom: 3px;
+  margin: 0 0 4px;
+  padding-bottom: 2px;
   border-bottom: 1pt solid #1f3a5f;
   font-family: Arial, "Segoe UI", sans-serif;
   font-size: 9pt;
@@ -4587,8 +4618,8 @@ button {
 
 .pr-narrative {
   margin: 0;
-  font-size: 10.5pt;
-  line-height: 1.6;
+  font-size: 9.5pt;
+  line-height: 1.35;
   color: #22272e;
   white-space: pre-wrap;
   text-align: justify;
@@ -4599,10 +4630,10 @@ button {
 }
 
 .pr-diagnosis .pr-narrative {
-  padding: 8px 12px;
+  padding: 5px 10px;
   border-left: 3pt solid #1f3a5f;
   background: #f4f7fa !important;
-  font-size: 11pt;
+  font-size: 10pt;
   font-weight: 500;
 }
 
@@ -4613,7 +4644,7 @@ button {
 }
 
 .pr-results-group + .pr-results-group {
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 .pr-results-heading {
@@ -4634,6 +4665,7 @@ button {
 .pr-results {
   width: 100%;
   table-layout: fixed;
+  font-size: 9pt;
 }
 
 /* Repeat column headers when a single test's table spans a page. */
@@ -4672,7 +4704,7 @@ button {
 }
 
 .pr-results thead th {
-  padding: 5px 8px;
+  padding: 3px 6px;
   text-align: left;
   border-bottom: 1.5pt solid #1f3a5f;
   font-size: 7.5pt;
@@ -4686,7 +4718,7 @@ button {
 }
 
 .pr-results tbody td {
-  padding: 6px 8px;
+  padding: 3px 6px;
   border-bottom: 0.5pt solid #e3e7ec;
   color: #1a1a1a;
   vertical-align: top;
@@ -4715,7 +4747,7 @@ button {
   display: grid !important;
   grid-template-columns: 1fr 1fr;
   gap: 40px;
-  margin-top: 26px;
+  margin-top: 16px;
   break-inside: avoid;
   page-break-inside: avoid;
 }
@@ -4725,7 +4757,7 @@ button {
 }
 
 .pr-sigline {
-  margin-top: 30px;
+  margin-top: 18px;
   border-top: 0.75pt solid #1a1a1a;
 }
 
@@ -4743,7 +4775,7 @@ button {
 }
 
 .pr-authnote {
-  margin: 14px 0 0;
+  margin: 8px 0 0;
   font-family: Arial, sans-serif;
   font-size: 7.5pt;
   font-style: italic;
@@ -4751,7 +4783,7 @@ button {
 }
 
 .pr-endmark {
-  margin: 18px 0 0;
+  margin: 10px 0 0;
   text-align: center;
   font-family: Arial, sans-serif;
   font-size: 7.5pt;
@@ -4767,8 +4799,8 @@ button {
   justify-content: space-between;
   align-items: baseline;
   gap: 12px;
-  margin-top: 10px;
-  padding-top: 6px;
+  margin-top: 8px;
+  padding-top: 4px;
   border-top: 0.5pt solid #e3e7ec;
   font-family: Arial, sans-serif;
   font-size: 7pt;
@@ -4797,7 +4829,7 @@ button {
 
 @page {
   size: A4;
-  margin: 12mm 12mm 14mm;
+  margin: 10mm 10mm 11mm;
 }
 
 /* =========================================
@@ -5623,7 +5655,8 @@ button {
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
-.preview-modal-sheet .print-report.pr-draft::before {
+.preview-modal-sheet .print-report.pr-draft::before,
+.preview-modal-sheet .print-report .pr-watermark {
   position: absolute;
 }
 
@@ -5796,6 +5829,31 @@ button {
   box-shadow: 0 0 40px rgba(80, 161, 224, 0.26);
 }
 
+/* This screen is night-dark and the logo is whatever the laboratory uploaded —
+   dark ink on transparency, or an opaque image with its own background. It is
+   therefore drawn unaltered on a light plate, which is the only treatment that
+   works for both. (Recolouring it with `brightness(0) invert(1)` suits a
+   transparent mark but turns any opaque logo into a solid white rectangle.) */
+.quiet-mode-mark.has-logo {
+  width: 188px;
+  height: 160px;
+  margin-bottom: 26px;
+  padding: 14px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 50px rgba(3, 12, 26, 0.45);
+}
+
+.quiet-mode-mark.has-logo img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
 .quiet-mode-kicker {
   margin-bottom: 13px;
   color: #8bb6d5;
@@ -5805,11 +5863,14 @@ button {
   text-transform: uppercase;
 }
 
+/* The heading carries a laboratory name of unknown length, so it scales with
+   the viewport and balances its own line breaks instead of assuming one word. */
 .quiet-mode h1 {
-  font-size: 68px;
+  font-size: clamp(34px, 5.2vw, 56px);
   font-weight: 500;
   letter-spacing: 0;
-  line-height: 0.98;
+  line-height: 1.04;
+  text-wrap: balance;
 }
 
 .quiet-mode-copy {
@@ -5861,11 +5922,6 @@ button {
   color: #c9ecff;
 }
 
-.quiet-mode-hint {
-  margin-top: 16px;
-  color: #6e8ba5;
-  font-size: 11px;
-}
 
 .quiet-mode-orbit {
   position: absolute;
@@ -6797,7 +6853,7 @@ button {
 
 .patients-table-header {
   display: grid;
-  grid-template-columns: 2fr 1fr 1.4fr;
+  grid-template-columns: 2fr 1fr 1.4fr 56px;
   padding: 9px 16px;
   background: var(--pf-theme-surface-muted);
   border-bottom: 1px solid var(--pf-theme-border);
@@ -6816,7 +6872,7 @@ button {
 
 .patients-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1.4fr;
+  grid-template-columns: 2fr 1fr 1.4fr 56px;
   padding: 9px 16px;
   border-bottom: 1px solid var(--pf-theme-surface-muted);
   align-items: center;
@@ -6824,6 +6880,35 @@ button {
 
 .patients-row:hover {
   background: var(--pf-theme-surface-muted);
+}
+
+.col-p-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.row-delete-button {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--pf-theme-text-subtle);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.row-delete-button:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: var(--pf-theme-danger);
 }
 
 .patient-display-name {
@@ -8286,7 +8371,7 @@ input[aria-invalid="true"] {
   }
 
   .patients-row {
-    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-columns: minmax(0, 1fr) auto auto !important;
     gap: 12px;
     padding: 14px 16px !important;
   }
@@ -10890,4 +10975,52 @@ input[aria-invalid="true"] {
 .pf-date-picker-popper .MuiPickersDay-root:focus-visible {
   outline: 2px solid var(--pf-theme-control-focus);
   outline-offset: 1px;
+}
+
+/* =========================================
+   LABORATORY BRANDING IN THE APP BAR
+   The nav mark shows the laboratory's own logo when the profile carries one,
+   so it needs a neutral tile and contained sizing instead of the solid brand
+   swatch the product glyph is drawn on.
+========================================= */
+
+/* A laboratory logo carries its own wordmark, so it needs real width to read
+   at a glance — the 38px product glyph tile is far too small for one. */
+/* A laboratory logo carries its own wordmark, so it needs real width to read
+   at a glance — the 38px product glyph tile is far too small for one. The logo
+   is transparent and the bar is light, so it sits on the bar itself with no
+   plate behind it. The image is bounded on both axes (never `height: 100%`,
+   which a grid item resolves against the row rather than the padding box and
+   then clips). */
+.top-nav-brand-icon.has-logo {
+  width: auto;
+  height: 60px;
+  min-width: 0;
+  max-width: 132px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none;
+}
+
+.top-nav-brand-icon.has-logo img {
+  width: auto;
+  height: auto;
+  max-width: 120px;
+  max-height: 58px;
+  object-fit: contain;
+}
+
+.top-nav-brand-text strong {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.top-nav-brand-text span {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

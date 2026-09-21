@@ -13,8 +13,6 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import Autocomplete from "@mui/material/Autocomplete";
-import TextField from "@mui/material/TextField";
 
 import CardHeading from "../components/common/CardHeading";
 import PrintableReport from "../components/report/PrintableReport";
@@ -25,7 +23,6 @@ import { formatReportDate, isoDateFromLocalDate } from "../components/report/rep
 import { buildReportModel } from "../components/report/reportModel";
 import { downloadReportPdf } from "../components/report/reportPdf";
 import { sanitizeText } from "../domain/textRules.mjs";
-import { normalizeSpecimens } from "../domain/report-bridge.mjs";
 import {
   notifyError,
   notifyErrorList,
@@ -654,32 +651,20 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
           isFinalized ? "read-only" : ""
         }`}
       >
-        {/* LEFT COLUMN: Specimen Details & Results Table */}
+        {/* LEFT COLUMN: Collection details & Results Table */}
         <div className="editor-left-column">
           <div className="editor-card specimen-card">
             <div className="editor-card-header">
               <CardHeading
                 icon={FileText}
-                title="Specimen Details"
-                subtitle="Sample identification & origin"
+                title="Collection Details"
+                subtitle="When the sample was collected"
               />
             </div>
 
             <div className="editor-card-body">
-              <div className="form-group specimen-form-group">
-                <label htmlFor="ed-specimens">Specimens</label>
-                <Autocomplete
-                  multiple
-                  freeSolo
-                  options={["Whole Blood EDTA", "Serum", "Plasma", "Urine", "Stool", "CSF", "Sputum", "Swab", "Tissue"]}
-                  value={formData.specimens}
-                  disabled={isFinalized || busy}
-                  onChange={(_event, values) => { const specimens = normalizeSpecimens(values); setFormData((previous) => ({ ...previous, specimens })); if (specimens.length) setValidationErrors((previous) => { const next = { ...previous }; delete next.specimens; return next; }); }}
-                  renderInput={(params) => <TextField {...params} id="ed-specimens" placeholder={formData.specimens.length ? undefined : "Select or type specimens…"} autoFocus={!isFinalized} error={Boolean(validationErrors.specimens)} helperText={validationErrors.specimens} />}
-                />
-              </div>
               <div className="form-group specimen-date-form-group">
-                <label htmlFor="ed-specimen-collection-date">Specimen collection date</label>
+                <label htmlFor="ed-specimen-collection-date">Collection date</label>
                 <input
                   id="ed-specimen-collection-date"
                   name="specimenCollectionDate"

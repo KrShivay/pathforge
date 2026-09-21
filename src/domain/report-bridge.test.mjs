@@ -145,7 +145,9 @@ test('checkClinicalCompleteness flags missing required content and blank results
     diagnosis: '',
     testResults: [{ parameterId: 'hb', parameterName: 'Hemoglobin', value: '' }],
   });
-  assert.deepEqual(issues.map((issue) => issue.field).sort(), ['diagnosis', 'result.hb', 'specimens']);
+  // A specimen label is no longer captured anywhere in the workspace, so an
+  // empty list cannot hold a report back from being finalized.
+  assert.deepEqual(issues.map((issue) => issue.field).sort(), ['diagnosis', 'result.hb']);
 });
 
 test('checkClinicalCompleteness flags two results that collapse onto the same payload key', () => {

@@ -13,7 +13,6 @@ import XlsxExportButton from "../../common/XlsxExportButton";
 interface ReviewStepProps {
   patientId: string;
   selectedTestIds: string[];
-  specimens: string[];
   specimenCollectionDate: string;
   results: Record<string, string>;
   clinical: ClinicalDetails;
@@ -22,7 +21,6 @@ interface ReviewStepProps {
 export default function ReviewStep({
   patientId,
   selectedTestIds,
-  specimens,
   specimenCollectionDate,
   results,
   clinical,
@@ -83,11 +81,7 @@ export default function ReviewStep({
           </em>
         </div>
         <div className="review-item">
-          <span>Specimens</span>
-          <strong>{specimens.join(", ") || "—"}</strong>
-        </div>
-        <div className="review-item">
-          <span>Specimen collection date</span>
+          <span>Collection date</span>
           <strong>{formatReportDay(specimenCollectionDate)}</strong>
         </div>
         <div className="review-item">

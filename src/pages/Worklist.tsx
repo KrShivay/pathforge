@@ -79,7 +79,6 @@ export default function Worklist({
           Patient: patient?.name ?? "Unknown Patient",
           "Patient ID": patient?.patientId ?? "",
           Test: report.testName ?? "",
-          Specimen: report.specimens.join(", "),
           "Collection Date": report.specimenCollectionDate || report.createdAt.slice(0, 10),
           Status: report.status,
           Created: report.createdAt,
@@ -197,7 +196,7 @@ export default function Worklist({
             <input
               aria-label="Search reports"
               type="text"
-              placeholder="Search by patient, test, or specimen…"
+              placeholder="Search by patient or test…"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
@@ -226,7 +225,7 @@ export default function Worklist({
           />
           <SortableHeader
             className="col-test"
-            label="Test / Specimen"
+            label="Test"
             active={sortField(sort) === "test"}
             direction={sortDirection(sort)}
             onClick={() => setSort(toggleSort(sort, "test"))}
@@ -277,9 +276,6 @@ export default function Worklist({
                     <strong className="test-name">
                       {report.testName || "Laboratory Test"}
                     </strong>
-                    <span className="specimen-label">
-                      {report.specimens.join(", ") || "Unspecified"}
-                    </span>
                     <span className="specimen-label report-collection-date">
                       Collected {formatReportFilterDate(report.specimenCollectionDate || report.createdAt)}
                     </span>

@@ -50,7 +50,6 @@ export default function VersionHistory({
         Patient: getPatient(report.patientId)?.name ?? "Unknown Patient",
         "Patient ID": getPatient(report.patientId)?.patientId ?? "",
         Test: report.testName ?? "",
-        Specimen: report.specimens.join(", "),
         Version: report.version,
         Status: report.status,
         Event: historyEventDate(report),
@@ -150,9 +149,7 @@ export default function VersionHistory({
                   <div className="version-patient-block">
                     <strong>{pt?.name ?? "Unknown Patient"}</strong>
                     <span className="version-specimen">
-                      {report.testName ||
-                        report.specimens.join(", ") ||
-                        "No specimen"}
+                      {report.testName || "Pathology Report"}
                     </span>
                     <span className="version-specimen version-collection-date">
                       Collected {formatDate(report.specimenCollectionDate || report.createdAt, true)}

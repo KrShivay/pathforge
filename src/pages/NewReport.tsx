@@ -40,7 +40,7 @@ interface NewReportProps {
 
 const STEPS = [
   "Patient",
-  "Test & specimen",
+  "Tests",
   "Results",
   "Clinical details",
   "Review",
@@ -69,7 +69,6 @@ export default function NewReport({
 
   const [patientId, setPatientId] = useState("");
   const [selectedTestIds, setSelectedTestIds] = useState<string[]>([]);
-  const [specimens, setSpecimens] = useState<string[]>([]);
   const [specimenCollectionDate, setSpecimenCollectionDate] = useState(() =>
     isoDateFromLocalDate(),
   );
@@ -86,7 +85,6 @@ export default function NewReport({
     const hasProgress =
       patientId !== "" ||
       selectedTestIds.length > 0 ||
-      specimens.length > 0 ||
       specimenCollectionDate !== isoDateFromLocalDate() ||
       Object.values(results).some((value) => value.trim() !== "") ||
       clinical.clinicalHistory.trim() !== "" ||
@@ -94,7 +92,7 @@ export default function NewReport({
       clinical.diagnosis.trim() !== "";
     onDirtyChange?.(hasProgress);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [patientId, selectedTestIds, specimens, specimenCollectionDate, results, clinical]);
+  }, [patientId, selectedTestIds, specimenCollectionDate, results, clinical]);
 
   const selectedTests = useMemo(
     () =>
@@ -106,7 +104,7 @@ export default function NewReport({
 
   const stepValid = [
     getPatient(patientId) !== undefined,
-    selectedTests.length > 0 && specimens.length > 0,
+    selectedTests.length > 0,
     selectedTests.every((test) =>
       test.parameters.every(
         (parameter) =>
@@ -156,7 +154,9 @@ export default function NewReport({
     return {
       id: crypto.randomUUID(),
       patientId,
-      specimens,
+      // The report no longer collects or prints a specimen label; the field
+      // stays on the record so stored reports keep their shape.
+      specimens: [],
       specimenCollectionDate: specimenCollectionDate || isoDateFromLocalDate(),
       referringClinician: clinical.referringClinician,
       clinicalHistory: clinical.clinicalHistory,
@@ -246,7 +246,7 @@ export default function NewReport({
             title={
               canSave
                 ? "Save current progress as a draft"
-                : "Choose a patient, at least one test and a specimen first"
+                : "Choose a patient and at least one test first"
             }
           >
             <Save size={15} />
@@ -256,7 +256,7 @@ export default function NewReport({
       </div>
       {!canSave ? (
         <p className="wizard-prerequisite">
-          To save a draft, choose a patient, at least one test, and a specimen.
+          To save a draft, choose a patient and at least one test.
         </p>
       ) : null}
 
@@ -288,10 +288,8 @@ export default function NewReport({
         {step === 1 && (
           <TestSpecimenStep
             selectedTestIds={selectedTestIds}
-            specimens={specimens}
             specimenCollectionDate={specimenCollectionDate}
             onChangeTests={setSelectedTestIds}
-            onChangeSpecimens={setSpecimens}
             onChangeSpecimenCollectionDate={setSpecimenCollectionDate}
           />
         )}
@@ -319,7 +317,6 @@ export default function NewReport({
           <ReviewStep
             patientId={patientId}
             selectedTestIds={selectedTestIds}
-            specimens={specimens}
             specimenCollectionDate={specimenCollectionDate}
             results={results}
             clinical={clinical}
