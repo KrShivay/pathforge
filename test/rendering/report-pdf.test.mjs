@@ -139,6 +139,158 @@ function lineTopMm(line) {
   return (PAGE_H_PT - line.y1) * PT_TO_MM;
 }
 
+async function assertPdfOperationsStayInContent(pages, margins, label) {
+  const left = margins.left;
+  const right = 210 - margins.right;
+  const bottom = 297 - margins.bottom;
+  const { jsPDF } = await import('jspdf');
+  const measure = new jsPDF({ unit: 'mm', format: 'a4' });
+  for (const [pageIndex, page] of pages.entries()) {
+    for (const item of page.texts) {
+      const top = textTopMm(item);
+      if (top >= bottom - 0.02) continue; // footer text is deliberately inside the bottom margin
+      assert.ok(
+        top >= margins.top - 0.1,
+        `${label}: page ${pageIndex + 1} text starts below top margin: ${item.text.slice(0, 40)} (${top})`,
+      );
+      assert.ok(
+        top + item.fontSize * 1.3 * PT_TO_MM <= bottom + 0.2,
+        `${label}: page ${pageIndex + 1} text crosses content bottom: ${item.text.slice(0, 40)}`,
+      );
+      const x = item.x * PT_TO_MM;
+      measure.setFont('helvetica', 'normal').setFontSize(item.fontSize);
+      const normalWidth = measure.getTextWidth(item.text);
+      measure.setFont('helvetica', 'bold');
+      const boldWidth = measure.getTextWidth(item.text);
+      measure.setFont('helvetica', 'italic');
+      const width = Math.max(normalWidth, boldWidth, measure.getTextWidth(item.text));
+      const isRightAligned = x >= right - 0.2;
+      const textLeft = isRightAligned ? x - width : x;
+      const textRight = isRightAligned ? x : x + width;
+      assert.ok(
+        textLeft >= left - 0.1 && textRight <= right + 0.2,
+        `${label}: text crosses horizontal content bounds: ${item.text.slice(0, 40)} (${textLeft}–${textRight})`,
+      );
+    }
+    for (const rect of page.rectangles) {
+      const x = rect.x * PT_TO_MM;
+      const rectRight = (rect.x + rect.w) * PT_TO_MM;
+      const top = rectTopMm(rect);
+      const rectBottom = top + Math.abs(rect.h) * PT_TO_MM;
+      assert.ok(x >= left - 0.1 && rectRight <= right + 0.1, `${label}: rectangle crosses horizontal content bounds`);
+      assert.ok(
+        top >= margins.top - 0.1 && rectBottom <= bottom + 0.1,
+        `${label}: rectangle crosses vertical content bounds`,
+      );
+    }
+    for (const rule of page.rules) {
+      const top = lineTopMm(rule);
+      if (top >= bottom - 0.02) continue; // footer rule
+      assert.ok(Math.min(rule.x1, rule.x2) * PT_TO_MM >= left - 0.1, `${label}: rule starts left of content`);
+      assert.ok(Math.max(rule.x1, rule.x2) * PT_TO_MM <= right + 0.1, `${label}: rule ends right of content`);
+      assert.ok(top >= margins.top - 0.1 && top <= bottom + 0.1, `${label}: rule is outside vertical content bounds`);
+    }
+  }
+}
+
+test('oversized PDF items paginate without clipping content or dropping clinical text', async () => {
+  const marginsList = [
+    { top: 60, right: 40, bottom: 60, left: 40 },
+    { top: 16, right: 16, bottom: 16, left: 16 },
+  ];
+  const longBandTail = 'BAND_VALUE_DISTINCTIVE_TAIL';
+  const rowTail = 'RESULT_NAME_DISTINCTIVE_TAIL';
+  const noticeTail = 'DRAFT_NOTICE_DISTINCTIVE_TAIL';
+  const signoffTail = 'SIGNOFF_NOTE_DISTINCTIVE_TAIL';
+  const cases = [
+    {
+      name: '60 patient-band entries',
+      model: (layout) =>
+        baseModel({
+          layout,
+          band: Array.from({ length: 60 }, (_, i) => ({
+            label: `Band ${i}`,
+            value:
+              i === 59
+                ? `Value 59 ${'clinical detail '.repeat(6)} BAND_59_TAIL`
+                : `Value ${i} ${'clinical detail '.repeat(6)}`,
+          })),
+        }),
+      tail: 'BAND_59_TAIL',
+      chars: 60 * 100,
+    },
+    {
+      name: '3000-character unbroken band value',
+      model: (layout) =>
+        baseModel({ layout, band: [{ label: 'Patient Name', value: `${'Y'.repeat(3000)}${longBandTail}` }] }),
+      tail: 'DISTINCTIVE_TAIL',
+      chars: 3050,
+    },
+    {
+      name: '2000-word result row name',
+      model: (layout) =>
+        baseModel({
+          layout,
+          resultGroups: [
+            {
+              key: 'g',
+              testName: 'Results',
+              rows: [
+                {
+                  key: 'r',
+                  name: `${'word '.repeat(2000)}${rowTail}`,
+                  value: '1',
+                  numeric: true,
+                  unit: 'u',
+                  reference: 'ref',
+                  flag: '',
+                  flagLabel: '',
+                },
+              ],
+            },
+          ],
+        }),
+      tail: rowTail,
+      chars: 11000,
+    },
+    {
+      name: 'long draft notice',
+      model: (layout) => baseModel({ layout, draftNotice: `${'draft notice text '.repeat(1500)}${noticeTail}` }),
+      tail: noticeTail,
+      chars: 27050,
+    },
+    {
+      name: 'long amendment notice',
+      model: (layout) =>
+        baseModel({ layout, amendmentNotice: `${'amendment notice text '.repeat(1500)}${noticeTail}` }),
+      tail: noticeTail,
+      chars: 33050,
+    },
+    {
+      name: 'long sign-off note',
+      model: (layout) =>
+        baseModel({ layout, signoff: [{ role: 'Authorised by', note: `${'note '.repeat(3000)}${signoffTail}` }] }),
+      tail: signoffTail,
+      chars: 15050,
+    },
+  ];
+
+  for (const marginsMm of marginsList) {
+    const layout = { showLetterhead: true, marginsMm };
+    const available = 297 - marginsMm.top - marginsMm.bottom;
+    for (const item of cases) {
+      const pages = parsePdf(await renderPdfText(item.model(layout)));
+      const content = textValue(pages);
+      assert.ok(content.includes(item.tail), `${item.name} tail survives at margins ${JSON.stringify(marginsMm)}`);
+      assert.ok(
+        pages.length <= Math.ceil(item.chars / 2000) + 2,
+        `${item.name} has bounded pagination: ${pages.length} pages for ${available} mm content height`,
+      );
+      await assertPdfOperationsStayInContent(pages, marginsMm, item.name);
+    }
+  }
+});
+
 test('PDF does not truncate a long patient/specimen band value to its first wrapped line', async () => {
   const longSpecimen = 'Left breast core biopsy, ultrasound-guided, three cores, site marked with clip';
   const model = baseModel({
@@ -831,6 +983,61 @@ test('results section heading reserves its first group heading, header, and row'
   const groupPage = pages.findIndex((page) => page.texts.some(({ text }) => text === 'Complete Blood Count'));
   assert.notEqual(headingPage, -1, 'results heading is present');
   assert.equal(groupPage, headingPage, 'the first group heading stays with the results heading');
+});
+
+test('wrapped first result row stays with its group heading and results header', async () => {
+  const firstRowName = `LONG_RESULT_FIRST_ROW ${'clinical descriptor '.repeat(24)}`;
+  assert.ok(firstRowName.length > 400, 'first result row is long enough to wrap to at least four lines');
+  const pages = parsePdf(
+    await renderPdfText(
+      baseModel({
+        draftNotice: 'x '.repeat(5360),
+        showGroupHeadings: true,
+        resultGroups: [
+          {
+            key: 'g',
+            testName: 'Comprehensive first panel',
+            rows: [
+              {
+                key: 'r',
+                name: firstRowName,
+                value: '13.5',
+                numeric: true,
+                unit: 'g/dL',
+                reference: '12-16',
+                flag: '',
+                flagLabel: '',
+              },
+            ],
+          },
+        ],
+      }),
+    ),
+  );
+  const groupPage = pages.findIndex((page) => page.texts.some(({ text }) => text === 'Comprehensive first panel'));
+  assert.notEqual(groupPage, -1, 'group heading is present');
+  const page = pages[groupPage];
+  assert.ok(
+    page.texts.some(({ text }) => text === 'PARAMETER'),
+    'results header is on the group page',
+  );
+  assert.ok(
+    page.texts.some(({ text }) => text.startsWith('LONG_RESULT_FIRST_ROW')),
+    'first result row starts on the group page',
+  );
+  const rowStartIndex = page.texts.findIndex(({ text }) => text.startsWith('LONG_RESULT_FIRST_ROW'));
+  const rowStart = page.texts[rowStartIndex];
+  let renderedNameLines = 0;
+  for (const item of page.texts.slice(rowStartIndex)) {
+    if (item.x !== rowStart.x || item.fontSize !== rowStart.fontSize) break;
+    renderedNameLines += 1;
+  }
+  assert.ok(renderedNameLines >= 4, 'the first result name wraps to at least four rendered lines');
+  if (groupPage > 0) {
+    const previousPageText = pages[groupPage - 1].texts.map(({ text }) => text);
+    assert.ok(!previousPageText.includes('Comprehensive first panel'), 'previous page has no orphaned group heading');
+    assert.ok(!previousPageText.includes('PARAMETER'), 'previous page has no orphaned results header');
+  }
 });
 
 test('continuation headers retain patient identity and omit the brand when the letterhead is hidden', async () => {

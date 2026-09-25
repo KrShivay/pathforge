@@ -1,9 +1,61 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { after } from 'node:test';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { createServer } from 'vite';
 import { REPORT_TYPE_SCALE_PT } from '../../src/components/report/printLayout.ts';
+import { buildReportModel } from '../../src/components/report/reportModel.ts';
+import { DEFAULT_LABORATORY_PROFILE } from '../../src/store/branding.ts';
 
 const css = fs.readFileSync(new URL('../../src/index.css', import.meta.url), 'utf8');
+const vite = await createServer({
+  configFile: false,
+  esbuild: { jsx: 'automatic' },
+  server: { middlewareMode: true, hmr: false, ws: false },
+  appType: 'custom',
+  logLevel: 'error',
+});
+after(async () => vite.close());
+
+const { default: PrintableReport } = await vite.ssrLoadModule('/src/components/report/PrintableReport.tsx');
+const { default: LaboratoryProfilePage } = await vite.ssrLoadModule('/src/pages/LaboratoryProfile.tsx');
+const { BrandingProvider } = await vite.ssrLoadModule('/src/store/BrandingContext.tsx');
+
+function reportModel(showLetterhead, marginsMm = { top: 31.75, right: 12, bottom: 14.5, left: 10 }) {
+  return buildReportModel({
+    patientName: 'Jane Doe',
+    patientCode: 'P-100',
+    reportId: 'R-100',
+    version: 1,
+    isFinalized: false,
+    laboratoryProfile: {
+      ...DEFAULT_LABORATORY_PROFILE,
+      logoDataUrl: '',
+      printLayout: { showLetterhead, marginsMm },
+    },
+    content: {
+      specimens: ['Whole Blood'],
+      referringClinician: 'Dr Example',
+      clinicalHistory: 'Routine history narrative',
+      findings: 'No significant finding',
+      diagnosis: 'Within normal limits',
+      interpretation: 'No further action',
+      testResults: [
+        {
+          testId: 'cbc',
+          testName: 'CBC',
+          parameterId: 'hb',
+          parameterName: 'Haemoglobin',
+          value: '13',
+          unit: 'g/dL',
+          referenceRange: { min: 12, max: 16 },
+        },
+      ],
+    },
+  });
+}
 
 function firstRule(selector) {
   const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -94,18 +146,23 @@ test('report type sizes in CSS match the shared report scale', () => {
   }
 });
 
-test('PrintableReport sources layout margins and conditionally renders its letterhead', () => {
-  const source = fs.readFileSync(new URL('../../src/components/report/PrintableReport.tsx', import.meta.url), 'utf8');
-  assert.match(source, /model\.layout\.showLetterhead\s*&&\s*<header className="pr-letterhead">/);
-  assert.match(source, /@page \{ size: A4; margin: \$\{Number\(margins\.top\)\.toFixed\(2\)\}mm/);
-  for (const side of ['top', 'right', 'bottom', 'left']) {
-    assert.match(source, new RegExp(`margins\\.${side}\\)\\.toFixed\\(2\\)`));
+test('PrintableReport renders configured margins and hides only its letterhead', () => {
+  const margins = { top: 31.75, right: 12, bottom: 14.5, left: 10 };
+  const shown = renderToStaticMarkup(React.createElement(PrintableReport, { model: reportModel(true, margins) }));
+  const hidden = renderToStaticMarkup(React.createElement(PrintableReport, { model: reportModel(false, margins) }));
+  assert.match(shown, /<header class="pr-letterhead">/);
+  assert.match(shown, /@page \{ size: A4; margin: 31\.75mm 12\.00mm 14\.50mm 10\.00mm; \}/);
+  for (const [side, value] of Object.entries(margins)) {
+    assert.match(shown, new RegExp(`--pr-margin-${side}:${value.toFixed(2)}mm`));
   }
-  assert.match(source, /pr-no-letterhead/);
-  assert.match(source, /--pr-margin-top/);
+  assert.match(hidden, /class="print-report pr-draft pr-no-letterhead"/);
+  assert.doesNotMatch(hidden, /<header class="pr-letterhead">/);
+  for (const content of ['Patient details', 'Haemoglobin', 'Routine history narrative', 'pr-footer']) {
+    assert.ok(hidden.includes(content), `hidden letterhead retains ${content}`);
+  }
 });
 
-test('hidden letterhead removes top margin only from the first visible block', () => {
+test('hidden-letterhead CSS removes top margin only from the first visible block', () => {
   assert.match(css, /\.print-report\.pr-no-letterhead\s*>\s*\.pr-draftbanner\s*,/);
   assert.match(css, /\.print-report\.pr-no-letterhead\s*>\s*\.pr-amendmentbanner:not\(\.pr-draftbanner ~ \*\)\s*,/);
   assert.match(
@@ -118,17 +175,24 @@ test('hidden letterhead removes top margin only from the first visible block', (
   assert.match(css, /\.pr-band:not\(\.pr-draftbanner ~ \*\):not\(\.pr-amendmentbanner ~ \*\)/);
 });
 
-test('Laboratory Profile exposes and validates configurable print margins', () => {
-  const source = fs.readFileSync(new URL('../../src/pages/LaboratoryProfile.tsx', import.meta.url), 'utf8');
-  assert.match(source, /<legend>Print layout<\/legend>/);
-  assert.match(source, /Print laboratory header \(letterhead\)/);
-  assert.match(source, /MARGIN_LABELS/);
-  assert.match(source, /mmToPx\(draft\.printLayout\.marginsMm\[side\]\)/);
-
-  const validation = source.indexOf('const layoutErrors = validatePrintLayout(candidateLayout)');
-  const update = source.indexOf('updateProfile({ ...draft, printLayout: candidateLayout })');
-  assert.ok(validation >= 0, 'save validates the candidate layout');
-  assert.ok(update > validation, 'save validation runs before updating the profile');
+test('Laboratory Profile renders the print layout controls and converted margin hints', () => {
+  const html = renderToStaticMarkup(
+    React.createElement(BrandingProvider, null, React.createElement(LaboratoryProfilePage)),
+  );
+  assert.match(html, /<legend>Print layout<\/legend>/);
+  assert.match(html, /Print laboratory header \(letterhead\)/);
+  for (const [side, min, max] of [
+    ['top', 0, 60],
+    ['right', 0, 60],
+    ['bottom', 10, 60],
+    ['left', 0, 60],
+  ]) {
+    const label = `${side[0].toUpperCase()}${side.slice(1)} margin (mm)`;
+    assert.ok(html.includes(label), `renders the ${side} margin label`);
+    assert.match(html, new RegExp(`<input type="number"[^>]*min="${min}"[^>]*max="${max}"[^>]*value="16"`));
+  }
+  assert.equal([...html.matchAll(/<small>≈ \d+ px<\/small>/g)].length, 4);
+  assert.match(html, /120 px = 31\.75 mm/);
 });
 
 test('preview modal uses the print report line height', () => {
