@@ -1,5 +1,6 @@
 import type { ReportModel } from "./reportModel";
 import { getUsableLogoDataUrl } from "../../store/branding";
+import type { CSSProperties } from "react";
 
 interface PrintableReportProps {
   model: ReportModel;
@@ -13,15 +14,25 @@ interface PrintableReportProps {
  */
 export default function PrintableReport({ model }: PrintableReportProps) {
   const logoDataUrl = getUsableLogoDataUrl(model.brand.logoDataUrl);
+  const margins = model.layout.marginsMm;
+  const marginStyle = {
+    "--pr-margin-top": `${Number(margins.top).toFixed(1)}mm`,
+    "--pr-margin-right": `${Number(margins.right).toFixed(1)}mm`,
+    "--pr-margin-bottom": `${Number(margins.bottom).toFixed(1)}mm`,
+    "--pr-margin-left": `${Number(margins.left).toFixed(1)}mm`,
+  } as CSSProperties;
 
   return (
+    <>
+    <style>{`@page { size: A4; margin: ${Number(margins.top).toFixed(1)}mm ${Number(margins.right).toFixed(1)}mm ${Number(margins.bottom).toFixed(1)}mm ${Number(margins.left).toFixed(1)}mm; }`}</style>
     <div
-      className={`print-report${model.isFinalized ? "" : " pr-draft"}`}
+      className={`print-report${model.isFinalized ? "" : " pr-draft"}${model.layout.showLetterhead ? "" : " pr-no-letterhead"}`}
+      style={marginStyle}
     >
       {model.isFinalized && logoDataUrl && (
         <img className="pr-watermark" src={logoDataUrl} alt="" aria-hidden="true" />
       )}
-      <header className="pr-letterhead">
+      {model.layout.showLetterhead && <header className="pr-letterhead">
         <div className="pr-brand">
           {logoDataUrl && <img className="pr-logo" src={logoDataUrl} alt="Laboratory logo" />}
           <div className="pr-brand-text">
@@ -46,7 +57,7 @@ export default function PrintableReport({ model }: PrintableReportProps) {
             )}
           </dl>
         </div>
-      </header>
+      </header>}
 
       {model.draftNotice && (
         <p className="pr-draftbanner">{model.draftNotice}</p>
@@ -153,5 +164,6 @@ export default function PrintableReport({ model }: PrintableReportProps) {
         <span>Report date {model.generatedAt}</span>
       </footer>
     </div>
+    </>
   );
 }

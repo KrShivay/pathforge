@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { buildReportPdf } from '../../src/components/report/reportPdf.ts';
-import { DEFAULT_PRINT_LAYOUT } from '../../src/components/report/printLayout.ts';
+import { DEFAULT_PRINT_LAYOUT, REPORT_TYPE_SCALE_PT, pxToMm } from '../../src/components/report/printLayout.ts';
 
 /** @type {import('../../src/components/report/reportModel.ts').ReportModel} */
 function baseModel(overrides = {}) {
@@ -55,6 +55,88 @@ async function renderPdfText(model) {
   return bytes.toString('latin1');
 }
 
+const PT_TO_MM = 25.4 / 72;
+const PAGE_H_PT = 841.89;
+
+function unescapePdfString(value) {
+  return value
+    .replace(/\\([()\\])/g, '$1')
+    .replace(/\\([0-7]{1,3})/g, (_, octal) => String.fromCharCode(parseInt(octal, 8)));
+}
+
+/** Parse the uncompressed jsPDF page streams into text, font, rectangle, and rule records. */
+function parsePdf(pdf) {
+  const objects = new Map([...pdf.matchAll(/(\d+) 0 obj([\s\S]*?)endobj/g)].map(([, id, body]) => [Number(id), body]));
+  const streams = new Map(
+    [...objects].flatMap(([id, body]) => {
+      const match = body.match(/stream\r?\n([\s\S]*?)\r?\nendstream/);
+      return match ? [[id, match[1]]] : [];
+    }),
+  );
+  const pages = [...objects.values()]
+    .filter((body) => /\/Type \/Page(?:\s|\n)/.test(body))
+    .map((body) => {
+      const contentId = Number(body.match(/\/Contents\s+(\d+)\s+0\s+R/)?.[1]);
+      const stream = streams.get(contentId) ?? '';
+      const texts = [];
+      let fontSize = 0;
+      let leading = 0;
+      let x = 0;
+      let y = 0;
+      const token =
+        /\/F\d+\s+([\d.]+)\s+Tf|([\d.]+)\s+TL|([+-]?[\d.]+)\s+([+-]?[\d.]+)\s+Td|T\*\s*\(((?:\\.|[^\\)])*)\)\s*Tj|\(((?:\\.|[^\\)])*)\)\s*Tj/g;
+      for (const match of stream.matchAll(token)) {
+        if (match[1]) fontSize = Number(match[1]);
+        else if (match[2]) leading = Number(match[2]);
+        else if (match[3]) {
+          x = Number(match[3]);
+          y = Number(match[4]);
+        } else if (match[5]) {
+          y -= leading;
+          texts.push({ text: unescapePdfString(match[5]), x, y, fontSize });
+        } else if (match[6]) {
+          texts.push({ text: unescapePdfString(match[6]), x, y, fontSize });
+        }
+      }
+      const rectangles = [
+        ...stream.matchAll(/([+-]?[\d.]+)\s+([+-]?[\d.]+)\s+([+-]?[\d.]+)\s+([+-]?[\d.]+)\s+re/g),
+      ].map(([, x, y, w, h]) => ({
+        x: Number(x),
+        y: Number(y),
+        w: Number(w),
+        h: Number(h),
+      }));
+      const rules = [
+        ...stream.matchAll(/([+-]?[\d.]+)\s+([+-]?[\d.]+)\s+m\s+([+-]?[\d.]+)\s+([+-]?[\d.]+)\s+l\s+S/g),
+      ].map(([, x1, y1, x2, y2]) => ({
+        x1: Number(x1),
+        y1: Number(y1),
+        x2: Number(x2),
+        y2: Number(y2),
+      }));
+      return { stream, texts, rectangles, rules };
+    });
+  return pages;
+}
+
+function textValue(pages) {
+  return pages.flatMap((page) => page.texts.map(({ text }) => text)).join('\n');
+}
+
+function textTopMm(item) {
+  // With jsPDF's verified `baseline: "top"`, the glyph top is close to the
+  // supplied point; Helvetica's upper extent is conservatively 0.8 em.
+  return (PAGE_H_PT - item.y - item.fontSize * 0.8) * PT_TO_MM;
+}
+
+function rectTopMm(rect) {
+  return (PAGE_H_PT - rect.y) * PT_TO_MM;
+}
+
+function lineTopMm(line) {
+  return (PAGE_H_PT - line.y1) * PT_TO_MM;
+}
+
 test('PDF does not truncate a long patient/specimen band value to its first wrapped line', async () => {
   const longSpecimen = 'Left breast core biopsy, ultrasound-guided, three cores, site marked with clip';
   const model = baseModel({
@@ -64,11 +146,11 @@ test('PDF does not truncate a long patient/specimen band value to its first wrap
     ],
   });
 
-  const pdfText = await renderPdfText(model);
+  const pages = parsePdf(await renderPdfText(model));
 
   // The tail of the wrapped value must survive into the PDF stream, not just
   // the words that fit on the first line.
-  assert.match(pdfText, /site marked with clip/);
+  assert.match(textValue(pages), /site\nmarked with clip/);
 });
 
 test('PDF does not truncate a long reference-range note to its first wrapped line', async () => {
@@ -94,11 +176,126 @@ test('PDF does not truncate a long reference-range note to its first wrapped lin
     ],
   });
 
-  const pdfText = await renderPdfText(model);
+  const pages = parsePdf(await renderPdfText(model));
 
   // Wrapped lines are drawn as separate Tj/T* operators, so check the final
   // wrapped line's word survives rather than the whole phrase as one string.
-  assert.match(pdfText, /\(clinically\) Tj/);
+  assert.match(textValue(pages), /clinically/);
+});
+
+test('long narratives start with the preceding content and continue without an orphan heading', async () => {
+  const priorContent = `${'Prior section content. '.repeat(240)}PRIOR CONTENT END`;
+  const longBody = `NARRATIVE START ${'Continuation material. '.repeat(680)}`;
+  const pages = parsePdf(
+    await renderPdfText(
+      baseModel({
+        layout: { showLetterhead: false, marginsMm: { top: 16, right: 16, bottom: 16, left: 16 } },
+        narratives: [
+          { heading: 'Prior Section', body: priorContent, emphasis: false },
+          { heading: 'Long Narrative', body: longBody, emphasis: false },
+        ],
+      }),
+    ),
+  );
+
+  const startPageIndex = pages.findIndex((page) => page.texts.some(({ text }) => text === 'LONG NARRATIVE'));
+  assert.notEqual(startPageIndex, -1, 'narrative heading is present');
+  const startPage = pages[startPageIndex];
+  assert.ok(startPage.texts.some(({ text }) => text.includes('PRIOR CONTENT END')));
+  assert.ok(startPage.texts.some(({ text }) => text.includes('NARRATIVE START')));
+  assert.ok(
+    pages
+      .slice(startPageIndex + 1)
+      .some((page) => page.texts.some(({ text }) => text.includes('Continuation material.'))),
+    'long narrative continues on a following page',
+  );
+
+  for (const page of pages) {
+    for (const [index, item] of page.texts.entries()) {
+      if (item.text !== 'LONG NARRATIVE') continue;
+      assert.ok(
+        page.texts
+          .slice(index + 1)
+          .some(({ text }) => text.includes('NARRATIVE START') || text.includes('Continuation material.')),
+        'narrative heading has body text on the same page',
+      );
+    }
+  }
+});
+
+test('PDF table cell lines stay inside their columns with default and maximum margins', async () => {
+  const { jsPDF } = await import('jspdf');
+  const testCells = [
+    { marker: 'PARAMETERX', value: 'PARAMETERX '.repeat(12) },
+    { marker: 'RESULTX', value: 'RESULTX '.repeat(8) },
+    { marker: 'UNITX', value: 'UNITX '.repeat(7) },
+    { marker: 'REFERENCEX', value: 'REFERENCEX '.repeat(12) },
+  ];
+
+  for (const horizontalMargin of [16, 40]) {
+    const contentWidth = 210 - horizontalMargin * 2;
+    const columnWidths = [0.38, 0.17, 0.13, 0.24, 0.08].map((portion) => contentWidth * portion);
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pages = parsePdf(
+      await renderPdfText(
+        baseModel({
+          layout: {
+            showLetterhead: false,
+            marginsMm: { top: 16, right: horizontalMargin, bottom: 16, left: horizontalMargin },
+          },
+          resultGroups: [
+            {
+              key: 'unique-table-group',
+              testName: 'Unique table group',
+              rows: [
+                {
+                  key: 'unique-long-row',
+                  name: testCells[0].value,
+                  value: testCells[1].value,
+                  numeric: false,
+                  unit: testCells[2].value,
+                  reference: testCells[3].value,
+                  flag: 'H',
+                  flagLabel: 'High',
+                },
+              ],
+            },
+          ],
+        }),
+      ),
+    );
+    const rowLines = pages
+      .flatMap((page) => page.texts)
+      .filter(({ text }) => /(?:PARAMETERX|RESULTX|UNITX|REFERENCEX)/.test(text) || text === 'H');
+    assert.ok(rowLines.length > testCells.length, 'long row wraps to multiple drawn lines');
+
+    for (const item of rowLines) {
+      const columnIndex = item.text === 'H' ? 4 : testCells.findIndex(({ marker }) => item.text.includes(marker));
+      assert.notEqual(columnIndex, -1, `recognized row cell line: ${item.text}`);
+      const availableWidth = columnWidths[columnIndex] - (columnIndex === 4 ? 0 : 1.5);
+      doc.setFont('helvetica', 'normal').setFontSize(REPORT_TYPE_SCALE_PT.table);
+      const normalWidth = doc.getTextWidth(item.text);
+      doc.setFont('helvetica', 'bold').setFontSize(REPORT_TYPE_SCALE_PT.table);
+      const boldWidth = doc.getTextWidth(item.text);
+      assert.ok(
+        Math.max(normalWidth, boldWidth) <= availableWidth + 0.01,
+        `${item.text} is ${Math.max(normalWidth, boldWidth).toFixed(2)}mm, column permits ${availableWidth.toFixed(2)}mm`,
+      );
+    }
+
+    const headers = ['PARAMETER', 'RESULT', 'UNIT', 'REFERENCE RANGE', 'FLAG'];
+    for (const page of pages) {
+      for (const item of page.texts.filter(({ text }) => headers.includes(text))) {
+        const columnIndex = headers.indexOf(item.text);
+        const availableWidth = columnWidths[columnIndex] - (columnIndex === 4 ? 0 : 1.5);
+        doc.setFont('helvetica', 'bold').setFontSize(REPORT_TYPE_SCALE_PT.tableHeader);
+        assert.ok(
+          doc.getTextWidth(item.text) <= availableWidth + 0.01,
+          `header ${item.text} exceeds ${availableWidth.toFixed(2)}mm`,
+        );
+      }
+    }
+  }
 });
 
 test('PDF omits invalid legacy logo data instead of reserving logo space', async () => {
@@ -209,4 +406,296 @@ test('finalized PDF stamps a faint logo watermark, drafts do not', async () => {
   assert.equal(countImages(finalText), 2, 'a finalized report adds the logo watermark');
   // The watermark is drawn at reduced opacity via an ExtGState.
   assert.match(finalText, /\/ca 0\.06/, 'watermark uses ~6% opacity');
+});
+
+test('default layout keeps the letterhead, top glyphs, footer, and report type scale in bounds', async () => {
+  const pdf = await renderPdfText(
+    baseModel({
+      resultGroups: [
+        {
+          key: 'g',
+          testName: 'Chemistry',
+          rows: [
+            {
+              key: 'r',
+              name: 'Glucose',
+              value: '5.2',
+              numeric: true,
+              unit: 'mmol/L',
+              reference: '3.9–6.1',
+              flag: 'none',
+              flagLabel: '',
+            },
+          ],
+        },
+      ],
+      narratives: [{ heading: 'Interpretation', body: 'Within expected limits.', emphasis: false }],
+    }),
+  );
+  const pages = parsePdf(pdf);
+  const allText = textValue(pages);
+  assert.match(allText, /PathForge/);
+  assert.match(allText, /TAGLINE/);
+  assert.match(allText, /PATHOLOGY REPORT/);
+  assert.ok(Math.min(...pages[0].texts.map(textTopMm)) >= 15.5);
+
+  const footerRule = pages[0].rules.find(
+    (rule) =>
+      Math.abs(rule.x1 * PT_TO_MM - 16) < 0.1 &&
+      Math.abs(rule.x2 * PT_TO_MM - 194) < 0.1 &&
+      Math.abs(rule.y1 - rule.y2) < 0.1 &&
+      lineTopMm(rule) > 280,
+  );
+  assert.ok(footerRule, 'footer rule spans the default content width');
+  assert.ok(Math.abs(lineTopMm(footerRule) - 285) < 0.2);
+  const footer = pages[0].texts.find((item) => item.text === 'Page 1 of 1');
+  assert.ok(footer);
+  const footerTop = textTopMm(footer);
+  assert.ok(footerTop > 281 && footerTop < 297, `footer glyph top ${footerTop}mm stays in the bottom margin`);
+  const contentFontSizes = pages
+    .flatMap((page) => page.texts)
+    .filter(
+      ({ text }) =>
+        !['PathForge', 'TAGLINE', 'PATHOLOGY REPORT', 'LABORATORY RESULTS', 'INTERPRETATION'].includes(text),
+    )
+    .map(({ fontSize }) => fontSize);
+  assert.ok(contentFontSizes.every((size) => size >= 6 && size <= 7.5));
+  assert.equal(REPORT_TYPE_SCALE_PT.body, 7.5);
+});
+
+test('hidden letterhead starts the patient band at the configured top and retains clinical content', async () => {
+  const pages = parsePdf(
+    await renderPdfText(
+      baseModel({
+        layout: { showLetterhead: false, marginsMm: { ...DEFAULT_PRINT_LAYOUT.marginsMm } },
+        brand: {
+          name: 'HiddenLabName',
+          tagline: 'HiddenTagline',
+          strapline: '',
+          proprietor: '',
+          address: '',
+          contact: '',
+          hours: '',
+          logoDataUrl: '',
+        },
+        band: [
+          { label: 'Patient Name', value: 'Jane Doe' },
+          { label: 'Patient ID', value: 'PF-20260101-001' },
+        ],
+        resultGroups: [
+          {
+            key: 'g',
+            testName: 'Chemistry',
+            rows: [
+              {
+                key: 'r',
+                name: 'Glucose',
+                value: '5.2',
+                numeric: true,
+                unit: 'mmol/L',
+                reference: '3.9–6.1',
+                flag: 'none',
+                flagLabel: '',
+              },
+            ],
+          },
+        ],
+        narratives: [{ heading: 'Diagnosis', body: 'No abnormality detected.', emphasis: true }],
+      }),
+    ),
+  );
+  const allText = textValue(pages);
+  assert.doesNotMatch(allText, /HiddenLabName|HIDDENTAGLINE|PATHOLOGY REPORT/);
+  assert.match(allText, /Jane Doe/);
+  assert.match(allText, /PF-20260101-001/);
+  assert.match(allText, /Glucose/);
+  assert.match(allText, /No abnormality detected/);
+  assert.ok(Math.abs(rectTopMm(pages[0].rectangles[0]) - 16) < 0.2);
+});
+
+test('120 CSS px top margin maps to the exact hidden-letterhead PDF band position', async () => {
+  const top = pxToMm(120);
+  const pages = parsePdf(
+    await renderPdfText(
+      baseModel({
+        layout: { showLetterhead: false, marginsMm: { ...DEFAULT_PRINT_LAYOUT.marginsMm, top } },
+      }),
+    ),
+  );
+  assert.ok(Math.abs(rectTopMm(pages[0].rectangles[0]) - 31.75) < 0.2);
+});
+
+test('hidden-letterhead draft and amendment notices begin at the top margin', async () => {
+  for (const override of [{ draftNotice: 'Draft content notice.' }, { amendmentNotice: 'Amendment content notice.' }]) {
+    const pages = parsePdf(
+      await renderPdfText(
+        baseModel({
+          layout: { showLetterhead: false, marginsMm: { ...DEFAULT_PRINT_LAYOUT.marginsMm } },
+          ...override,
+        }),
+      ),
+    );
+    assert.ok(Math.abs(rectTopMm(pages[0].rectangles[0]) - 16) < 0.2);
+  }
+});
+
+test('independent margins constrain text, content, footer, and right alignment', async () => {
+  const margins = { top: 30, right: 12, bottom: 25, left: 20 };
+  const pages = parsePdf(
+    await renderPdfText(
+      baseModel({
+        layout: { showLetterhead: false, marginsMm: margins },
+        resultGroups: [
+          {
+            key: 'g',
+            testName: 'Chemistry',
+            rows: [
+              {
+                key: 'r',
+                name: 'Glucose',
+                value: '5.2',
+                numeric: true,
+                unit: 'mmol/L',
+                reference: '3.9–6.1',
+                flag: 'none',
+                flagLabel: '',
+              },
+            ],
+          },
+        ],
+      }),
+    ),
+  );
+  const footerTexts = new Set(['PathForge · PF-000001', 'Report date 2026-01-01, 12:00 PM', 'Page 1 of 1']);
+  for (const page of pages) {
+    for (const item of page.texts) {
+      const xMm = item.x * PT_TO_MM;
+      assert.ok(xMm >= margins.left - 0.1, `${item.text} begins at ${xMm}mm`);
+      const conservativeWidth = item.text.length * item.fontSize * PT_TO_MM * 0.45;
+      assert.ok(xMm + conservativeWidth <= 210 - margins.right + 1.5, `${item.text} ends within right margin`);
+      if (!footerTexts.has(item.text)) {
+        const anchorTop = (PAGE_H_PT - item.y) * PT_TO_MM;
+        assert.ok(anchorTop <= 297 - margins.bottom + 1, `${item.text} stays above the content bottom`);
+      }
+    }
+    for (const rect of page.rectangles) {
+      assert.ok(rect.x * PT_TO_MM >= margins.left - 0.1);
+      assert.ok((rect.x + rect.w) * PT_TO_MM <= 210 - margins.right + 0.1);
+      assert.ok(rectTopMm(rect) <= 297 - margins.bottom + 0.1);
+    }
+  }
+  const footerRule = pages[0].rules.find(
+    (rule) =>
+      Math.abs(rule.x1 * PT_TO_MM - margins.left) < 0.1 && Math.abs(rule.y1 - rule.y2) < 0.1 && lineTopMm(rule) > 272,
+  );
+  assert.ok(footerRule);
+  assert.ok(Math.abs(lineTopMm(footerRule) - 276) < 0.2);
+});
+
+test('zero top, left, and right margins with the minimum bottom margin produce an on-page PDF', async () => {
+  const marginsMm = { top: 0, left: 0, right: 0, bottom: 10 };
+  const pages = parsePdf(
+    await renderPdfText(
+      baseModel({
+        layout: { showLetterhead: false, marginsMm },
+      }),
+    ),
+  );
+  assert.equal(pages.length, 1);
+  for (const item of pages[0].texts) {
+    assert.ok(item.x >= -0.1);
+    assert.ok(item.x <= 210 / PT_TO_MM);
+    const anchorTop = (PAGE_H_PT - item.y) * PT_TO_MM;
+    assert.ok(anchorTop >= -0.1 && anchorTop <= 297.1);
+  }
+  assert.ok(Math.abs(rectTopMm(pages[0].rectangles[0])) < 0.2);
+});
+
+test('maximum margins paginate long results without splitting rows or orphaning section headings', async () => {
+  const rows = Array.from({ length: 72 }, (_, index) => ({
+    key: `row-${index}`,
+    name: `ANALYTE_${index.toString().padStart(3, '0')} extended descriptive name for result ${index}`,
+    value: `${(index + 1) / 7}`,
+    numeric: true,
+    unit: 'micromoles per litre',
+    reference: `Reference ${index}: expected interval 2.5 to 8.5 depending on age, collection conditions, and clinical context`,
+    flag: 'none',
+    flagLabel: '',
+  }));
+  const marginsMm = { top: 60, right: 40, bottom: 60, left: 40 };
+  const pages = parsePdf(
+    await renderPdfText(
+      baseModel({
+        layout: { showLetterhead: false, marginsMm },
+        resultGroups: [{ key: 'long', testName: 'Comprehensive chemistry panel', rows }],
+        showGroupHeadings: true,
+        narratives: [{ heading: 'Clinical interpretation', body: 'Clinical details '.repeat(180), emphasis: true }],
+      }),
+    ),
+  );
+  assert.ok(pages.length >= 2, 'the long report spans pages');
+  for (const [index, page] of pages.entries()) {
+    const pageText = page.texts.map((item) => item.text).join('\n');
+    assert.match(pageText, new RegExp(`Page ${index + 1} of ${pages.length}`));
+    const pageHasRows = page.texts.some(({ text }) => /ANALYTE_\d{3}/.test(text));
+    if (pageHasRows) assert.match(pageText, /PARAMETER/);
+    for (const item of page.texts) {
+      const xMm = item.x * PT_TO_MM;
+      assert.ok(xMm >= marginsMm.left - 0.1, `${item.text} is inside the left content edge`);
+      assert.ok(
+        xMm + item.text.length * item.fontSize * PT_TO_MM * 0.45 <= 210 - marginsMm.right + 1.5,
+        `${item.text} is inside the right content edge`,
+      );
+      const isFooter =
+        item.text.startsWith('PathForge ·') || item.text.startsWith('Report date ') || item.text.startsWith('Page ');
+      if (!isFooter) assert.ok((PAGE_H_PT - item.y) * PT_TO_MM <= 237 + 1, `${item.text} is above the content bottom`);
+    }
+    const tableHeaders = page.texts.filter(({ text }) => text === 'PARAMETER');
+    if (pageHasRows) assert.ok(tableHeaders.length >= 1, `page ${index + 1} repeats the results header`);
+    for (const row of rows) {
+      if (page.texts.some(({ text }) => text.includes(`ANALYTE_${row.key.slice(-3)}`))) {
+        assert.ok(page.texts.some(({ text }) => text.includes(`Reference ${Number(row.key.slice(-3))}:`)));
+      }
+    }
+  }
+  const rowOccurrences = new Map();
+  pages.forEach((page, pageIndex) => {
+    for (const item of page.texts) {
+      const match = item.text.match(/ANALYTE_(\d{3})/);
+      if (match) rowOccurrences.set(Number(match[1]), (rowOccurrences.get(Number(match[1])) ?? 0) + 1);
+    }
+    const headings = page.texts.filter(({ text }) => ['Laboratory Results', 'Clinical interpretation'].includes(text));
+    for (const heading of headings) {
+      const at = page.texts.indexOf(heading);
+      assert.ok(page.texts[at + 1], `heading on page ${pageIndex + 1} has following content`);
+      assert.doesNotMatch(page.texts[at + 1].text, /^Page /);
+    }
+  });
+  assert.equal(rowOccurrences.size, rows.length);
+  assert.ok([...rowOccurrences.values()].every((count) => count === 1));
+});
+
+test('continuation headers retain patient identity and omit the brand when the letterhead is hidden', async () => {
+  const rows = Array.from({ length: 72 }, (_, index) => ({
+    key: `r-${index}`,
+    name: `Marker ${index}`,
+    value: `${index}`,
+    numeric: true,
+    unit: 'unit',
+    reference: '0–100',
+    flag: 'none',
+    flagLabel: '',
+  }));
+  const pages = parsePdf(
+    await renderPdfText(
+      baseModel({
+        layout: { showLetterhead: false, marginsMm: { top: 60, right: 40, bottom: 60, left: 40 } },
+        resultGroups: [{ key: 'g', testName: 'Panel', rows }],
+      }),
+    ),
+  );
+  assert.ok(pages.length > 1);
+  const continued = pages[1].texts.map(({ text }) => text).join('\n');
+  assert.match(continued, /Patient Jane Doe/);
+  assert.ok(!pages[1].texts.some(({ text }) => text === 'PathForge'));
 });
