@@ -107,6 +107,11 @@ export default function LaboratoryProfilePage({ onDirtyChange }: LaboratoryProfi
   const hasLogo = Boolean(logoDataUrl);
   const marginsChanged = MARGIN_SIDES.some((side) => marginInputs[side] !== String(profile.printLayout.marginsMm[side]));
   const isDirty = JSON.stringify(draft) !== JSON.stringify(profile) || marginsChanged;
+  const candidateLayout = {
+    ...draft.printLayout,
+    marginsMm: Object.fromEntries(MARGIN_SIDES.map((side) => [side, marginInputs[side].trim() ? Number(marginInputs[side]) : Number.NaN])) as Record<MarginSide, number>,
+  };
+  const layoutErrors = validatePrintLayout(candidateLayout);
 
   useEffect(() => {
     onDirtyChange?.(isDirty);
@@ -186,8 +191,11 @@ export default function LaboratoryProfilePage({ onDirtyChange }: LaboratoryProfi
             {MARGIN_SIDES.map((side) => {
               const errorId = `print-layout-${side}-error`;
               const text = marginInputs[side];
-              const parsed = text.trim() ? Number(text) : Number.NaN;
-              const error = Number.isFinite(parsed) ? "" : "Enter a finite margin value.";
+              const sideLabel = `${side[0]?.toUpperCase()}${side.slice(1)} margin`;
+              const error = layoutErrors.find((message) =>
+                message.startsWith(sideLabel) ||
+                ((side === "left" || side === "right") && message.startsWith("Left and right margins together")),
+              ) ?? "";
               return <label key={side}>
                 <span>{MARGIN_LABELS[side]}</span>
                 <input

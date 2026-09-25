@@ -353,6 +353,69 @@ test('PDF prints optional laboratory details only once the profile carries them'
   }
 });
 
+test('default laboratory letterhead text stays clear of the title and metadata at supported margins', async () => {
+  const { jsPDF } = await import('jspdf');
+  for (const horizontalMargin of [40, 30, 16]) {
+    const model = buildReportModel({
+      patientName: 'Jane Doe',
+      patientCode: 'P-100',
+      reportId: 'R-100',
+      version: 1,
+      isFinalized: false,
+      laboratoryProfile: {
+        ...DEFAULT_LABORATORY_PROFILE,
+        printLayout: {
+          showLetterhead: true,
+          marginsMm: {
+            top: 16,
+            right: horizontalMargin,
+            bottom: 16,
+            left: horizontalMargin,
+          },
+        },
+      },
+      content: {
+        specimens: ['Whole Blood'],
+        referringClinician: '',
+        clinicalHistory: '',
+        findings: '',
+        diagnosis: '',
+        interpretation: '',
+        testResults: [],
+      },
+    });
+    const page = parsePdf(await renderPdfText(model))[0];
+    const firstRuleTop = Math.min(...page.rules.map(lineTopMm));
+    const letterheadTexts = page.texts.filter((item) => textTopMm(item) < firstRuleTop);
+    const contentMidpoint = 105;
+    const brandTexts = letterheadTexts.filter((item) => item.x * PT_TO_MM < contentMidpoint);
+    const titleMetaTexts = letterheadTexts.filter((item) => item.x * PT_TO_MM >= contentMidpoint);
+    const measure = (item) => {
+      const font = new jsPDF({ unit: 'mm', format: 'a4' }).setFont('helvetica', 'bold').setFontSize(item.fontSize);
+      const x = item.x * PT_TO_MM;
+      return { left: x, right: x + font.getTextWidth(item.text) };
+    };
+
+    assert.ok(brandTexts.length > 0, 'brand and laboratory details are present');
+    assert.ok(titleMetaTexts.length > 0, 'title and metadata are present');
+    for (const brand of brandTexts) {
+      const brandY = textTopMm(brand);
+      const brandBottom = brandY + brand.fontSize * 0.8 * PT_TO_MM;
+      const brandX = measure(brand);
+      for (const titleMeta of titleMetaTexts) {
+        const titleMetaY = textTopMm(titleMeta);
+        const titleMetaBottom = titleMetaY + titleMeta.fontSize * 0.8 * PT_TO_MM;
+        if (brandY >= titleMetaBottom || titleMetaY >= brandBottom) continue;
+        const titleMetaX = measure(titleMeta);
+        assert.ok(
+          brandX.right <= titleMetaX.left + 0.01 || titleMetaX.right <= brandX.left + 0.01,
+          `letterhead text '${brand.text}' intersects '${titleMeta.text}' at ${horizontalMargin} mm margins`,
+        );
+      }
+    }
+  }
+});
+
 test('PDF draws the laboratory logo at its own aspect ratio', async () => {
   // A 2:1 box with a 1:1 image must stay 1:1 on the page — the letterhead
   // scales the logo into its box instead of stretching it to fill one.
@@ -449,7 +512,9 @@ test('default layout keeps the letterhead, top glyphs, footer, and report type s
       lineTopMm(rule) > 280,
   );
   assert.ok(footerRule, 'footer rule spans the default content width');
-  assert.ok(Math.abs(lineTopMm(footerRule) - 285) < 0.2);
+  const footerLineH = REPORT_TYPE_SCALE_PT.footer * PT_TO_MM * 1.3;
+  const expectedFooterRuleY = 297 - 16 + (16 - footerLineH - 1.5) / 2;
+  assert.ok(Math.abs(lineTopMm(footerRule) - expectedFooterRuleY) < 0.2);
   const footer = pages[0].texts.find((item) => item.text === 'Page 1 of 1');
   assert.ok(footer);
   const footerTop = textTopMm(footer);
@@ -463,6 +528,39 @@ test('default layout keeps the letterhead, top glyphs, footer, and report type s
     .map(({ fontSize }) => fontSize);
   assert.ok(contentFontSizes.every((size) => size >= 6 && size <= 7.5));
   assert.equal(REPORT_TYPE_SCALE_PT.body, 7.5);
+});
+
+test('footer block stays inside the page and below the content bottom for tall bottom margins', async () => {
+  for (const bottom of [10, 16, 60]) {
+    const pages = parsePdf(
+      await renderPdfText(
+        baseModel({
+          layout: { showLetterhead: false, marginsMm: { top: 16, right: 16, bottom, left: 16 } },
+        }),
+      ),
+    );
+    const contentBottom = 297 - bottom;
+    for (const page of pages) {
+      const footerRule = page.rules.find(
+        (rule) =>
+          Math.abs(rule.x1 * PT_TO_MM - 16) < 0.1 &&
+          Math.abs(rule.x2 * PT_TO_MM - 194) < 0.1 &&
+          lineTopMm(rule) > contentBottom,
+      );
+      const footerItems = page.texts.filter(
+        ({ text }) => text.startsWith('PathForge ·') || text.startsWith('Report date ') || text.startsWith('Page '),
+      );
+      assert.ok(footerRule);
+      assert.ok(lineTopMm(footerRule) > contentBottom, 'footer rule is below the content bottom');
+      assert.equal(footerItems.length, 3);
+      for (const item of footerItems) {
+        const glyphTop = textTopMm(item);
+        const glyphBottom = glyphTop + item.fontSize * 0.8 * PT_TO_MM;
+        assert.ok(glyphTop >= 0, `${item.text} begins on the page`);
+        assert.ok(297 - glyphBottom >= 3, `${item.text} stays at least 3 mm from the paper edge`);
+      }
+    }
+  }
 });
 
 test('hidden letterhead starts the patient band at the configured top and retains clinical content', async () => {
@@ -621,7 +719,9 @@ test('independent margins constrain text, content, footer, and right alignment',
       Math.abs(rule.x1 * PT_TO_MM - margins.left) < 0.1 && Math.abs(rule.y1 - rule.y2) < 0.1 && lineTopMm(rule) > 272,
   );
   assert.ok(footerRule);
-  assert.ok(Math.abs(lineTopMm(footerRule) - 276) < 0.2);
+  const footerLineH = REPORT_TYPE_SCALE_PT.footer * PT_TO_MM * 1.3;
+  const expectedFooterRuleY = 297 - margins.bottom + (margins.bottom - footerLineH - 1.5) / 2;
+  assert.ok(Math.abs(lineTopMm(footerRule) - expectedFooterRuleY) < 0.2);
 });
 
 test('zero top, left, and right margins with the minimum bottom margin produce an on-page PDF', async () => {
@@ -705,6 +805,32 @@ test('maximum margins paginate long results without splitting rows or orphaning 
   });
   assert.equal(rowOccurrences.size, rows.length);
   assert.ok([...rowOccurrences.values()].every((count) => count === 1));
+});
+
+test('results section heading reserves its first group heading, header, and row', async () => {
+  const row = {
+    key: 'r',
+    name: 'Haemoglobin',
+    value: '13.5',
+    numeric: true,
+    unit: 'g/dL',
+    reference: '12-16',
+    flag: '',
+    flagLabel: '',
+  };
+  const pages = parsePdf(
+    await renderPdfText(
+      baseModel({
+        draftNotice: 'x '.repeat(5360),
+        showGroupHeadings: true,
+        resultGroups: [{ key: 'g', testName: 'Complete Blood Count', rows: [row] }],
+      }),
+    ),
+  );
+  const headingPage = pages.findIndex((page) => page.texts.some(({ text }) => text === 'LABORATORY RESULTS'));
+  const groupPage = pages.findIndex((page) => page.texts.some(({ text }) => text === 'Complete Blood Count'));
+  assert.notEqual(headingPage, -1, 'results heading is present');
+  assert.equal(groupPage, headingPage, 'the first group heading stays with the results heading');
 });
 
 test('continuation headers retain patient identity and omit the brand when the letterhead is hidden', async () => {

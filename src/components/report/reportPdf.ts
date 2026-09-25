@@ -31,8 +31,11 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
   const contentRight = PAGE_W - right;
   const contentWidth = contentRight - contentLeft;
   const contentBottom = PAGE_H - bottom;
-  const footerRuleY = contentBottom + 4;
-  const footerTextY = footerRuleY + 4;
+  const footerLineH = lineMm(REPORT_TYPE_SCALE_PT.footer);
+  const footerRuleToTextGap = 1.5;
+  const footerBlockHeight = footerLineH + footerRuleToTextGap;
+  const footerRuleY = contentBottom + (bottom - footerBlockHeight) / 2;
+  const footerTextY = footerRuleY + footerRuleToTextGap;
   let y = top;
 
   const drawText = (value: string | string[], x: number, topY: number, options: TextOptionsLight = {}) => {
@@ -87,37 +90,56 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
       }
     }
     const letterheadX = contentLeft + logoWidth + (logoWidth ? 3 : 0);
-    doc.setFont("helvetica", "bold").setFontSize(REPORT_TYPE_SCALE_PT.brandName).setTextColor(...NAVY);
-    drawText(model.brand.name, letterheadX, y);
-    doc.setFont("helvetica", "normal").setFontSize(REPORT_TYPE_SCALE_PT.letterheadDetail).setTextColor(...MUTED);
-    drawText(model.brand.tagline.toUpperCase(), letterheadX, y + lineMm(REPORT_TYPE_SCALE_PT.brandName));
-    let letterheadY = y + lineMm(REPORT_TYPE_SCALE_PT.brandName) + lineMm(REPORT_TYPE_SCALE_PT.letterheadDetail);
+    doc.setFont("helvetica", "bold").setFontSize(REPORT_TYPE_SCALE_PT.documentTitle);
+    const titleWidth = doc.getTextWidth(model.documentTitle.toUpperCase());
+    doc.setFont("helvetica", "normal").setFontSize(REPORT_TYPE_SCALE_PT.letterheadDetail);
+    const metaLines = model.isFinalized
+      ? [`Issue Date  ${model.generatedAt}`]
+      : [`Report Date  ${model.generatedAt}`, "DRAFT"];
+    const titleBlockWidth = Math.max(
+      titleWidth,
+      ...metaLines.map((line) => doc.getTextWidth(line)),
+    );
+    const brandColumnWidth = contentRight - titleBlockWidth - 4 - letterheadX;
+    const drawBrandLines = (
+      text: string,
+      font: "normal" | "bold",
+      size: number,
+      color: [number, number, number],
+    ) => {
+      doc.setFont("helvetica", font).setFontSize(size).setTextColor(...color);
+      const lines = doc.splitTextToSize(text, brandColumnWidth) as string[];
+      drawText(lines, letterheadX, brandY);
+      brandY += lines.length * lineMm(size);
+    };
+    let brandY = y;
+    drawBrandLines(model.brand.name, "bold", REPORT_TYPE_SCALE_PT.brandName, NAVY);
+    drawBrandLines(model.brand.tagline.toUpperCase(), "normal", REPORT_TYPE_SCALE_PT.letterheadDetail, MUTED);
     if (model.brand.proprietor) {
-      doc.setFont("helvetica", "bold").setFontSize(REPORT_TYPE_SCALE_PT.letterheadDetail).setTextColor(...NAVY);
-      drawText(model.brand.proprietor, letterheadX, letterheadY);
-      letterheadY += lineMm(REPORT_TYPE_SCALE_PT.letterheadDetail);
+      drawBrandLines(model.brand.proprietor, "bold", REPORT_TYPE_SCALE_PT.letterheadDetail, NAVY);
     }
-    doc.setFont("helvetica", "normal").setFontSize(REPORT_TYPE_SCALE_PT.letterheadDetail).setTextColor(...MUTED);
-    drawText(model.brand.strapline, letterheadX, letterheadY);
-    const addressLines = model.brand.address
-      ? doc.splitTextToSize(model.brand.address, contentWidth * 0.62)
-      : [];
-    // Contact details and opening hours are optional: each prints only when the
-    // laboratory profile carries it, and the block shrinks when it does not.
-    const contactLines = [
-      ...(model.brand.contact ? doc.splitTextToSize(model.brand.contact, contentWidth * 0.62) : []),
-      ...(model.brand.hours ? doc.splitTextToSize(model.brand.hours, contentWidth * 0.62) : []),
+    drawBrandLines(model.brand.strapline, "normal", REPORT_TYPE_SCALE_PT.letterheadDetail, MUTED);
+
+    const detailLines = [
+      ...(model.brand.address ? doc.splitTextToSize(model.brand.address, brandColumnWidth) as string[] : []),
+      ...(model.brand.contact ? doc.splitTextToSize(model.brand.contact, brandColumnWidth) as string[] : []),
+      ...(model.brand.hours ? doc.splitTextToSize(model.brand.hours, brandColumnWidth) as string[] : []),
     ];
-    let contactY = letterheadY + lineMm(REPORT_TYPE_SCALE_PT.letterheadDetail);
-    if (addressLines.length > 0) {
+    if (detailLines.length > 0) {
       doc.setFont("helvetica", "bold").setFontSize(REPORT_TYPE_SCALE_PT.letterheadDetail).setTextColor(...INK);
-      drawText(addressLines, letterheadX, contactY);
-      contactY += addressLines.length * lineMm(REPORT_TYPE_SCALE_PT.letterheadDetail);
-    }
-    if (contactLines.length > 0) {
-      doc.setFont("helvetica", "normal").setFontSize(REPORT_TYPE_SCALE_PT.letterheadDetail).setTextColor(...MUTED);
-      drawText(contactLines, letterheadX, contactY);
-      contactY += contactLines.length * lineMm(REPORT_TYPE_SCALE_PT.letterheadDetail);
+      const addressCount = model.brand.address
+        ? (doc.splitTextToSize(model.brand.address, brandColumnWidth) as string[]).length
+        : 0;
+      if (addressCount > 0) {
+        drawText(detailLines.slice(0, addressCount), letterheadX, brandY);
+        brandY += addressCount * lineMm(REPORT_TYPE_SCALE_PT.letterheadDetail);
+      }
+      const contactDetailLines = detailLines.slice(addressCount);
+      if (contactDetailLines.length > 0) {
+        doc.setFont("helvetica", "normal").setFontSize(REPORT_TYPE_SCALE_PT.letterheadDetail).setTextColor(...MUTED);
+        drawText(contactDetailLines, letterheadX, brandY);
+        brandY += contactDetailLines.length * lineMm(REPORT_TYPE_SCALE_PT.letterheadDetail);
+      }
     }
 
     doc.setFont("helvetica", "bold").setFontSize(REPORT_TYPE_SCALE_PT.documentTitle).setTextColor(...NAVY);
@@ -125,13 +147,11 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
       align: "right",
     });
     doc.setFont("helvetica", "normal").setFontSize(REPORT_TYPE_SCALE_PT.letterheadDetail).setTextColor(...INK);
-    const metaLines = model.isFinalized
-      ? [`Issue Date  ${model.generatedAt}`]
-      : [`Report Date  ${model.generatedAt}`, "DRAFT"];
     drawText(metaLines, contentRight, y + lineMm(REPORT_TYPE_SCALE_PT.documentTitle), { align: "right" });
 
     // Without the QR block the letterhead is only as tall as its text.
-    y += Math.max(contactY - y + lineMm(REPORT_TYPE_SCALE_PT.letterheadDetail), lineMm(REPORT_TYPE_SCALE_PT.brandName) + lineMm(REPORT_TYPE_SCALE_PT.documentTitle));
+    const metaBlockHeight = lineMm(REPORT_TYPE_SCALE_PT.documentTitle) + metaLines.length * lineMm(REPORT_TYPE_SCALE_PT.letterheadDetail);
+    y += Math.max(brandY - y, metaBlockHeight);
     doc.setDrawColor(...NAVY).setLineWidth(0.7).line(contentLeft, y, contentRight, y);
     y += lineMm(REPORT_TYPE_SCALE_PT.body);
   }
@@ -259,7 +279,16 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
   };
 
   if (model.resultGroups.length > 0) {
-    sectionHeading(model.resultsHeading, lineMm(REPORT_TYPE_SCALE_PT.tableHeader) + lineMm(REPORT_TYPE_SCALE_PT.label) + lineMm(REPORT_TYPE_SCALE_PT.table));
+    const firstGroupHeight = model.showGroupHeadings && model.resultGroups[0]?.testName
+      ? lineMm(REPORT_TYPE_SCALE_PT.groupHeading)
+      : 0;
+    sectionHeading(
+      model.resultsHeading,
+      firstGroupHeight +
+        lineMm(REPORT_TYPE_SCALE_PT.tableHeader) +
+        lineMm(REPORT_TYPE_SCALE_PT.label) +
+        lineMm(REPORT_TYPE_SCALE_PT.table),
+    );
 
     for (const group of model.resultGroups) {
       if (model.showGroupHeadings && group.testName) {

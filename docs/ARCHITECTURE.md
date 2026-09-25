@@ -117,14 +117,15 @@ Print settings are configured in Laboratory Profile → Print layout and stored 
 to drafts and are frozen with the branding snapshot at finalization, so an issued
 report keeps its header and margins. Typography remains renderer code and follows
 INV-6. Defaults show the letterhead and use 16 mm margins on every side, matching
-the previous Download-PDF output; browser printing previously used 10/10/11 mm
-and now uses the same configured margins.
+the previous Download-PDF margins; the footer position has changed. Browser
+printing previously used 10/10/11 mm and now uses the same configured margins.
 
 Millimetres are canonical. The CSS-pixel conversion (96 px = 1 in = 25.4 mm;
 px = mm × 96 / 25.4; 120 px = 31.75 mm) lives only in
 [`printLayout.ts`](../src/components/report/printLayout.ts). A4 is the only
 supported page size. Top/left/right margins are 0–60 mm, bottom is 10–60 mm
-because the footer prints inside it, and left + right may total at most 80 mm.
+because the Download-PDF footer is centred inside it; in browser printing the
+footer flows after the end of the report. Left + right may total at most 80 mm.
 Loading and snapshots normalise malformed or out-of-range settings; saving
 validates and rejects them.
 
