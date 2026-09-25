@@ -4,10 +4,11 @@ import {
   buildReportDocumentModel,
   buildWorkspaceDocumentConfig,
 } from "../../rendering/index.mjs";
-import { accession, formatReportDate, formatReportDay } from "./reportMeta";
-import { computeFlag, flagLabel, type ResultFlag } from "./flags";
-import { formatReferenceRange } from "./referenceRange";
-import { DEFAULT_LABORATORY_PROFILE, getUsableLogoDataUrl, normalizeLaboratoryProfile, type LaboratoryProfile } from "../../store/branding";
+import { accession, formatReportDate, formatReportDay } from "./reportMeta.ts";
+import { computeFlag, flagLabel, type ResultFlag } from "./flags.ts";
+import { formatReferenceRange } from "./referenceRange.ts";
+import { DEFAULT_LABORATORY_PROFILE, getUsableLogoDataUrl, normalizeLaboratoryProfile, type LaboratoryProfile } from "../../store/branding.ts";
+import type { PrintLayout } from "./printLayout";
 
 /**
  * House-format *presenter*. It owns the wording of the printed page — brand
@@ -86,6 +87,7 @@ export interface ReportSignoff {
 }
 
 export interface ReportModel {
+  layout: PrintLayout;
   brand: {
     name: string;
     tagline: string;
@@ -286,6 +288,7 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
   const hasSignatoryDetails = signoff.some((entry) => entry.note.trim());
 
   return {
+    layout: profile.printLayout,
     brand: {
       name: profile.laboratoryName || BRAND.name,
       tagline: profile.reportSubtitle || BRAND.tagline,

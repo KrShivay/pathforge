@@ -2,10 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { buildReportPdf } from '../../src/components/report/reportPdf.ts';
+import { DEFAULT_PRINT_LAYOUT } from '../../src/components/report/printLayout.ts';
 
 /** @type {import('../../src/components/report/reportModel.ts').ReportModel} */
 function baseModel(overrides = {}) {
   return {
+    layout: DEFAULT_PRINT_LAYOUT,
     brand: {
       name: 'PathForge',
       tagline: 'Tagline',

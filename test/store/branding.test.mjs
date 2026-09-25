@@ -100,7 +100,7 @@ test('branding: every profile detail beyond the supplied identity is optional', 
   // Nothing else is prefilled, so the rest of the profile is free to stay blank
   // and the report simply leaves those lines out.
   const prefilled = Object.entries(DEFAULT_LABORATORY_PROFILE)
-    .filter(([, value]) => value !== '')
+    .filter(([, value]) => typeof value === 'string' && value !== '')
     .map(([key]) => key)
     .sort();
 
@@ -204,4 +204,42 @@ test('branding: normalize backfills string fields missing from a legacy snapshot
   assert.equal(typeof normalized.workingHours, 'string');
   assert.equal(normalized.proprietorName, DEFAULT_LABORATORY_PROFILE.proprietorName);
   assert.doesNotThrow(() => normalized.proprietorName.trim());
+});
+
+test('branding: legacy profiles and snapshots default print layout', () => {
+  global.localStorage.clear();
+  const legacyProfile = { laboratoryName: 'Older Lab' };
+  global.localStorage.setItem('pathforge.laboratory-profile.v1', JSON.stringify(legacyProfile));
+  assert.deepEqual(loadLaboratoryProfile().printLayout, DEFAULT_LABORATORY_PROFILE.printLayout);
+
+  global.localStorage.setItem(
+    'pathforge.laboratory-branding-snapshots.v1',
+    JSON.stringify({ 'legacy-layout::1': { ...legacyProfile, logoDataUrl: '' } }),
+  );
+  assert.deepEqual(loadLaboratorySnapshot('legacy-layout', 1).printLayout, DEFAULT_LABORATORY_PROFILE.printLayout);
+});
+
+test('branding: print layout survives save and freezes in finalized profile snapshots', () => {
+  global.localStorage.clear();
+  const printLayout = {
+    showLetterhead: false,
+    marginsMm: { top: 22.5, right: 18, bottom: 12, left: 20 },
+  };
+  const profile = { ...DEFAULT_LABORATORY_PROFILE, printLayout };
+  const frozenLayout = structuredClone(printLayout);
+  saveLaboratoryProfile(profile);
+  assert.deepEqual(loadLaboratoryProfile().printLayout, printLayout);
+
+  snapshotLaboratoryProfile('layout-freeze', 2, profile);
+  profile.printLayout.marginsMm.top = 30;
+  saveLaboratoryProfile(profile);
+
+  assert.deepEqual(loadLaboratorySnapshot('layout-freeze', 2).printLayout, frozenLayout);
+  assert.equal(loadLaboratoryProfile().printLayout.marginsMm.top, 30);
+});
+
+test('branding: default profile copies own independent print layout objects', () => {
+  const copy = normalizeLaboratoryProfile(DEFAULT_LABORATORY_PROFILE);
+  copy.printLayout.marginsMm.top = 25;
+  assert.equal(DEFAULT_LABORATORY_PROFILE.printLayout.marginsMm.top, 16);
 });

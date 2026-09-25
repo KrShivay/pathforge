@@ -1,5 +1,6 @@
 import { sha256Hex } from "../domain/sha256.mjs";
 import { DEFAULT_LOGO_DATA_URL } from "./defaultLogo.ts";
+import { DEFAULT_PRINT_LAYOUT, normalizePrintLayout, type PrintLayout } from "../components/report/printLayout.ts";
 
 export interface LaboratoryProfile {
   laboratoryName: string;
@@ -28,7 +29,10 @@ export interface LaboratoryProfile {
   pathologistName: string;
   pathologistQualifications: string;
   pathologistDesignation: string;
+  printLayout: PrintLayout;
 }
+
+export type LaboratoryProfileTextKey = Exclude<keyof LaboratoryProfile, "printLayout">;
 
 /**
  * The laboratory this workspace ships for. Only the identity the owner supplied
@@ -41,9 +45,10 @@ export const DEFAULT_LABORATORY_PROFILE: LaboratoryProfile = {
   addressLine1: "Collectry Road", addressLine2: "Dibiyapur", city: "Auraiya", state: "", postcode: "", country: "India", phone: "", alternatePhone: "", email: "", website: "",
   registrationNumber: "ETW/ALO/0002/05", accreditationName: "", accreditationNumber: "", workingHours: "", footerNote: "",
   technologistName: "", technologistDesignation: "Lab technologist", pathologistName: "", pathologistQualifications: "", pathologistDesignation: "Consultant pathologist",
+  printLayout: normalizePrintLayout(DEFAULT_PRINT_LAYOUT),
 };
 
-const PROFILE_KEYS = Object.keys(DEFAULT_LABORATORY_PROFILE) as Array<keyof LaboratoryProfile>;
+const PROFILE_KEYS = Object.keys(DEFAULT_LABORATORY_PROFILE).filter((key) => key !== "printLayout") as LaboratoryProfileTextKey[];
 const LOGO_DATA_URL_RE = /^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/]+={0,2}$/i;
 
 /** Return only raster image data that the upload flow can produce. */
@@ -58,6 +63,7 @@ export function normalizeLaboratoryProfile(value: unknown): LaboratoryProfile {
   for (const key of PROFILE_KEYS) {
     if (typeof profile[key] !== "string") profile[key] = DEFAULT_LABORATORY_PROFILE[key];
   }
+  profile.printLayout = normalizePrintLayout(stored.printLayout);
   return profile;
 }
 
@@ -112,11 +118,11 @@ export function loadLaboratoryProfile(): LaboratoryProfile {
   try {
     const profile = normalizeLaboratoryProfile(JSON.parse(localStorage.getItem(PROFILE_KEY) ?? "{}"));
     if (profile.laboratoryName.trim() === SUPERSEDED_DEFAULT_NAME) {
-      return { ...DEFAULT_LABORATORY_PROFILE };
+      return normalizeLaboratoryProfile(DEFAULT_LABORATORY_PROFILE);
     }
     return profile;
   } catch {
-    return { ...DEFAULT_LABORATORY_PROFILE };
+    return normalizeLaboratoryProfile(DEFAULT_LABORATORY_PROFILE);
   }
 }
 export function saveLaboratoryProfile(profile: LaboratoryProfile): void { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); }
@@ -135,7 +141,7 @@ export function loadLaboratorySnapshot(reportId: string, version: number): Labor
       | LaboratoryProfile
       | undefined;
     if (!snapshot) return undefined;
-    return { ...snapshot, logoDataUrl: resolveSnapshotLogo(snapshot.logoDataUrl ?? "") };
+    return normalizeLaboratoryProfile({ ...snapshot, logoDataUrl: resolveSnapshotLogo(snapshot.logoDataUrl ?? "") });
   } catch {
     return undefined;
   }

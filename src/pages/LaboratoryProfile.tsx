@@ -3,10 +3,10 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import PageHeading from "../components/layout/PageHeading";
 import { confirmDestructive, notifyError, notifySuccess } from "../lib/dialog";
 import { useBranding } from "../store/BrandingContext";
-import { getUsableLogoDataUrl, type LaboratoryProfile } from "../store/branding";
+import { getUsableLogoDataUrl, type LaboratoryProfileTextKey } from "../store/branding";
 
 interface ProfileField {
-  key: keyof LaboratoryProfile;
+  key: LaboratoryProfileTextKey;
   label: string;
   placeholder: string;
   type?: "email" | "text";
