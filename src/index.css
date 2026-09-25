@@ -9480,6 +9480,30 @@ input[aria-invalid="true"] {
     background: var(--pf-theme-surface-raised);
   }
 
+  .profile-fields .print-layout-toggle input {
+    width: 16px;
+    height: 16px;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    appearance: auto;
+    flex: 0 0 auto;
+  }
+
+  .profile-fields .print-layout-toggle {
+    display: flex;
+    grid-column: 1 / -1;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .profile-fields .print-layout-helper {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+
   .logo-editor {
     align-items: center;
     padding: 14px;

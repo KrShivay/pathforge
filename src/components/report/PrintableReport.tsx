@@ -16,15 +16,15 @@ export default function PrintableReport({ model }: PrintableReportProps) {
   const logoDataUrl = getUsableLogoDataUrl(model.brand.logoDataUrl);
   const margins = model.layout.marginsMm;
   const marginStyle = {
-    "--pr-margin-top": `${Number(margins.top).toFixed(1)}mm`,
-    "--pr-margin-right": `${Number(margins.right).toFixed(1)}mm`,
-    "--pr-margin-bottom": `${Number(margins.bottom).toFixed(1)}mm`,
-    "--pr-margin-left": `${Number(margins.left).toFixed(1)}mm`,
+    "--pr-margin-top": `${Number(margins.top).toFixed(2)}mm`,
+    "--pr-margin-right": `${Number(margins.right).toFixed(2)}mm`,
+    "--pr-margin-bottom": `${Number(margins.bottom).toFixed(2)}mm`,
+    "--pr-margin-left": `${Number(margins.left).toFixed(2)}mm`,
   } as CSSProperties;
 
   return (
     <>
-    <style>{`@page { size: A4; margin: ${Number(margins.top).toFixed(1)}mm ${Number(margins.right).toFixed(1)}mm ${Number(margins.bottom).toFixed(1)}mm ${Number(margins.left).toFixed(1)}mm; }`}</style>
+    <style>{`@page { size: A4; margin: ${Number(margins.top).toFixed(2)}mm ${Number(margins.right).toFixed(2)}mm ${Number(margins.bottom).toFixed(2)}mm ${Number(margins.left).toFixed(2)}mm; }`}</style>
     <div
       className={`print-report${model.isFinalized ? "" : " pr-draft"}${model.layout.showLetterhead ? "" : " pr-no-letterhead"}`}
       style={marginStyle}

@@ -3,6 +3,8 @@ import test from 'node:test';
 
 import { buildReportPdf } from '../../src/components/report/reportPdf.ts';
 import { DEFAULT_PRINT_LAYOUT, REPORT_TYPE_SCALE_PT, pxToMm } from '../../src/components/report/printLayout.ts';
+import { buildReportModel } from '../../src/components/report/reportModel.ts';
+import { DEFAULT_LABORATORY_PROFILE } from '../../src/store/branding.ts';
 
 /** @type {import('../../src/components/report/reportModel.ts').ReportModel} */
 function baseModel(overrides = {}) {
@@ -523,6 +525,36 @@ test('120 CSS px top margin maps to the exact hidden-letterhead PDF band positio
     ),
   );
   assert.ok(Math.abs(rectTopMm(pages[0].rectangles[0]) - 31.75) < 0.2);
+});
+
+test('120 CSS px survives profile normalization through the report model into the PDF', async () => {
+  const model = buildReportModel({
+    patientName: 'Jane Doe',
+    patientCode: 'P-100',
+    reportId: 'R-100',
+    version: 1,
+    isFinalized: false,
+    laboratoryProfile: {
+      ...DEFAULT_LABORATORY_PROFILE,
+      printLayout: {
+        showLetterhead: false,
+        marginsMm: { ...DEFAULT_PRINT_LAYOUT.marginsMm, top: pxToMm(120) },
+      },
+    },
+    content: {
+      specimens: ['Whole Blood'],
+      referringClinician: '',
+      clinicalHistory: '',
+      findings: '',
+      diagnosis: '',
+      interpretation: '',
+      testResults: [],
+    },
+  });
+
+  assert.equal(model.layout.marginsMm.top, 31.75);
+  const pages = parsePdf(await renderPdfText(model));
+  assert.ok(Math.abs(rectTopMm(pages[0].rectangles[0]) - 31.75) <= 0.05);
 });
 
 test('hidden-letterhead draft and amendment notices begin at the top margin', async () => {

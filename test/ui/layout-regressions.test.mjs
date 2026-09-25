@@ -97,9 +97,9 @@ test('report type sizes in CSS match the shared report scale', () => {
 test('PrintableReport sources layout margins and conditionally renders its letterhead', () => {
   const source = fs.readFileSync(new URL('../../src/components/report/PrintableReport.tsx', import.meta.url), 'utf8');
   assert.match(source, /model\.layout\.showLetterhead\s*&&\s*<header className="pr-letterhead">/);
-  assert.match(source, /@page \{ size: A4; margin: \$\{Number\(margins\.top\)\.toFixed\(1\)\}mm/);
+  assert.match(source, /@page \{ size: A4; margin: \$\{Number\(margins\.top\)\.toFixed\(2\)\}mm/);
   for (const side of ['top', 'right', 'bottom', 'left']) {
-    assert.match(source, new RegExp(`margins\\.${side}\\)\\.toFixed\\(1\\)`));
+    assert.match(source, new RegExp(`margins\\.${side}\\)\\.toFixed\\(2\\)`));
   }
   assert.match(source, /pr-no-letterhead/);
   assert.match(source, /--pr-margin-top/);
@@ -116,6 +116,19 @@ test('hidden letterhead removes top margin only from the first visible block', (
   // A band that follows either banner must keep its normal top margin.
   assert.doesNotMatch(css, /\.pr-no-letterhead\s*>\s*\.pr-band:first-of-type/);
   assert.match(css, /\.pr-band:not\(\.pr-draftbanner ~ \*\):not\(\.pr-amendmentbanner ~ \*\)/);
+});
+
+test('Laboratory Profile exposes and validates configurable print margins', () => {
+  const source = fs.readFileSync(new URL('../../src/pages/LaboratoryProfile.tsx', import.meta.url), 'utf8');
+  assert.match(source, /<legend>Print layout<\/legend>/);
+  assert.match(source, /Print laboratory header \(letterhead\)/);
+  assert.match(source, /MARGIN_LABELS/);
+  assert.match(source, /mmToPx\(draft\.printLayout\.marginsMm\[side\]\)/);
+
+  const validation = source.indexOf('const layoutErrors = validatePrintLayout(candidateLayout)');
+  const update = source.indexOf('updateProfile({ ...draft, printLayout: candidateLayout })');
+  assert.ok(validation >= 0, 'save validates the candidate layout');
+  assert.ok(update > validation, 'save validation runs before updating the profile');
 });
 
 test('preview modal uses the print report line height', () => {

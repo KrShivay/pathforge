@@ -4,6 +4,16 @@ import PageHeading from "../components/layout/PageHeading";
 import { confirmDestructive, notifyError, notifySuccess } from "../lib/dialog";
 import { useBranding } from "../store/BrandingContext";
 import { getUsableLogoDataUrl, type LaboratoryProfileTextKey } from "../store/branding";
+import { MARGIN_LIMITS_MM, mmToPx, validatePrintLayout } from "../components/report/printLayout.ts";
+
+const MARGIN_SIDES = ["top", "right", "bottom", "left"] as const;
+type MarginSide = (typeof MARGIN_SIDES)[number];
+const MARGIN_LABELS: Record<MarginSide, string> = {
+  top: "Top margin (mm)",
+  right: "Right margin (mm)",
+  bottom: "Bottom margin (mm)",
+  left: "Left margin (mm)",
+};
 
 interface ProfileField {
   key: LaboratoryProfileTextKey;
@@ -86,10 +96,17 @@ const PROFILE_GROUPS: ProfileGroup[] = [
 export default function LaboratoryProfilePage({ onDirtyChange }: LaboratoryProfilePageProps) {
   const { profile, updateProfile, restoreDefault } = useBranding();
   const [draft, setDraft] = useState(profile);
+  const [marginInputs, setMarginInputs] = useState<Record<MarginSide, string>>(() => ({
+    top: String(profile.printLayout.marginsMm.top),
+    right: String(profile.printLayout.marginsMm.right),
+    bottom: String(profile.printLayout.marginsMm.bottom),
+    left: String(profile.printLayout.marginsMm.left),
+  }));
   const [processingLogo, setProcessingLogo] = useState(false);
   const logoDataUrl = getUsableLogoDataUrl(draft.logoDataUrl);
   const hasLogo = Boolean(logoDataUrl);
-  const isDirty = JSON.stringify(draft) !== JSON.stringify(profile);
+  const marginsChanged = MARGIN_SIDES.some((side) => marginInputs[side] !== String(profile.printLayout.marginsMm[side]));
+  const isDirty = JSON.stringify(draft) !== JSON.stringify(profile) || marginsChanged;
 
   useEffect(() => {
     onDirtyChange?.(isDirty);
@@ -97,11 +114,26 @@ export default function LaboratoryProfilePage({ onDirtyChange }: LaboratoryProfi
   }, [isDirty, onDirtyChange]);
 
   async function saveProfile() {
+    const candidateLayout = {
+      ...draft.printLayout,
+      marginsMm: Object.fromEntries(MARGIN_SIDES.map((side) => [side, marginInputs[side].trim() ? Number(marginInputs[side]) : Number.NaN])) as Record<MarginSide, number>,
+    };
+    const layoutErrors = validatePrintLayout(candidateLayout);
+    if (layoutErrors.length) {
+      await notifyError({ title: "Print layout is not valid", text: layoutErrors.join(" ") });
+      return;
+    }
     if (!draft[REQUIRED_FIELD.key].trim()) {
       await notifyError({ title: "Laboratory name is required", text: "Every report is headed by the laboratory name. Enter one before saving." });
       return;
     }
-    updateProfile(draft);
+    setMarginInputs({
+      top: String(candidateLayout.marginsMm.top),
+      right: String(candidateLayout.marginsMm.right),
+      bottom: String(candidateLayout.marginsMm.bottom),
+      left: String(candidateLayout.marginsMm.left),
+    });
+    updateProfile({ ...draft, printLayout: candidateLayout });
     onDirtyChange?.(false);
     void notifySuccess({ title: "Laboratory profile saved" });
   }
@@ -139,6 +171,52 @@ export default function LaboratoryProfilePage({ onDirtyChange }: LaboratoryProfi
           </div>
         </fieldset>)}
         <fieldset>
+          <legend>Print layout</legend>
+          <p className="fieldset-hint">Millimetres on A4; 1 mm ≈ 3.78 CSS px. The top margin is measured from the page top to the first printed line (for example, 120 px = 31.75 mm). Finalized reports keep the layout they were issued with.</p>
+          <div className="profile-fields">
+            <label className="print-layout-toggle">
+              <input
+                type="checkbox"
+                checked={draft.printLayout.showLetterhead}
+                onChange={(event) => setDraft((value) => ({ ...value, printLayout: { ...value.printLayout, showLetterhead: event.target.checked } }))}
+              />
+              <span>Print laboratory header (letterhead)</span>
+            </label>
+            <p className="helper-text print-layout-helper">Turn this off when printing on pre-printed letterhead stationery; patient details, results and footer always print.</p>
+            {MARGIN_SIDES.map((side) => {
+              const errorId = `print-layout-${side}-error`;
+              const text = marginInputs[side];
+              const parsed = text.trim() ? Number(text) : Number.NaN;
+              const error = Number.isFinite(parsed) ? "" : "Enter a finite margin value.";
+              return <label key={side}>
+                <span>{MARGIN_LABELS[side]}</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min={MARGIN_LIMITS_MM[side].min}
+                  max={MARGIN_LIMITS_MM[side].max}
+                  value={text}
+                  aria-invalid={Boolean(error)}
+                  aria-describedby={error ? errorId : undefined}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    setMarginInputs((value) => ({ ...value, [side]: next }));
+                    const valueNumber = next.trim() ? Number(next) : Number.NaN;
+                    if (Number.isFinite(valueNumber)) {
+                      setDraft((value) => ({
+                        ...value,
+                        printLayout: { ...value.printLayout, marginsMm: { ...value.printLayout.marginsMm, [side]: valueNumber } },
+                      }));
+                    }
+                  }}
+                />
+                <small>≈ {Math.round(mmToPx(draft.printLayout.marginsMm[side]))} px</small>
+                {error && <small id={errorId} role="alert">{error}</small>}
+              </label>;
+            })}
+          </div>
+        </fieldset>
+        <fieldset>
           <legend>Laboratory logo <span className="fieldset-optional">Optional</span></legend>
           <div className="logo-editor">
             {hasLogo ? <img src={logoDataUrl} alt="Laboratory logo preview" /> : <div className="logo-placeholder" aria-label="No laboratory logo uploaded"><span>No logo uploaded</span></div>}
@@ -160,6 +238,7 @@ export default function LaboratoryProfilePage({ onDirtyChange }: LaboratoryProfi
       <aside className="profile-preview" aria-label="Laboratory identity preview">
           {hasLogo && <img src={logoDataUrl} alt="" />}
           <span className="profile-preview-kicker">Report header preview</span>
+          <small>Header: {draft.printLayout.showLetterhead ? "shown" : "hidden"} · Margins T/R/B/L: {MARGIN_SIDES.map((side) => draft.printLayout.marginsMm[side].toFixed(2)).join("/")} mm</small>
           <strong>{draft.laboratoryName || "Laboratory name"}</strong>
           <span>{draft.reportSubtitle || "Report subtitle"}</span>
           {draft.proprietorName && <span>Prop. {draft.proprietorName}</span>}

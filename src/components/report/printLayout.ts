@@ -51,17 +51,18 @@ export function validatePrintLayout(value: unknown): string[] {
   for (const side of SIDES) {
     const margin = margins[side];
     const { min, max } = MARGIN_LIMITS_MM[side];
+    const label = `${side[0].toUpperCase()}${side.slice(1)}`;
     if (typeof margin !== "number" || !Number.isFinite(margin)) {
-      errors.push(`${side} margin must be a finite number from ${min} to ${max} mm.`);
+      errors.push(`${label} margin must be a finite number from ${min} to ${max} mm.`);
     } else if (margin < min || margin > max) {
-      errors.push(`${side} margin must be from ${min} to ${max} mm.`);
+      errors.push(`${label} margin must be from ${min} to ${max} mm.`);
     }
   }
 
   const left = margins.left;
   const right = margins.right;
   if (typeof left === "number" && Number.isFinite(left) && typeof right === "number" && Number.isFinite(right) && left + right > MAX_HORIZONTAL_MARGINS_MM) {
-    errors.push(`left and right margins together must be no more than ${MAX_HORIZONTAL_MARGINS_MM} mm.`);
+    errors.push(`Left and right margins together must be no more than ${MAX_HORIZONTAL_MARGINS_MM} mm.`);
   }
   return errors;
 }
@@ -76,13 +77,13 @@ export function normalizePrintLayout(value: unknown): PrintLayout {
     const { min, max } = MARGIN_LIMITS_MM[side];
     const finite = typeof candidate === "number" && Number.isFinite(candidate);
     const clamped = Math.min(max, Math.max(min, finite ? candidate : DEFAULT_PRINT_LAYOUT.marginsMm[side]));
-    marginsMm[side] = Math.round(clamped * 2) / 2;
+    marginsMm[side] = Math.round(clamped * 100) / 100;
   }
 
   if (marginsMm.left + marginsMm.right > MAX_HORIZONTAL_MARGINS_MM) {
     const scale = MAX_HORIZONTAL_MARGINS_MM / (marginsMm.left + marginsMm.right);
-    marginsMm.left = Math.floor(marginsMm.left * scale * 2) / 2;
-    marginsMm.right = Math.floor(marginsMm.right * scale * 2) / 2;
+    marginsMm.left = Math.floor(marginsMm.left * scale * 100) / 100;
+    marginsMm.right = Math.floor(marginsMm.right * scale * 100) / 100;
   }
 
   return {

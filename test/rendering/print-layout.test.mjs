@@ -41,27 +41,27 @@ test('print layout validation rejects malformed values and accepts valid margins
   });
   assert.equal(invalid.length, 5);
   assert.match(invalid.join(' '), /Show letterhead must be a boolean/);
-  assert.match(invalid.join(' '), /top margin must be from 0 to 60 mm/);
-  assert.match(invalid.join(' '), /right margin must be a finite number from 0 to 60 mm/);
-  assert.match(invalid.join(' '), /bottom margin must be from 10 to 60 mm/);
-  assert.match(invalid.join(' '), /left margin must be a finite number from 0 to 60 mm/);
+  assert.match(invalid.join(' '), /Top margin must be from 0 to 60 mm/);
+  assert.match(invalid.join(' '), /Right margin must be a finite number from 0 to 60 mm/);
+  assert.match(invalid.join(' '), /Bottom margin must be from 10 to 60 mm/);
+  assert.match(invalid.join(' '), /Left margin must be a finite number from 0 to 60 mm/);
   assert.ok(
     validatePrintLayout({
       showLetterhead: true,
       marginsMm: { top: Number.NaN, right: 61, bottom: 10, left: 41 },
-    }).some((error) => /top margin/.test(error)),
+    }).some((error) => /Top margin/.test(error)),
   );
   assert.ok(
     validatePrintLayout({
       showLetterhead: true,
       marginsMm: { top: 10, right: 10, bottom: 10 },
-    }).some((error) => /left margin must be a finite number/.test(error)),
+    }).some((error) => /Left margin must be a finite number/.test(error)),
   );
   assert.ok(
     validatePrintLayout({
       showLetterhead: true,
       marginsMm: { top: 10, right: 41, bottom: 10, left: 40 },
-    }).some((error) => /left and right margins together/.test(error)),
+    }).some((error) => /Left and right margins together/.test(error)),
   );
   assert.deepEqual(validatePrintLayout(DEFAULT_PRINT_LAYOUT), []);
 });
@@ -75,11 +75,11 @@ test('print layout normalization defaults, clamps, rounds, and constrains horizo
     marginsMm: { top: 3.26, right: 60, bottom: 8, left: 60 },
   });
   assert.equal(normalized.showLetterhead, false);
-  assert.deepEqual(normalized.marginsMm, { top: 3.5, right: 40, bottom: 10, left: 40 });
+  assert.deepEqual(normalized.marginsMm, { top: 3.26, right: 40, bottom: 10, left: 40 });
   assert.ok(normalized.marginsMm.left + normalized.marginsMm.right <= MAX_HORIZONTAL_MARGINS_MM);
 
   const odd = normalizePrintLayout({ marginsMm: { top: 16.24, right: 16.26, bottom: Infinity, left: 'bad' } });
-  assert.deepEqual(odd.marginsMm, { top: 16, right: 16.5, bottom: 16, left: 16 });
+  assert.deepEqual(odd.marginsMm, { top: 16.24, right: 16.26, bottom: 16, left: 16 });
   assert.notEqual(normalizePrintLayout(DEFAULT_PRINT_LAYOUT), DEFAULT_PRINT_LAYOUT);
   const copy = normalizePrintLayout(DEFAULT_PRINT_LAYOUT);
   copy.marginsMm.top = 20;
