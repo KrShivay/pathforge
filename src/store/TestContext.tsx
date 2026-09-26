@@ -78,19 +78,19 @@ const initialTests: LaboratoryTest[] = [
     parameters: [
       {
         id: "rbc",
-        name: "RBC Count",
+        name: "TOTAL RBCs COUNTS",
         type: "number",
-        unit: "million/mm³",
+        unit: "/uL",
         referenceRange: {
-          min: 3.8,
-          max: 4.8,
+          min: 4,
+          max: 6,
         },
       },
       {
         id: "hemoglobin",
         name: "Hemoglobin",
         type: "number",
-        unit: "g/dL",
+        unit: "gm%",
         referenceRange: {
           min: 12,
           max: 15,
@@ -102,25 +102,25 @@ const initialTests: LaboratoryTest[] = [
         type: "number",
         unit: "%",
         referenceRange: {
-          min: 36,
-          max: 46,
+          min: 38,
+          max: 54,
         },
       },
       {
         id: "mcv",
         name: "MCV",
         type: "number",
-        unit: "fL",
+        unit: "fl",
         referenceRange: {
-          min: 83,
-          max: 101,
+          min: 76,
+          max: 96,
         },
       },
       {
         id: "wbc",
-        name: "Total WBC Count",
+        name: "Total WBC Count (TLC)",
         type: "number",
-        unit: "cells/mm³",
+        unit: "cells/cu.mm",
         referenceRange: {
           min: 4000,
           max: 10000,
@@ -128,13 +128,62 @@ const initialTests: LaboratoryTest[] = [
       },
       {
         id: "platelet",
-        name: "Platelet Count",
+        name: "PLATELET COUNTS",
         type: "number",
-        unit: "10³/µL",
+        unit: "Lac/Cub.m.m.",
         referenceRange: {
-          min: 150,
-          max: 450,
+          min: 1.5,
+          max: 4.5,
         },
+      },
+      {
+        id: "neutrophils",
+        name: "POLYMORPHS",
+        type: "number",
+        unit: "%",
+        referenceRange: { min: 50, max: 70 },
+      },
+      {
+        id: "lymphocytes",
+        name: "LYMPHOCYTES",
+        type: "number",
+        unit: "%",
+        referenceRange: { min: 25, max: 40 },
+      },
+      {
+        id: "monocytes",
+        name: "MONOCYTES",
+        type: "number",
+        unit: "%",
+        referenceRange: { min: 2, max: 10 },
+      },
+      {
+        id: "eosinophils",
+        name: "EOSINOPHILS",
+        type: "number",
+        unit: "%",
+        referenceRange: { min: 1, max: 6 },
+      },
+      {
+        id: "basophils",
+        name: "BASOPHILS",
+        type: "number",
+        unit: "%",
+        referenceRange: { min: 0, max: 1 },
+      },
+      {
+        id: "mch",
+        name: "MEAN CELL HB (MCH)",
+        type: "number",
+        unit: "pg",
+        referenceRange: { min: 23, max: 32 },
+      },
+      {
+        id: "mchc",
+        name: "MEAN CELL HB CONC.",
+        type: "number",
+        unit: "g/dl",
+        referenceRange: { min: 30, max: 35 },
       },
     ],
 
@@ -150,44 +199,50 @@ const initialTests: LaboratoryTest[] = [
     parameters: [
       {
         id: "bilirubin-total",
-        name: "Total Bilirubin",
+        name: "SERUM BILIRUBIN (T)",
         type: "number",
         unit: "mg/dL",
         referenceRange: {
-          min: 0.3,
-          max: 1.2,
+          min: 0.2,
+          max: 1,
         },
       },
       {
         id: "alt",
-        name: "ALT (SGPT)",
+        name: "SGPT (ALT)",
         type: "number",
         unit: "U/L",
         referenceRange: {
-          min: 7,
-          max: 56,
+          min: 5,
+          max: 35,
         },
       },
       {
         id: "ast",
-        name: "AST (SGOT)",
+        name: "SGOT (AST)",
         type: "number",
         unit: "U/L",
         referenceRange: {
-          min: 10,
+          min: 8,
           max: 40,
         },
       },
       {
         id: "alp",
-        name: "Alkaline Phosphatase (ALP)",
+        name: "SERUM ALKALINE Po4",
         type: "number",
-        unit: "U/L",
+        unit: "KA Units",
         referenceRange: {
-          min: 44,
-          max: 147,
+          min: 4,
+          max: 11,
         },
       },
+      { id: "bilirubin-direct", name: "SERUM BILIRUBIN (D)", type: "number", unit: "mg/dl", referenceRange: { min: 0, max: 0.2 } },
+      { id: "bilirubin-indirect", name: "SERUM BILIRUBIN (IN)", type: "number", unit: "mg/dl", referenceRange: { min: 0.2, max: 0.6 } },
+      { id: "total-protein", name: "SERUM PROTEIN (T)", type: "number", unit: "gm/dl", referenceRange: { min: 6, max: 8 } },
+      { id: "albumin", name: "SERUM ALBUMIN", type: "number", unit: "gm/dl", referenceRange: { min: 3.5, max: 5 } },
+      { id: "globulin", name: "GLOBULIN", type: "number", unit: "gm/dl", referenceRange: { min: 1.8, max: 2.1 } },
+      { id: "ag-ratio", name: "A/G RATIO", type: "text", unit: "" },
     ],
 
     createdAt: new Date().toISOString(),
@@ -299,10 +354,7 @@ const initialTests: LaboratoryTest[] = [
         name: "Urea",
         type: "number",
         unit: "mg/dL",
-        referenceRange: {
-          min: 15,
-          max: 45,
-        },
+        referenceRange: { min: 10, max: 40 },
       },
       {
         id: "creatinine",
@@ -310,8 +362,8 @@ const initialTests: LaboratoryTest[] = [
         type: "number",
         unit: "mg/dL",
         referenceRange: {
-          min: 0.6,
-          max: 1.2,
+          min: 0.8,
+          max: 1.4,
         },
       },
       {
@@ -320,10 +372,11 @@ const initialTests: LaboratoryTest[] = [
         type: "number",
         unit: "mg/dL",
         referenceRange: {
-          min: 3.5,
-          max: 7.2,
+          min: 2.5,
+          max: 7,
         },
       },
+      { id: "bun", name: "SERUM BUN", type: "number", unit: "mg/dl", referenceRange: { min: 5, max: 20 } },
     ],
 
     createdAt: new Date().toISOString(),
@@ -342,7 +395,8 @@ const initialTests: LaboratoryTest[] = [
         type: "number",
         unit: "mg/dL",
         referenceRange: {
-          max: 200,
+          min: 130,
+          max: 250,
         },
       },
       {
@@ -351,7 +405,8 @@ const initialTests: LaboratoryTest[] = [
         type: "number",
         unit: "mg/dL",
         referenceRange: {
-          max: 150,
+          min: 40,
+          max: 165,
         },
       },
       {
@@ -360,7 +415,8 @@ const initialTests: LaboratoryTest[] = [
         type: "number",
         unit: "mg/dL",
         referenceRange: {
-          min: 40,
+          min: 30,
+          max: 70,
         },
       },
       {
@@ -369,7 +425,8 @@ const initialTests: LaboratoryTest[] = [
         type: "number",
         unit: "mg/dL",
         referenceRange: {
-          max: 100,
+          min: 90,
+          max: 120,
         },
       },
     ],
@@ -423,7 +480,7 @@ const initialTests: LaboratoryTest[] = [
         unit: "mmol/L",
         referenceRange: {
           min: 135,
-          max: 145,
+          max: 155,
         },
       },
       {
@@ -433,7 +490,7 @@ const initialTests: LaboratoryTest[] = [
         unit: "mmol/L",
         referenceRange: {
           min: 3.5,
-          max: 5.1,
+          max: 5.5,
         },
       },
       {
@@ -443,9 +500,10 @@ const initialTests: LaboratoryTest[] = [
         unit: "mmol/L",
         referenceRange: {
           min: 98,
-          max: 107,
+          max: 106,
         },
       },
+      { id: "electrolyte-calcium", name: "SERUM CALCIUM", type: "number", unit: "mg/dl", referenceRange: { min: 8.5, max: 11 } },
     ],
 
     createdAt: new Date().toISOString(),
@@ -483,7 +541,7 @@ const initialTests: LaboratoryTest[] = [
         name: "ESR",
         type: "number",
         unit: "mm/hr",
-        referenceRange: { max: 20 },
+        referenceRange: { text: "Male 0 to 10 mm/1 hr; Female 0 to 20 mm/1 hr" },
       },
     ],
   ),
@@ -779,10 +837,10 @@ const initialTests: LaboratoryTest[] = [
   createSeedTest("hiv-screen", "HIV 1 and 2 Screening", "Immunology", "Serum", [
     {
       id: "hiv-result",
-      name: "HIV Screening Result",
+      name: "HIV 1st. & 2nd.CARD TEST",
       type: "text",
       unit: "",
-      referenceRange: { text: "Non-reactive" },
+      referenceRange: { text: "NEGATIVE" },
     },
   ]),
 
@@ -794,10 +852,10 @@ const initialTests: LaboratoryTest[] = [
     [
       {
         id: "hbsag-result",
-        name: "HBsAg",
+        name: "HBsAg CARD TEST",
         type: "text",
         unit: "",
-        referenceRange: { text: "Non-reactive" },
+        referenceRange: { text: "NEGATIVE" },
       },
     ],
   ),
@@ -873,6 +931,103 @@ const initialTests: LaboratoryTest[] = [
     ],
     createdAt: new Date().toISOString(),
   },
+
+  createSeedTest("widal", "WIDAL TEST", "Immunology", "Serum", [
+    { id: "widal-typhi-o-1-20", name: "Salmonella Typhi ‘O’ - 1:20", type: "text", unit: "1:20", referenceRange: { text: "NEGATIVE" } },
+    { id: "widal-typhi-o-1-40", name: "Salmonella Typhi ‘O’ - 1:40", type: "text", unit: "1:40", referenceRange: { text: "NEGATIVE" } },
+    { id: "widal-typhi-o-1-80", name: "Salmonella Typhi ‘O’ - 1:80", type: "text", unit: "1:80", referenceRange: { text: "NEGATIVE" } },
+    { id: "widal-typhi-o-1-160", name: "Salmonella Typhi ‘O’ - 1:160", type: "text", unit: "1:160", referenceRange: { text: "NEGATIVE" } },
+    { id: "widal-typhi-o-1-320", name: "Salmonella Typhi ‘O’ - 1:320", type: "text", unit: "1:320", referenceRange: { text: "NEGATIVE" } },
+    { id: "widal-typhi-h-1-20", name: "S. Typhi ‘H’ - 1:20", type: "text", unit: "1:20", referenceRange: { text: "NEGATIVE" } },
+    { id: "widal-typhi-h-1-40", name: "S. Typhi ‘H’ - 1:40", type: "text", unit: "1:40", referenceRange: { text: "NEGATIVE" } },
+    { id: "widal-typhi-h-1-80", name: "S. Typhi ‘H’ - 1:80", type: "text", unit: "1:80", referenceRange: { text: "NEGATIVE" } },
+    { id: "widal-typhi-h-1-160", name: "S. Typhi ‘H’ - 1:160", type: "text", unit: "1:160", referenceRange: { text: "NEGATIVE" } },
+    { id: "widal-typhi-h-1-320", name: "S. Typhi ‘H’ - 1:320", type: "text", unit: "1:320", referenceRange: { text: "NEGATIVE" } },
+    { id: "widal-paratyphi-a-h-1-20", name: "S.Para Typhi A (H) - 1:20", type: "text", unit: "1:20", referenceRange: { text: "NEGATIVE" } },
+    { id: "widal-paratyphi-a-h-1-40", name: "S.Para Typhi A (H) - 1:40", type: "text", unit: "1:40", referenceRange: { text: "NEGATIVE" } },
+    { id: "widal-paratyphi-a-h-1-80", name: "S.Para Typhi A (H) - 1:80", type: "text", unit: "1:80", referenceRange: { text: "NEGATIVE" } },
+    { id: "widal-paratyphi-a-h-1-160", name: "S.Para Typhi A (H) - 1:160", type: "text", unit: "1:160", referenceRange: { text: "NEGATIVE" } },
+    { id: "widal-paratyphi-a-h-1-320", name: "S.Para Typhi A (H) - 1:320", type: "text", unit: "1:320", referenceRange: { text: "NEGATIVE" } },
+    { id: "widal-paratyphi-b-h-1-20", name: "S.Para Typhi B (H) - 1:20", type: "text", unit: "1:20", referenceRange: { text: "NEGATIVE" } },
+    { id: "widal-paratyphi-b-h-1-40", name: "S.Para Typhi B (H) - 1:40", type: "text", unit: "1:40", referenceRange: { text: "NEGATIVE" } },
+    { id: "widal-paratyphi-b-h-1-80", name: "S.Para Typhi B (H) - 1:80", type: "text", unit: "1:80", referenceRange: { text: "NEGATIVE" } },
+    { id: "widal-paratyphi-b-h-1-160", name: "S.Para Typhi B (H) - 1:160", type: "text", unit: "1:160", referenceRange: { text: "NEGATIVE" } },
+    { id: "widal-paratyphi-b-h-1-320", name: "S.Para Typhi B (H) - 1:320", type: "text", unit: "1:320", referenceRange: { text: "NEGATIVE" } },
+    { id: "widal-interpretation", name: "INTERPRETATION : WIDAL TEST FOR TYPHOID", type: "text", unit: "", referenceRange: { text: "NEGATIVE" } },
+  ]),
+
+  createSeedTest("blood-sugar-profile", "SUGAR-PROFILE", "Biochemistry", "Fluoride Plasma", [
+    { id: "blood-sugar-fasting", name: "BLOOD SUGAR (F)", type: "number", unit: "mg/dl", referenceRange: { min: 60, max: 100 } },
+    { id: "blood-sugar-postprandial", name: "BLOOD SUGAR (PP)", type: "number", unit: "mg/dl", referenceRange: { min: 60, max: 120 } },
+    { id: "blood-sugar-random", name: "BLOOD SUGAR (R)", type: "number", unit: "mg/dl", referenceRange: { min: 60, max: 140 } },
+  ]),
+
+  createSeedTest("blood-sugar", "BLOOD SUGAR (R)", "Biochemistry", "Fluoride Plasma", [
+    { id: "blood-sugar-random-standalone", name: "BLOOD SUGAR (R)", type: "number", unit: "mg/dl", referenceRange: { min: 60, max: 140 } },
+  ]),
+
+  createSeedTest("serum-bilirubin", "SERUM BILIRUBIN", "Biochemistry", "Serum", [
+    { id: "serum-bilirubin-total", name: "SERUM BILIRUBIN (T)", type: "number", unit: "mg/dl", referenceRange: { min: 0.2, max: 1 } },
+    { id: "serum-bilirubin-direct", name: "SERUM BILIRUBIN (D)", type: "number", unit: "mg/dl", referenceRange: { min: 0, max: 0.2 } },
+    { id: "serum-bilirubin-indirect", name: "SERUM BILIRUBIN (IN)", type: "number", unit: "mg/dl", referenceRange: { min: 0.2, max: 0.6 } },
+  ]),
+
+  createSeedTest("serum-uric-acid", "SERUM URIC ACID", "Biochemistry", "Serum", [
+    { id: "serum-uric-acid-value", name: "SERUM URIC ACID", type: "number", unit: "mg/dl", referenceRange: { min: 2.5, max: 7 } },
+  ]),
+
+  createSeedTest("hemoglobin-screen", "Hemoglobin", "Hematology", "Whole Blood EDTA", [
+    { id: "hemoglobin-screen-value", name: "Hemoglobin", type: "number", unit: "gm%", referenceRange: { min: 12.5, max: 15.5 } },
+  ]),
+
+  createSeedTest("sputum-afb", "SPUTUM TEST FOR A.F.B.", "Microbiology", "Sputum", [
+    { id: "sputum-afb-result", name: "SPUTUM TEST FOR A.F.B.", type: "text", unit: "", referenceRange: { text: "NEGATIVE" } },
+  ]),
+
+  createSeedTest("mantoux-ppd-10tu", "MANTOUX TEST - PPD 10 TU/ID", "Immunology", "Whole Blood", [
+    { id: "mantoux-ppd-dose", name: "PPD 10 TU/ID", type: "text", unit: "", referenceRange: { text: "DERMAL REACTION EXAMINED AFTER 72 HRS" } },
+  ]),
+
+  createSeedTest("mantoux-dose-route", "MANTOUX TEST", "Immunology", "Whole Blood", [
+    { id: "mantoux-dose", name: "DOSE", type: "text", unit: "", referenceRange: { text: "0.1 ml of 5 IU P.P.D" } },
+    { id: "mantoux-route", name: "ROUTE", type: "text", unit: "", referenceRange: { text: "Injected Intradermally" } },
+    { id: "mantoux-time", name: "TIME", type: "text", unit: "", referenceRange: { text: "48Hrs." } },
+    { id: "mantoux-induration", name: "INDURATION (horizontal diameter of indurations)", type: "text", unit: "mm", referenceRange: { text: "NO INDURATION SEEN" } },
+    { id: "mantoux-remark", name: "REMARK", type: "text", unit: "", referenceRange: { text: "NEGATIVE" } },
+    { id: "mantoux-interpretation-notes", name: "Interpretation notes", type: "text", unit: "", referenceRange: { text: "Induration of 5 mm or more is positive in cases of HIV infected person, recent close contact with someone who has infectious tuberculosis, chest x-ray findings consistent with old healed tuberculosis. Induration of 10 mm or more is positive in person who have other risk factors for tuberculosis (silicosis, CRF, DM, Tt with high dose steroids or immunosuppression drugs & malignancies). Injection drug users. Induration of 15 mm or more is positive in all other persons." } },
+  ]),
+
+  createSeedTest("rheumatoid-factor", "“RHEUMATOID” ARTHRITIS FACTOR", "Immunology", "Serum", [
+    { id: "rheumatoid-factor-result", name: "“RHEUMATOID” ARTHRITIS FACTOR", type: "text", unit: "", referenceRange: { text: "NEGATIVE" } },
+  ]),
+
+  createSeedTest("serochek-mtb", "SEROCHEK-MTB TEST", "Immunology", "Serum/Plasma", [
+    { id: "serochek-mtb-igg", name: "IgG", type: "text", unit: "", referenceRange: { text: "NEGATIVE" } },
+    { id: "serochek-mtb-igm", name: "IgM", type: "text", unit: "", referenceRange: { text: "NEGATIVE" } },
+  ]),
+
+  createSeedTest("signal-mf", "“SIGNAL-MF”MICRO FILARIA TEST", "Immunology", "Serum", [
+    { id: "signal-mf-result", name: "“SIGNAL-MF”MICRO FILARIA TEST", type: "text", unit: "", referenceRange: { text: "NEGATIVE" } },
+  ]),
+
+  createSeedTest("signal-tp-vdrl", "“SIGNAL-TP” V.D.R.L.TEST FOR SYPHILIS", "Immunology", "Serum", [
+    { id: "signal-tp-vdrl-result", name: "“SIGNAL-TP” V.D.R.L.TEST FOR SYPHILIS", type: "text", unit: "", referenceRange: { text: "NEGATIVE" } },
+  ]),
+
+  createSeedTest("skiagram-chest-pa", "SKIAGRAM CHEST P.A. VIEW", "Radiology", "Radiology", [
+    { id: "chest-mediastinum", name: "Mediastinum", type: "text", unit: "", referenceRange: { text: "Normal" } },
+    { id: "chest-hilar-lymph-nodes", name: "Hilar Lymph nods", type: "text", unit: "", referenceRange: { text: "Prominent" } },
+    { id: "chest-lungs-right", name: "Lungs Field - Right", type: "text", unit: "", referenceRange: { text: "Clear" } },
+    { id: "chest-lungs-left", name: "Lungs Field - Left", type: "text", unit: "", referenceRange: { text: "Clear" } },
+    { id: "chest-heart-shadow", name: "Heart Shadow", type: "text", unit: "", referenceRange: { text: "With in normal limits" } },
+    { id: "chest-costophrenic-right", name: "Costophrenic Angle - Right", type: "text", unit: "", referenceRange: { text: "Clear" } },
+    { id: "chest-costophrenic-left", name: "Costophrenic Angle - Left", type: "text", unit: "", referenceRange: { text: "Clear" } },
+    { id: "chest-diaphragm-right", name: "Diaphragm - Right", type: "text", unit: "", referenceRange: { text: "Normal" } },
+    { id: "chest-diaphragm-left", name: "Diaphragm - Left", type: "text", unit: "", referenceRange: { text: "Normal" } },
+    { id: "chest-ribs-right", name: "Ribs - Right", type: "text", unit: "", referenceRange: { text: "Normal" } },
+    { id: "chest-ribs-left", name: "Ribs - Left", type: "text", unit: "", referenceRange: { text: "Normal" } },
+    { id: "chest-impression", name: "IMPRESSION", type: "text", unit: "", referenceRange: { text: "CHEST X-RAY NORMAL" } },
+  ]),
 
   createSeedTest("insulin", "Fasting Insulin", "Endocrinology", "Serum", [
     {
