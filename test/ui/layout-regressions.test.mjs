@@ -90,6 +90,20 @@ test('printable report headers stay on one line and all five columns have room',
   assert.match(firstRule('.pr-results'), /width:\s*100%/);
 });
 
+test('print results can span pages without orphaning headings or splitting rows', () => {
+  assert.match(firstRule('.pr-section > h2'), /break-after:\s*avoid/);
+  const group = firstRule('.pr-results-group');
+  assert.match(group, /break-inside:\s*auto/);
+  assert.doesNotMatch(group, /break-inside:\s*avoid/);
+  assert.match(firstRule('.pr-results-heading'), /break-after:\s*avoid/);
+  assert.match(firstRule('.pr-results tr'), /break-inside:\s*avoid/);
+  assert.match(firstRule('.pr-results thead'), /display:\s*table-header-group/);
+
+  // These compact report blocks still stay together in browser print output.
+  assert.match(firstRule('.pr-section.pr-diagnosis'), /break-inside:\s*avoid/);
+  assert.match(firstRule('.pr-signoff'), /break-inside:\s*avoid/);
+});
+
 test('static A4 page rule leaves margins to the report model', () => {
   const pageRule = css.match(/@page\s*\{([^}]*)\}/)?.[1];
   assert.ok(pageRule);

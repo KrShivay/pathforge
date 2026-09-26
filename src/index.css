@@ -4684,7 +4684,7 @@ button {
 /* ---- results table ---- */
 
 .pr-results-group {
-  break-inside: avoid;
+  break-inside: auto;
 }
 
 .pr-results-group + .pr-results-group {
