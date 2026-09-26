@@ -10,7 +10,8 @@ interface PrintableReportProps {
  * On-screen / print rendering of the house-format report. The report's content
  * and structure come entirely from {@link ReportModel}; this component only
  * decides how it looks. Hidden on screen and revealed by the `@media print`
- * rules in index.css, so `window.print()` drives paper printing.
+ * rules in index.css. It is the on-screen preview and remains available for
+ * manual browser printing; the Print action uses the jsPDF document.
  */
 export default function PrintableReport({ model }: PrintableReportProps) {
   const logoDataUrl = getUsableLogoDataUrl(model.brand.logoDataUrl);

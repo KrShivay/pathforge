@@ -21,7 +21,7 @@ never collapsed into one another.
 | Domain | [`src/domain/`](../src/domain/) | Validation, canonicalization, semantic comparison, lifecycle, lineage, hashing. Pure logic, no UI or storage. |
 | Rendering | [`src/rendering/`](../src/rendering/) | Builds the presentation-neutral **document model** from a validated payload and the house-format config. |
 | Service | [`src/service/`](../src/service/) | Report lifecycle orchestration behind ports; the in-memory adapter is the current storage. |
-| Report/PDF | [`src/components/report/`](../src/components/report/) | Printable report React tree and the browser print / save-as-PDF path. |
+| Report/PDF | [`src/components/report/`](../src/components/report/) | Shared jsPDF document for Print and Download PDF; HTML report preview and manual browser printing. |
 | App shell | [`src/pages/`](../src/pages/), [`src/store/`](../src/store/) | React + Tauri desktop UI, contexts, and branding. |
 | Native | [`src-tauri/`](../src-tauri/) | Tauri (Rust) shell and local SQLite. |
 
@@ -116,16 +116,15 @@ Print settings are configured in Laboratory Profile → Print layout and stored 
 [`LaboratoryProfile.printLayout`](../src/store/branding.ts). They apply globally
 to drafts and are frozen with the branding snapshot at finalization, so an issued
 report keeps its header and margins. Typography remains renderer code and follows
-INV-6. Defaults show the letterhead and use 16 mm margins on every side, matching
-the previous Download-PDF margins; the footer position has changed. Browser
-printing previously used 10/10/11 mm and now uses the same configured margins.
+INV-6. Print and Download PDF use the same jsPDF document and produce identical
+output. The HTML report is the on-screen preview and remains available for manual
+browser printing. Defaults show the letterhead and use 16 mm margins on every side.
 
 Millimetres are canonical. The CSS-pixel conversion (96 px = 1 in = 25.4 mm;
 px = mm × 96 / 25.4; 120 px = 31.75 mm) lives only in
 [`printLayout.ts`](../src/components/report/printLayout.ts). A4 is the only
 supported page size. Top/left/right margins are 0–60 mm, bottom is 10–60 mm
-because the Download-PDF footer is centred inside it; in browser printing the
-footer flows after the end of the report. Left + right may total at most 80 mm.
+because the PDF footer is centred inside it. Left + right may total at most 80 mm.
 Loading and snapshots normalise malformed or out-of-range settings; saving
 validates and rejects them.
 

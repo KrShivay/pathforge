@@ -447,13 +447,23 @@ function ReportEditor({ reportId, onBack, onOpenReport, onDirtyChange }: ReportE
   // ========================================
   // PRINT  /  DOWNLOAD PDF
   //
-  // "Print" sends the on-screen `.print-report` layout to the OS print dialog.
-  // "Download PDF" builds a PDF file from the same report data and prompts for a
-  // save location (native dialog in Tauri, "Save As" picker in the browser).
+  // Both actions use the same jsPDF document; Print sends it to the print dialog
+  // and Download PDF prompts for a save location.
   // ========================================
 
-  function handlePrint() {
-    window.print();
+  async function handlePrint() {
+    setBusy(true);
+    try {
+      const { printReportPdf } = await import("../components/report/reportPdf");
+      await printReportPdf(model);
+    } catch (error) {
+      void notifyError({
+        title: "Could not print the PDF",
+        text: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      setBusy(false);
+    }
   }
 
   function handleExportMenuKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {

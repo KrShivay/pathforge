@@ -119,7 +119,9 @@ test('focus and elevation tokens distinguish controls, embedded cards, menus, an
   assert.match(css, /\.preview-modal\s*\{[^}]*box-shadow:\s*0 24px 70px/);
 });
 
-test('PDF generator is loaded only when the download action runs', () => {
+test('PDF generator is loaded only when a print or download action runs', () => {
   assert.doesNotMatch(editor, /^import \{ downloadReportPdf \}/m);
   assert.match(editor, /await import\("\.\.\/components\/report\/reportPdf"\)/);
+  assert.match(editor, /const \{ printReportPdf \} = await import\("\.\.\/components\/report\/reportPdf"\)/);
+  assert.doesNotMatch(editor, /window\.print\(\)/);
 });

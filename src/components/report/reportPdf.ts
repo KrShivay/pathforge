@@ -596,6 +596,87 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
   return doc;
 }
 
+async function reportPdfBlob(model: ReportModel): Promise<Blob> {
+  const doc = await buildReportPdf(model);
+  return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+}
+
+const PRINT_UNAVAILABLE_MESSAGE =
+  "Printing is not available here — use Download PDF and print the saved file.";
+
+/** Print the same PDF bytes produced by the Download PDF action. */
+export async function printReportPdf(model: ReportModel): Promise<void> {
+  const blob = await reportPdfBlob(model);
+  const url = URL.createObjectURL(blob);
+  const iframe = document.createElement("iframe");
+  iframe.title = "Report PDF print document";
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.style.position = "fixed";
+  iframe.style.left = "-10000px";
+  iframe.style.top = "0";
+  iframe.style.width = "1px";
+  iframe.style.height = "1px";
+  iframe.style.border = "0";
+
+  let settled = false;
+  let loadTimer = 0;
+  let cleanupTimer = 0;
+  const cleanup = () => {
+    window.clearTimeout(loadTimer);
+    window.clearTimeout(cleanupTimer);
+    iframe.remove();
+    URL.revokeObjectURL(url);
+  };
+  const scheduleCleanup = () => {
+    if (!cleanupTimer) cleanupTimer = window.setTimeout(cleanup, 60_000);
+  };
+
+  return new Promise<void>((resolve, reject) => {
+    const openPdfViewer = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(loadTimer);
+      try {
+        const popup = window.open(url, "_blank");
+        if (!popup) throw new Error(PRINT_UNAVAILABLE_MESSAGE);
+        scheduleCleanup();
+        resolve();
+      } catch {
+        cleanup();
+        reject(new Error(PRINT_UNAVAILABLE_MESSAGE));
+      }
+    };
+
+    iframe.onload = () => {
+      if (settled) return;
+      window.clearTimeout(loadTimer);
+      try {
+        const printWindow = iframe.contentWindow;
+        if (!printWindow || typeof printWindow.print !== "function") {
+          openPdfViewer();
+          return;
+        }
+        if (typeof printWindow.addEventListener === "function") {
+          printWindow.addEventListener("afterprint", cleanup, { once: true });
+        } else {
+          printWindow.onafterprint = cleanup;
+        }
+        printWindow.focus();
+        printWindow.print();
+        settled = true;
+        scheduleCleanup();
+        resolve();
+      } catch {
+        openPdfViewer();
+      }
+    };
+
+    loadTimer = window.setTimeout(openPdfViewer, 10_000);
+    document.body.appendChild(iframe);
+    iframe.src = url;
+  });
+}
+
 /**
  * Save the report PDF to disk, prompting for a location.
  * - Tauri: native save dialog + filesystem write.
@@ -603,9 +684,9 @@ export async function buildReportPdf(model: ReportModel): Promise<jsPDF> {
  * - Otherwise: falls back to a normal download into the Downloads folder.
  */
 export async function downloadReportPdf(model: ReportModel): Promise<void> {
-  const doc = await buildReportPdf(model);
+  const blob = await reportPdfBlob(model);
   const fileName = `${model.fileBaseName}.pdf`;
-  const bytes = doc.output("arraybuffer");
+  const bytes = await blob.arrayBuffer();
 
   if (isTauri()) {
     const { save } = await import("@tauri-apps/plugin-dialog");
@@ -655,5 +736,10 @@ export async function downloadReportPdf(model: ReportModel): Promise<void> {
     }
   }
 
-  doc.save(fileName);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
