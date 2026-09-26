@@ -837,25 +837,42 @@ const initialTests: LaboratoryTest[] = [
 
   createSeedTest(
     "malaria-screen",
-    "Malaria Antigen and Smear",
+    "Malaria Parasite Test by Card Method (Antigen)",
     "Microbiology",
     "Whole Blood EDTA",
     [
       {
         id: "malaria-antigen",
-        name: "Malaria Antigen",
+        name: "Malaria Parasite Test by Card Method (Antigen)",
+        type: "text",
+        unit: "",
+        referenceRange: { text: "Negative" },
+      },
+    ],
+  ),
+
+  {
+    id: "mp-card-test",
+    name: "MP Card Test (Serology Test)",
+    department: "Immunology",
+    parameters: [
+      {
+        id: "mp-card-pv",
+        name: "Rapid ELISA Qualitative Method for PV",
         type: "text",
         unit: "",
         referenceRange: { text: "Negative" },
       },
       {
-        id: "malaria-parasite",
-        name: "Parasite Findings",
+        id: "mp-card-pf",
+        name: "Rapid ELISA Qualitative Method for PF",
         type: "text",
         unit: "",
+        referenceRange: { text: "Negative" },
       },
     ],
-  ),
+    createdAt: new Date().toISOString(),
+  },
 
   createSeedTest("insulin", "Fasting Insulin", "Endocrinology", "Serum", [
     {

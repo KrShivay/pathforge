@@ -86,7 +86,8 @@ const PARAMETER_HELP: Record<string, string> = {
   "dengue-igm":
     "Looks for IgM antibodies that can appear after a recent dengue infection.",
   "malaria-antigen": "Looks for proteins from malaria parasites in the blood.",
-  "malaria-parasite": "Describes malaria parasites seen on the blood film.",
+  "mp-card-pv": "A rapid card test for Plasmodium vivax (PV) malaria.",
+  "mp-card-pf": "A rapid card test for Plasmodium falciparum (PF) malaria.",
   "fasting-insulin":
     "The insulin level after fasting; insulin helps control blood sugar.",
   "cortisol-value":
